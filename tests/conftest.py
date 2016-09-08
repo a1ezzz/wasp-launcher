@@ -8,7 +8,7 @@ from wasp_launcher.globals import WLauncherGlobals
 
 
 @pytest.fixture
-def tempfile(request):
+def temp_file(request):
 	filename = mktemp('pytest-wasp-launcher-')
 
 	def fin():
@@ -21,6 +21,7 @@ def tempfile(request):
 @pytest.fixture
 def global_log(request):
 	WLauncherGlobals.log = logging.getLogger('wasp-launcher-pytest')
+
 	def fin():
 		WLauncherGlobals.log = None
 	request.addfinalizer(fin)
