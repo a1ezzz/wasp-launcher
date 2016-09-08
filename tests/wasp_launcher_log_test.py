@@ -9,7 +9,7 @@ from wasp_launcher.globals import WLauncherGlobals
 
 
 @pytest.fixture
-def global_log(request):
+def fin_log(request):
 	def fin():
 		WLauncherGlobals.log = None
 	request.addfinalizer(fin)
@@ -17,7 +17,7 @@ def global_log(request):
 
 class TestWLauncherLogSetup:
 
-	@pytest.mark.usefixtures('global_log')
+	@pytest.mark.usefixtures('fin_log')
 	def test_task(self):
 		assert(isinstance(WLauncherLogSetup(), WLauncherTask) is True)
 		task = WLauncherLogSetup.start_dependent_task()
