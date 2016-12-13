@@ -36,7 +36,7 @@ class WLauncherLogSetup(WLauncherTask):
 	""" Task that initialized logger
 	"""
 
-	__registry_tag__ = '::wasp_launcher::log::log_setup'
+	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.log::log_setup'
 	""" Task tag
 	"""
 

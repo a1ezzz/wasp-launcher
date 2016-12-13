@@ -19,23 +19,25 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with wasp-launcher.  If not, see <http://www.gnu.org/licenses/>.
 
+# TODO: document the code
+# TODO: write tests for the code
+
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __author__, __version__, __credits__, __license__, __copyright__, __email__
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
 from wasp_general.task.thread import WThreadTask
-from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage
+from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage, WDependentTask
 
 
 class WLauncherAppRegistry(WTaskDependencyRegistry):
 	__registry_storage__ = WTaskDependencyRegistryStorage()
 
 
-class WLauncherAppDescriptor(WThreadTask):
+class WLauncherAppDescriptor(WThreadTask, metaclass=WDependentTask):
 
-	__registry__ = WLauncherAppRegistry
-	__registry_tag__ = '::wasp_launcher::app'
+	__auto_registry__ = False
 
 	@classmethod
 	def name(cls):

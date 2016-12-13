@@ -25,8 +25,19 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
+import signal
+
 from wasp_launcher.tasks.launcher.registry import WLauncherRegistry
 
 if __name__ == '__main__':
 	print('Launcher is starting')
-	WLauncherRegistry.start_task('::wasp_launcher::config::read_config')
+
+	main_task = 'com.binblob.wasp-launcher.launcher.broker::broker_start'
+	WLauncherRegistry.start_task(main_task)
+
+	def shutdown_signal(signum, frame):
+		WLauncherRegistry.stop_task(main_task)
+
+	signal.signal(signal.SIGTERM, shutdown_signal)
+	signal.signal(signal.SIGINT, shutdown_signal)
+	signal.pause()

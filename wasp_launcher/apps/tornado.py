@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/tasks/launcher/globals.py
+# wasp_launcher/apps/tornado.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -19,25 +19,23 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with wasp-launcher.  If not, see <http://www.gnu.org/licenses/>.
 
+# TODO: document the code
+# TODO: write tests for the code
+
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __author__, __version__, __credits__, __license__, __copyright__, __email__
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from wasp_launcher.app import WLauncherAppRegistry
+from wasp_launcher.app import WLauncherAppDescriptor
 
 
-class WLauncherGlobals:
-	""" Storage of global variables, that are widely used across application
-	"""
+class WTornado(WLauncherAppDescriptor):
 
-	log = None
-	""" Application logger (logging.Logger instance. See :class:`wasp_launcher.tasks.launcher.log.WLauncherLogSetup`)
-	"""
+	__registry_tag__ = 'com.binblob.wasp-launcher.apps.wasp-tornado'
 
-	config = None
-	""" Current server configuration (wasp_general.config.WConfig instance.
-	See :class:`wasp_launcher.tasks.launcher.config.WLauncherConfig`)
-	"""
+	def start(self):
+		pass
 
-	apps_registry = WLauncherAppRegistry
+	def stop(self):
+		pass

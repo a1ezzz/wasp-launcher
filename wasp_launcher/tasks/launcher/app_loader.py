@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/tasks/launcher/tasks/launcher/app_loader.py
+# wasp_launcher/tasks/launcher/app_loader.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -65,7 +65,7 @@ class WLauncherAppLoader(WLauncherTask):
 				if hasattr(module, cls.__module_export_function__):
 					export_fn = getattr(module, cls.__module_export_function__)
 					for app in export_fn():
-						if isinstance(app, WLauncherAppDescriptor) is True:
+						if issubclass(app, WLauncherAppDescriptor) is True:
 							WLauncherGlobals.apps_registry.add(app)
 							apps_count += 1
 						else:

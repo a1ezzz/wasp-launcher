@@ -36,11 +36,11 @@ class WLauncherConfig(WLauncherTask):
 	""" Task that load configuration
 	"""
 
-	__registry_tag__ = '::wasp_launcher::config::read_config'
+	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.config::read_config'
 	""" Task tag
 	"""
 
-	__dependency__ = ['::wasp_launcher::log::log_setup']
+	__dependency__ = ['com.binblob.wasp-launcher.launcher.log::log_setup']
 	""" Task dependency
 	"""
 
