@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/log.py
+# wasp_launcher/tasks/launcher/log.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -28,8 +28,8 @@ import logging
 import logging.config
 import sys
 
-from wasp_launcher.launcher_registry import WLauncherTask
-from wasp_launcher.globals import WLauncherGlobals
+from wasp_launcher.tasks.launcher.registry import WLauncherTask
+from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
 
 
 class WLauncherLogSetup(WLauncherTask):
@@ -49,7 +49,7 @@ class WLauncherLogSetup(WLauncherTask):
 		WLauncherGlobals.log.info('Logger initialised')
 
 	def stop(self):
-		""" "Uninitialize" logger. Makes :attr:`wasp_launcher.globals.WLauncherGlobals.log` logger unavailable
+		""" "Uninitialize" logger. Makes :attr:`wasp_launcher.tasks.launcher.globals.WLauncherGlobals.log` logger unavailable
 
 		:return: None
 		"""
@@ -57,7 +57,7 @@ class WLauncherLogSetup(WLauncherTask):
 
 	@classmethod
 	def setup_logger(cls):
-		""" Initialize :attr:`wasp_launcher.globals.WLauncherGlobals.log` log.
+		""" Initialize :attr:`wasp_launcher.tasks.launcher.globals.WLauncherGlobals.log` log.
 
 		:return: None
 		"""

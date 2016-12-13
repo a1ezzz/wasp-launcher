@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/<FILENAME>.py
+# wasp_launcher/tasks/launcher/config.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -28,8 +28,8 @@ import os
 
 from wasp_general.config import WConfig
 
-from wasp_launcher.launcher_registry import WLauncherTask
-from wasp_launcher.globals import WLauncherGlobals
+from wasp_launcher.tasks.launcher.registry import WLauncherTask
+from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
 
 
 class WLauncherConfig(WLauncherTask):
@@ -48,7 +48,7 @@ class WLauncherConfig(WLauncherTask):
 	""" Environment variable name that is used for configuration filename which overrides defaults.
 	"""
 
-	__configuration_default__ = os.path.join(os.path.dirname(__file__), 'config', 'defaults.ini')
+	__configuration_default__ = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'defaults.ini')
 	""" Place where default configuration is stored
 	"""
 

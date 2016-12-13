@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/globals.py
+# wasp_launcher/tasks/launcher/registry.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -24,19 +24,26 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
+from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage, WDependentTask
+from wasp_general.task.sync import WSyncTask
 
-class WLauncherGlobals:
-	""" Storage of global variables, that are widely used across application
+
+class WLauncherRegistry(WTaskDependencyRegistry):
+	""" Main registry to keep tasks responded to the launcher starting
+	"""
+	__registry_storage__ = WTaskDependencyRegistryStorage()
+	""" Default storage for this type of registry
 	"""
 
-	log = None
-	""" Application logger (logging.Logger instance. See :class:`wasp_launcher.log.WLauncherLogSetup`)
+
+class WLauncherTask(WSyncTask, metaclass=WDependentTask):
+	""" Basic class for derived classes, that does real work in launcher starting process
 	"""
 
-	## .
-	# (\ref gap3_engine.lib.config.GapConfig instance)
-	# @sa gap3_engine.lib.config
-	config = None
-	""" Current server configuration (wasp_general.config.WConfig instance.
-	See :class:`wasp_launcher.config.WLauncherConfig`)
+	__registry__ = WLauncherRegistry
+	""" Link to registry
+	"""
+
+	__registry_tag__ = '::wasp_launcher'
+	""" Default tag (just because WDependentTask needs it)
 	"""

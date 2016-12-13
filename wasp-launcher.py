@@ -25,13 +25,7 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from wasp_launcher.launcher_registry import WLauncherRegistry
-
-# noinspection PyUnresolvedReferences
-from wasp_launcher.log import WLauncherLogSetup
-# noinspection PyUnresolvedReferences
-from wasp_launcher.config import WLauncherConfig
-
+from wasp_launcher.tasks.launcher.registry import WLauncherRegistry
 
 if __name__ == '__main__':
 	print('Launcher is starting')
