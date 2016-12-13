@@ -3,9 +3,9 @@
 import pytest
 import logging
 
-from wasp_launcher.log import WLauncherLogSetup
-from wasp_launcher.launcher_registry import WLauncherTask
-from wasp_launcher.globals import WLauncherGlobals
+from wasp_launcher.tasks.launcher.log import WLauncherLogSetup
+from wasp_launcher.tasks.launcher.registry import WLauncherTask
+from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
 
 
 @pytest.fixture

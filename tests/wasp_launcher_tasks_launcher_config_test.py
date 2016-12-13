@@ -5,9 +5,9 @@ import os
 
 from wasp_general.config import WConfig
 
-from wasp_launcher.config import WLauncherConfig
-from wasp_launcher.launcher_registry import WLauncherTask
-from wasp_launcher.globals import WLauncherGlobals
+from wasp_launcher.tasks.launcher.config import WLauncherConfig
+from wasp_launcher.tasks.launcher.registry import WLauncherTask
+from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
 
 
 @pytest.fixture
