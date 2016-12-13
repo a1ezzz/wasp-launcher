@@ -4,7 +4,7 @@ import os
 import pytest
 import logging
 
-from wasp_launcher.globals import WLauncherGlobals
+from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
 
 
 @pytest.fixture
