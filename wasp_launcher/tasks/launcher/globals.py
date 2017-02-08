@@ -41,3 +41,8 @@ class WLauncherGlobals:
 	"""
 
 	apps_registry = WLauncherAppRegistry
+	templates = None
+
+	wasp_web_service = None
+	tornado_io_loop = None
+	tornado_service = None
