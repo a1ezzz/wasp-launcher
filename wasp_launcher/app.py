@@ -46,3 +46,42 @@ class WLauncherAppDescriptor(WThreadTask, metaclass=WDependentTask):
 	@classmethod
 	def description(cls):
 		return None
+
+
+class WLauncherWebAppDescriptor(WLauncherAppDescriptor):
+
+	@classmethod
+	def public_presenters(cls):
+		return tuple()
+
+	@classmethod
+	def public_routes(cls):
+		""" Return routes which are published by an application
+
+		:return: tuple of WWebRoute
+		"""
+		return tuple()
+
+	@classmethod
+	def template_path(cls):
+		'''
+
+		can be none or non-existens path
+
+		:return:
+		'''
+		return None
+
+	@classmethod
+	def py_templates_package(cls):
+		return None
+
+	@classmethod
+	def static_files_path(cls):
+		'''
+
+		can be none or non-existens path
+
+		:return:
+		'''
+		return None
