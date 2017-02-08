@@ -32,7 +32,7 @@ from wasp_launcher.tasks.launcher.registry import WLauncherRegistry
 if __name__ == '__main__':
 	print('Launcher is starting')
 
-	main_task = 'com.binblob.wasp-launcher.launcher.broker::broker_start'
+	main_task = 'com.binblob.wasp-launcher.launcher.web_service::start'
 	WLauncherRegistry.start_task(main_task)
 
 	def shutdown_signal(signum, frame):
