@@ -29,11 +29,8 @@ from wasp_launcher.version import __status__
 
 import os
 
-from wasp_network.web.headers import WHTTPHeaders
-from wasp_network.web.response import WWebResponse
-from wasp_network.web.service import WWebRoute, WWebEnhancedPresenter, WSimpleErrorPresenter
-from wasp_network.web.proto import WWebPresenter
-from wasp_network.web.template import WWebTemplateText, WWebTemplateResponse
+from wasp_network.web.service import WWebRoute, WWebEnhancedPresenter
+from wasp_network.web.template import WWebTemplateResponse
 
 
 from wasp_launcher.app import WLauncherWebAppDescriptor
@@ -44,8 +41,9 @@ class WDebugPresenter(WWebEnhancedPresenter):
 
 	def index(self):
 		context = {}
-		template = WLauncherGlobals.templates.lookup('mako::com.binblob.wasp-launcher.apps.wasp-debug::test.mako')
-		print('FOUND TEMPLATE:' + str(template.template()))
+		template = WLauncherGlobals.templates.lookup(
+			'mako::com.binblob.wasp-launcher.apps.wasp-debug::test.mako'
+		)
 		return WWebTemplateResponse(template, context=context)
 
 	@classmethod
