@@ -1,0 +1,18 @@
+
+body {
+	background-image: url('/static.wasp-debug.debug/imgs/bg-engine-fhd5.png'), url('/static.wasp-debug.debug/imgs/bg-fhd3.png');
+	background-position: center center;
+	background-repeat: no-repeat, repeat-y;
+}
+
+div.wasp_debug_session_block > span.wasp_block_title {
+	font-size: medium;
+}
+
+div.wasp_debug_session_block > span.wasp_block_title > span.wasp_details_trigger {
+	text-decoration: underline;
+}
+
+div.wasp_debug_session_block > div.wasp_block_details {
+	padding-left: 40px;
+}
