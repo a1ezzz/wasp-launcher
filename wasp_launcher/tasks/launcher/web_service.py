@@ -24,17 +24,50 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
+from abc import ABCMeta
+
 import tornado.ioloop
 import tornado.web
 import tornado.httpserver
 
-from wasp_network.web.service import WWebService
+from wasp_general.verify import verify_type, verify_value
+
+from wasp_network.web.service import WWebService, WWebTargetRoute, WWebEnhancedPresenter, WWebPresenterFactory
+from wasp_network.web.proto import WWebRequestProto
 from wasp_network.web.tornado import WTornadoRequestHandler
+from wasp_network.web.template import WWebTemplateResponse
 
 from wasp_launcher.tasks.launcher.registry import WLauncherTask
 from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
 from wasp_launcher.tasks.launcher.web_debugger import WLauncherWebDebugger
 from wasp_launcher.app import WLauncherWebAppDescriptor
+
+
+class WLauncherWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
+
+	@verify_type(request=WWebRequestProto, target_route=WWebTargetRoute, service=WWebService)
+	def __init__(self, request, target_route, service):
+		WWebEnhancedPresenter.__init__(self, request, target_route, service)
+		self._context = {}
+
+	@verify_type(template_id=str)
+	@verify_value(template_id=lambda x: len(x) > 0)
+	def __template__(self, template_id):
+		return WLauncherGlobals.templates.lookup(template_id)
+
+	@verify_type(template_id=str)
+	@verify_value(template_id=lambda x: len(x) > 0)
+	def __template_response__(self, template_id):
+		return WWebTemplateResponse(self.__template__(template_id), context=self._context)
+
+
+class WLauncherPresenterFactory(WWebPresenterFactory):
+
+	def __init__(self):
+		WWebPresenterFactory.__init__(self)
+		self._add_constructor(
+			WLauncherWebPresenter, WWebPresenterFactory.enhanced_presenter_constructor
+		)
 
 
 class WLauncherWebServicePreInit(WLauncherTask):
@@ -54,7 +87,9 @@ class WLauncherWebServicePreInit(WLauncherTask):
 	"""
 
 	def start(self):
-		WLauncherGlobals.wasp_web_service = WWebService(debugger=WLauncherWebDebugger())
+		WLauncherGlobals.wasp_web_service = WWebService(
+			factory=WLauncherPresenterFactory, debugger=WLauncherWebDebugger()
+		)
 		WLauncherGlobals.tornado_io_loop = tornado.ioloop.IOLoop()
 		WLauncherGlobals.tornado_service = tornado.httpserver.HTTPServer(
 			tornado.web.Application([
@@ -130,6 +165,11 @@ class WLauncherWebServiceStart(WLauncherTask):
 			)
 			WLauncherGlobals.wasp_web_service.route_map().set_error_presenter(error_presenter)
 			WLauncherGlobals.log.info('Presenter "%s" set as error presenter' % error_presenter_name)
+		elif len(error_presenter_name) > 0:
+			WLauncherGlobals.log.warn(
+				'Presenter "%s" can\'t be set as error presenter (wasn\'t found).' %
+				error_presenter_name
+			)
 
 		# TODO: load routes from config
 		# TODO: add auto routes
