@@ -28,6 +28,7 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 from wasp_launcher.version import __status__
 
 import traceback
+import threading
 import pymongo
 from uuid import uuid4
 
@@ -83,6 +84,7 @@ class WLauncherWebDebugger(WWebDebugInfo):
 
 	@verify_type(request=WWebRequestProto, protocol_version=str, protocol=str)
 	def request(self, session_id, request, protocol_version, protocol):
+		request.__wlauncher_debugger_session__ = session_id
 		if self.mode != 'off':
 			self.__sessions[session_id.uuid]['request'] = request
 			self.__sessions[session_id.uuid]['protocol_version'] = protocol_version
@@ -149,6 +151,8 @@ class WLauncherWebDebugger(WWebDebugInfo):
 			return
 
 		target_route = session_data['target_route']
+		if target_route is None:
+			return
 
 		WLauncherWebDebuggerConnection.__mongo_target_routes__.insert_one({
 			'uuid': session_id.uuid,
@@ -183,11 +187,13 @@ class WLauncherWebDebugger(WWebDebugInfo):
 		if 'exception_data' not in session_data:
 			return
 
+		# TODO: replace with __mongo_exceptions__.insert_many
+
 		for exception_data in session_data['exception_data']:
 			exc = exception_data['exception']
 			traceback_data = exception_data['traceback']
 
-			WLauncherWebDebuggerConnection.__mongo_target_routes__.insert_one({
+			WLauncherWebDebuggerConnection.__mongo_exceptions__.insert_one({
 				'uuid': session_id.uuid,
 				'exception': str(exc),
 				'traceback': traceback_data
@@ -197,8 +203,11 @@ class WLauncherWebDebugger(WWebDebugInfo):
 		if self.mode == 'off':
 			return
 
-		if self.mode == 'on error' and 'exception_data' not in self.__sessions[session_id.uuid]:
-			return
+		if self.mode == 'on error':
+			if 'exception_data' not in self.__sessions[session_id.uuid]:
+				status = self.__sessions[session_id.uuid]['response'].status()
+				if status is None or status == 200:
+					return
 
 		try:
 			self.save_session_id(session_id)
@@ -265,7 +274,7 @@ class WLauncherWebDebuggerConnection(WLauncherTask):
 		WLauncherWebDebuggerConnection.__mongo_sessions__ = database['sessions']
 		WLauncherWebDebuggerConnection.__mongo_requests__ = database['requests']
 		WLauncherWebDebuggerConnection.__mongo_responses__ = database['responses']
-		WLauncherWebDebuggerConnection.__mongo_target_routes__ = database['target-routes']
+		WLauncherWebDebuggerConnection.__mongo_target_routes__ = database['target_routes']
 		WLauncherWebDebuggerConnection.__mongo_exceptions__ = database['exceptions']
 
 		WLauncherGlobals.log.info('Web-debugger started')
