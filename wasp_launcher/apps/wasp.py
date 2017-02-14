@@ -40,6 +40,7 @@ from wasp_network.web.response import WWebResponse
 from wasp_network.web.service import WWebEnhancedPresenter, WSimpleErrorPresenter
 from wasp_network.web.proto import WWebPresenter
 from wasp_network.web.template import WWebTemplateText, WWebTemplateResponse
+from wasp_network.web.service import WWebRoute
 
 from wasp_launcher.app import WLauncherWebAppDescriptor
 
@@ -146,6 +147,23 @@ class WStaticFilesPresenter(WWebEnhancedPresenter):
 	@classmethod
 	def __presenter_name__(cls):
 		return 'com.binblob.wasp-launcher.apps.wasp-basic.staticfiles-presenter'
+
+	@classmethod
+	def __public_routes__(cls):
+		return [
+			WWebRoute(
+				'/static.wasp-basic.angular{path:"/?(.*)"}',
+				'com.binblob.wasp-launcher.apps.wasp-basic.staticfiles-presenter',
+				basedir=os.path.join(os.path.dirname(__file__), '..', 'static', 'angular'),
+				listdir=False
+			),
+			WWebRoute(
+				'/static.wasp-basic.bootstrap{path:"/?(.*)"}',
+				'com.binblob.wasp-launcher.apps.wasp-basic.staticfiles-presenter',
+				basedir=os.path.join(os.path.dirname(__file__), '..', 'static', 'bootstrap'),
+				listdir=False
+			)
+		]
 
 
 class WErrorPresenter(WSimpleErrorPresenter):
