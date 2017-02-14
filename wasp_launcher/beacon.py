@@ -38,7 +38,7 @@ from wasp_launcher.globals import WLauncherGlobals
 
 
 class WLauncherBeaconMessenger(WHostgroupBeaconMessenger):
-	""" Messenger that works for server, client and neighbor finder sides
+	""" Messenger that works on server, client and neighbor finder sides
 	"""
 
 	__hello_message__ = b'WLauncherBeacon'
@@ -79,7 +79,7 @@ class WLauncherBeaconServer(WNetworkBeacon):
 
 
 class WLauncherBeaconClient(WNetworkBeacon):
-	""" Network beacon client, that can be work as neighbor finder
+	""" Network beacon client, that can work as neighbor finder
 	"""
 
 	class WBeaconCallback(WNetworkBeaconCallback):
