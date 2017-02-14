@@ -1,6 +1,6 @@
 
 body {
-	background-image: url('/static.wasp-debug.debug/imgs/bg-engine-fhd5.png'), url('/static.wasp-debug.debug/imgs/bg-fhd3.png');
+	background-image: url('/static.wasp-debug.debug/imgs/bg-engine-fhd.png'), url('/static.wasp-debug.debug/imgs/bg-fhd.png');
 	background-position: center center;
 	background-repeat: no-repeat, repeat-y;
 }
