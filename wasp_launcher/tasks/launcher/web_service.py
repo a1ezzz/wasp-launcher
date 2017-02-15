@@ -145,7 +145,7 @@ class WLauncherWebServiceStart(WLauncherTask):
 		WLauncherGlobals.log.info('Web-service is stopped')
 
 	def setup_app_presenters(self):
-		presenters_count = WLauncherGlobals.wasp_web_service.presenter_collection().count()
+		presenters_count = len(WLauncherGlobals.wasp_web_service.presenter_collection())
 		WLauncherGlobals.log.info('Web-application presenters loaded: %i' % presenters_count)
 
 		error_presenter_name = WLauncherGlobals.config['wasp-launcher::web']['error_presenter']
