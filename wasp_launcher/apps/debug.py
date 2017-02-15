@@ -36,7 +36,7 @@ from wasp_general.verify import verify_type, verify_value
 from wasp_network.web.service import WWebRoute
 from wasp_network.web.template import WWebTemplateResponse, WWebTemplateText
 
-from wasp_launcher.app import WLauncherWebAppDescriptor
+from wasp_launcher.tasks.launcher.apps import WLauncherWebAppDescriptor
 from wasp_launcher.tasks.launcher.web_service import WLauncherWebPresenter
 from wasp_launcher.tasks.launcher.web_debugger import WLauncherWebDebuggerConnection, WLauncherWebDebugger
 from wasp_launcher.apps.wasp import WErrorPresenter
@@ -113,12 +113,6 @@ class WDebugErrorPresenter(WErrorPresenter):
 class WWaspDebugApps(WLauncherWebAppDescriptor):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.apps.wasp-debug'
-
-	def start(self):
-		pass
-
-	def stop(self):
-		pass
 
 	@classmethod
 	def public_presenters(cls):

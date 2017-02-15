@@ -42,7 +42,7 @@ from wasp_network.web.proto import WWebPresenter
 from wasp_network.web.template import WWebTemplateText, WWebTemplateResponse
 from wasp_network.web.service import WWebRoute
 
-from wasp_launcher.app import WLauncherWebAppDescriptor
+from wasp_launcher.tasks.launcher.apps import WLauncherWebAppDescriptor
 
 
 class WRedirectPresenter(WWebPresenter):
@@ -233,12 +233,6 @@ class WErrorPresenter(WSimpleErrorPresenter):
 class WWaspBasicApps(WLauncherWebAppDescriptor):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.apps.wasp-basic'
-
-	def start(self):
-		pass
-
-	def stop(self):
-		pass
 
 	@classmethod
 	def public_presenters(cls):

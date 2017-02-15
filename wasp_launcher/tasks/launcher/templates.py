@@ -43,7 +43,7 @@ from wasp_network.web.template import WWebTemplateFile, WWebTemplate, WWebTempla
 
 from wasp_launcher.tasks.launcher.registry import WLauncherTask
 from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
-from wasp_launcher.app import WLauncherWebAppDescriptor
+from wasp_launcher.tasks.launcher.apps import WLauncherWebAppDescriptor
 
 
 class WLauncherTemplateSearcherProto(metaclass=ABCMeta):

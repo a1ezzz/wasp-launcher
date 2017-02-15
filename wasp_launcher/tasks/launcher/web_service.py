@@ -40,7 +40,6 @@ from wasp_network.web.template import WWebTemplateResponse
 from wasp_launcher.tasks.launcher.registry import WLauncherTask
 from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
 from wasp_launcher.tasks.launcher.web_debugger import WLauncherWebDebugger
-from wasp_launcher.app import WLauncherWebAppDescriptor
 
 
 class WLauncherWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
@@ -128,6 +127,7 @@ class WLauncherWebServiceStart(WLauncherTask):
 		'com.binblob.wasp-launcher.launcher.config::read_config',
 		'com.binblob.wasp-launcher.launcher.app_loader::load',
 		'com.binblob.wasp-launcher.launcher.web_service::pre_init',
+		'com.binblob.wasp-launcher.launcher.app_starter::start',
 		'com.binblob.wasp-launcher.launcher.broker::broker_start',
 		'com.binblob.wasp-launcher.launcher.web_templates::load'
 	]
@@ -145,18 +145,8 @@ class WLauncherWebServiceStart(WLauncherTask):
 		WLauncherGlobals.log.info('Web-service is stopped')
 
 	def setup_app_presenters(self):
-
-		presenters_count = 0
-		for app_name in WLauncherGlobals.apps_registry.registry_storage().tags():
-			app = WLauncherGlobals.apps_registry.registry_storage().tasks(app_name)
-			if issubclass(app, WLauncherWebAppDescriptor) is True:
-				for presenter in app.public_presenters():
-					WLauncherGlobals.wasp_web_service.add_presenter(presenter)
-					presenters_count += 1
-				for route in app.public_routes():
-					WLauncherGlobals.wasp_web_service.route_map().append(route)
-
-		WLauncherGlobals.log.info('Web-application %i presenters were set' % presenters_count)
+		presenters_count = WLauncherGlobals.wasp_web_service.presenter_collection().count()
+		WLauncherGlobals.log.info('Web-application presenters loaded: %i' % presenters_count)
 
 		error_presenter_name = WLauncherGlobals.config['wasp-launcher::web']['error_presenter']
 		if WLauncherGlobals.wasp_web_service.presenter_collection().has(error_presenter_name) is True:

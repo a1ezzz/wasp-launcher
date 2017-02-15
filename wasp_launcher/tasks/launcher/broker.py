@@ -42,33 +42,8 @@ class WLauncherBroker(WLauncherTask):
 		'com.binblob.wasp-launcher.launcher.web_service::pre_init'
 	]
 
-	def __init__(self):
-		WLauncherTask.__init__(self)
-		self.__loaded_apps = []
-
 	def start(self):
-		self.__loaded_apps.clear()
-		self.start_apps()
+		pass
 
 	def stop(self):
-		for app_name in self.__loaded_apps:
-			WLauncherGlobals.log.info('Stopping "%s" application and its dependencies' % app_name)
-			WLauncherGlobals.apps_registry.stop_task(app_name)
-		self.__loaded_apps.clear()
-
-	def start_apps(self):
-
-		enabled_applications = WLauncherGlobals.config.split_option(
-			'wasp-launcher::applications', 'load_applications'
-		)
-
-		WLauncherGlobals.log.info('Starting enabled local applications (total: %i)' % len(enabled_applications))
-
-		for app_name in enabled_applications:
-			app = WLauncherGlobals.apps_registry.registry_storage().tasks(app_name)
-			if app is None:
-				raise RuntimeError('Application "%s" was not found' % app_name)
-			WLauncherGlobals.log.info('Starting "%s" application and its dependencies' % app_name)
-			WLauncherGlobals.apps_registry.start_task(app_name)
-			self.__loaded_apps.append(app_name)
-			WLauncherGlobals.log.info('Application "%s" started' % app_name)
+		pass

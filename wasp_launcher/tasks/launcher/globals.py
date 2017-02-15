@@ -24,7 +24,11 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from wasp_launcher.app import WLauncherAppRegistry
+from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage
+
+
+class WLauncherAppRegistry(WTaskDependencyRegistry):
+	__registry_storage__ = WTaskDependencyRegistryStorage()
 
 
 class WLauncherGlobals:
