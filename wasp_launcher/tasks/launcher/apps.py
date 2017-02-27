@@ -29,14 +29,14 @@ from wasp_launcher.version import __status__
 
 from importlib import import_module
 
-from wasp_general.task.thread import WThreadTask
+from wasp_general.task.sync import WSyncTask
 from wasp_general.task.dependency import WDependentTask
 
 from wasp_launcher.tasks.launcher.registry import WLauncherTask
 from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
 
 
-class WLauncherAppDescriptor(WThreadTask, metaclass=WDependentTask):
+class WLauncherAppDescriptor(WSyncTask, metaclass=WDependentTask):
 
 	__auto_registry__ = False
 
@@ -100,6 +100,15 @@ class WLauncherWebAppDescriptor(WLauncherAppDescriptor):
 		pass
 
 
+class WLauncherModelAppDescriptor(WLauncherAppDescriptor):
+
+	def start(self):
+		pass
+
+	def stop(self):
+		pass
+
+
 class WLauncherAppLoader(WLauncherTask):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.app_loader::load'
@@ -154,7 +163,8 @@ class WLauncherAppStarter(WLauncherTask):
 		'com.binblob.wasp-launcher.launcher.log::log_setup',
 		'com.binblob.wasp-launcher.launcher.config::read_config',
 		'com.binblob.wasp-launcher.launcher.app_loader::load',
-		'com.binblob.wasp-launcher.launcher.web_service::pre_init'
+		'com.binblob.wasp-launcher.launcher.web_service::pre_init',
+		'com.binblob.wasp-launcher.launcher.model::init'
 	]
 
 	def __init__(self):

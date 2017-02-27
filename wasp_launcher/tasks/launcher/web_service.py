@@ -26,7 +26,7 @@ from wasp_launcher.version import __status__
 
 from abc import ABCMeta
 
-import tornado.ioloop
+from tornado.ioloop import IOLoop
 import tornado.web
 import tornado.httpserver
 
@@ -37,7 +37,7 @@ from wasp_network.web.proto import WWebRequestProto
 from wasp_network.web.tornado import WTornadoRequestHandler
 from wasp_network.web.template import WWebTemplateResponse
 
-from wasp_launcher.tasks.launcher.registry import WLauncherTask
+from wasp_launcher.tasks.launcher.registry import WLauncherTask, WLauncherThreadedTask
 from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
 from wasp_launcher.tasks.launcher.web_debugger import WLauncherWebDebugger
 
@@ -89,7 +89,8 @@ class WLauncherWebServicePreInit(WLauncherTask):
 		WLauncherGlobals.wasp_web_service = WWebService(
 			factory=WLauncherPresenterFactory, debugger=WLauncherWebDebugger()
 		)
-		WLauncherGlobals.tornado_io_loop = tornado.ioloop.IOLoop()
+		WLauncherGlobals.tornado_io_loop = IOLoop()
+
 		WLauncherGlobals.tornado_service = tornado.httpserver.HTTPServer(
 			tornado.web.Application([
 				(r".*", WTornadoRequestHandler.__handler__(WLauncherGlobals.wasp_web_service))
@@ -116,7 +117,7 @@ class WLauncherWebServicePreInit(WLauncherTask):
 		WLauncherGlobals.log.info('Web-service finalized')
 
 
-class WLauncherWebServiceStart(WLauncherTask):
+class WLauncherWebServiceStart(WLauncherThreadedTask):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.web_service::start'
 	""" Task tag
@@ -127,6 +128,7 @@ class WLauncherWebServiceStart(WLauncherTask):
 		'com.binblob.wasp-launcher.launcher.config::read_config',
 		'com.binblob.wasp-launcher.launcher.app_loader::load',
 		'com.binblob.wasp-launcher.launcher.web_service::pre_init',
+		'com.binblob.wasp-launcher.launcher.model::init',
 		'com.binblob.wasp-launcher.launcher.app_starter::start',
 		'com.binblob.wasp-launcher.launcher.broker::broker_start',
 		'com.binblob.wasp-launcher.launcher.web_templates::load'
@@ -136,9 +138,8 @@ class WLauncherWebServiceStart(WLauncherTask):
 		self.setup_app_presenters()
 
 		WLauncherGlobals.tornado_service.listen(8888)
+		WLauncherGlobals.log.info('Web-service is starting')
 		WLauncherGlobals.tornado_io_loop.start()
-
-		WLauncherGlobals.log.info('Web-service is started')
 
 	def stop(self):
 		WLauncherGlobals.tornado_io_loop.stop()

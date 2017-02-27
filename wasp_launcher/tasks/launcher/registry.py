@@ -25,7 +25,9 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 from wasp_launcher.version import __status__
 
 from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage, WDependentTask
+from wasp_general.task.base import WTask
 from wasp_general.task.sync import WSyncTask
+from wasp_general.task.thread import WThreadTask
 
 
 class WLauncherRegistry(WTaskDependencyRegistry):
@@ -36,14 +38,21 @@ class WLauncherRegistry(WTaskDependencyRegistry):
 	"""
 
 
-class WLauncherTask(WSyncTask, metaclass=WDependentTask):
-	""" Basic class for derived classes, that does real work in launcher starting process
-	"""
+class WLauncherBaseTask(WTask, metaclass=WDependentTask):
 
 	__registry__ = WLauncherRegistry
 	""" Link to registry
 	"""
 
-	__registry_tag__ = '::wasp_launcher'
-	""" Default tag (just because WDependentTask needs it)
+
+class WLauncherTask(WLauncherBaseTask, WSyncTask, metaclass=WDependentTask):
+	""" Basic class for derived classes, that does real work in launcher starting process
 	"""
+	pass
+
+
+class WLauncherThreadedTask(WLauncherBaseTask, WThreadTask, metaclass=WDependentTask):
+	""" Basic class for derived classes, that does real work in launcher starting process. This task will be
+	executed in separate thread
+	"""
+	pass
