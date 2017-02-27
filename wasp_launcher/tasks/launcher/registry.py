@@ -39,6 +39,8 @@ class WLauncherRegistry(WTaskDependencyRegistry):
 
 
 class WLauncherBaseTask(WTask, metaclass=WDependentTask):
+	""" Base class for launcher tasks. This class defines link to the registry, which holds every launcher tasks
+	"""
 
 	__registry__ = WLauncherRegistry
 	""" Link to registry
@@ -46,13 +48,12 @@ class WLauncherBaseTask(WTask, metaclass=WDependentTask):
 
 
 class WLauncherTask(WLauncherBaseTask, WSyncTask, metaclass=WDependentTask):
-	""" Basic class for derived classes, that does real work in launcher starting process
+	""" Launcher task, that executes in foreground
 	"""
 	pass
 
 
 class WLauncherThreadedTask(WLauncherBaseTask, WThreadTask, metaclass=WDependentTask):
-	""" Basic class for derived classes, that does real work in launcher starting process. This task will be
-	executed in separate thread
+	""" Launcher task, that executes in a separate thread
 	"""
 	pass
