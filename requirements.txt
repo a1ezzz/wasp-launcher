@@ -2,3 +2,4 @@ pymongo
 mako
 tornado
 decorator
+pyzmq
