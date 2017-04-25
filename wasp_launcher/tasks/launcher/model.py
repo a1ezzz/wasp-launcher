@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/tasks/launcher/globals.py
+# wasp_launcher/tasks/launcher/model.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -19,36 +19,35 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with wasp-launcher.  If not, see <http://www.gnu.org/licenses/>.
 
+# TODO: document the code
+# TODO: write tests for the code
+
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __author__, __version__, __credits__, __license__, __copyright__, __email__
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage
+from wasp_launcher.tasks.launcher.registry import WLauncherTask
+from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
 
 
-class WLauncherAppRegistry(WTaskDependencyRegistry):
-	__registry_storage__ = WTaskDependencyRegistryStorage()
+class WLauncherModelStorage:
+	pass
 
 
-class WLauncherGlobals:
-	""" Storage of global variables, that are widely used across application
-	"""
+class WLauncherBroker(WLauncherTask):
 
-	log = None
-	""" Application logger (logging.Logger instance. See :class:`wasp_launcher.tasks.launcher.log.WLauncherLogSetup`)
-	"""
+	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.model::init'
 
-	config = None
-	""" Current server configuration (wasp_general.config.WConfig instance.
-	See :class:`wasp_launcher.tasks.launcher.config.WLauncherConfig`)
-	"""
+	__dependency__ = [
+		'com.binblob.wasp-launcher.launcher.log::log_setup',
+		'com.binblob.wasp-launcher.launcher.config::read_config',
+		'com.binblob.wasp-launcher.launcher.app_loader::load',
+		'com.binblob.wasp-launcher.launcher.web_service::pre_init'
+	]
 
-	apps_registry = WLauncherAppRegistry
-	templates = None
+	def start(self):
+		WLauncherGlobals.models = WLauncherModelStorage()
 
-	models = None
-
-	wasp_web_service = None
-	tornado_io_loop = None
-	tornado_service = None
+	def stop(self):
+		WLauncherGlobals.models = None

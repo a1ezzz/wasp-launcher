@@ -30,31 +30,40 @@ from wasp_launcher.version import __status__
 import zmq
 from abc import abstractmethod
 
+from wasp_general.verify import verify_type
 from wasp_general.config import WConfig
 from wasp_general.task.thread import WThreadTask
-from wasp_network.service import WZMQBindHandler, WZMQConnectHandler, WZMQService
+from wasp_general.network.service import WZMQBindHandler, WZMQConnectHandler, WZMQService
 
 from wasp_launcher.tasks.launcher.registry import WLauncherTask
 from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
 
 
-class WRemoteControlServerHandler(WZMQBindHandler):
-
-	def on_recv(self, msg):
-		#print('REQUEST: ' + str(msg))
-		#self.stream().send(b'STREAM RESPONSE')
-		self.stream().flush()
-
-
 class WRemoteControlClientHandler(WZMQConnectHandler):
 
 	def on_recv(self, msg):
-		#print('RESPONSE: ' + str(msg))
+		print('RESPONSE: ' + str(msg))
 		pass
 
 	def setup_handler(self, io_loop):
 		WZMQConnectHandler.setup_handler(self, io_loop)
-		#self.stream().send(b'QUERY')
+		self.stream().send(b'QUERY')
+		self.stream().flush()
+
+
+class WBrokerClientTask(WZMQService, WThreadTask):
+
+	@verify_type(connection=str)
+	def __init__(self, connection):
+		WZMQService.__init__(self, zmq.REQ, connection, WRemoteControlClientHandler)
+		WThreadTask.__init__(self)
+
+
+class WRemoteControlServerHandler(WZMQBindHandler):
+
+	def on_recv(self, msg):
+		print('REQUEST: ' + str(msg))
+		self.stream().send(b'STREAM RESPONSE')
 		self.stream().flush()
 
 
@@ -77,7 +86,7 @@ class WLauncherBrokerBasicTask(WThreadTask):
 	def config(cls):
 		config = WConfig()
 
-		for subsection in WLauncherBrokerBasicTask.__messenger_subsections__:
+		for subsection in cls.__messenger_subsections__:
 
 			general_section = '%s::%s::%s' % (
 				cls.__messenger_section_prefix__, cls.__messenger_general_section__, subsection

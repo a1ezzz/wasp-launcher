@@ -34,10 +34,10 @@ from uuid import uuid4
 
 from wasp_general.verify import verify_type
 from wasp_general.datetime import utc_datetime
-from wasp_network.web.debug import WWebDebugInfo
-from wasp_network.web.proto import WWebRequestProto, WWebResponseProto
-from wasp_network.web.service import WWebTargetRoute
-from wasp_network.web.headers import WHTTPHeaders
+from wasp_general.network.web.debug import WWebDebugInfo
+from wasp_general.network.web.proto import WWebRequestProto, WWebResponseProto
+from wasp_general.network.web.service import WWebTargetRoute
+from wasp_general.network.web.headers import WHTTPHeaders
 
 from wasp_launcher.tasks.launcher.registry import WLauncherTask
 from wasp_launcher.tasks.launcher.globals import WLauncherGlobals

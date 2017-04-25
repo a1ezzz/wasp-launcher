@@ -32,10 +32,10 @@ import tornado.httpserver
 
 from wasp_general.verify import verify_type, verify_value
 
-from wasp_network.web.service import WWebService, WWebTargetRoute, WWebEnhancedPresenter, WWebPresenterFactory
-from wasp_network.web.proto import WWebRequestProto
-from wasp_network.web.tornado import WTornadoRequestHandler
-from wasp_network.web.template import WWebTemplateResponse
+from wasp_general.network.web.service import WWebService, WWebTargetRoute, WWebEnhancedPresenter, WWebPresenterFactory
+from wasp_general.network.web.proto import WWebRequestProto
+from wasp_general.network.web.tornado import WTornadoRequestHandler
+from wasp_general.network.web.template import WWebTemplateResponse
 
 from wasp_launcher.tasks.launcher.registry import WLauncherTask, WLauncherThreadedTask
 from wasp_launcher.tasks.launcher.globals import WLauncherGlobals

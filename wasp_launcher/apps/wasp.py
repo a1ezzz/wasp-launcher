@@ -35,12 +35,12 @@ import os
 from wasp_general.mime import mime_type
 from wasp_general.verify import verify_type, verify_value
 
-from wasp_network.web.headers import WHTTPHeaders
-from wasp_network.web.response import WWebResponse
-from wasp_network.web.service import WWebEnhancedPresenter, WSimpleErrorPresenter
-from wasp_network.web.proto import WWebPresenter
-from wasp_network.web.template import WWebTemplateText, WWebTemplateResponse
-from wasp_network.web.service import WWebRoute
+from wasp_general.network.web.headers import WHTTPHeaders
+from wasp_general.network.web.response import WWebResponse
+from wasp_general.network.web.service import WWebEnhancedPresenter, WSimpleErrorPresenter
+from wasp_general.network.web.proto import WWebPresenter
+from wasp_general.network.web.template import WWebTemplateText, WWebTemplateResponse
+from wasp_general.network.web.service import WWebRoute
 
 from wasp_launcher.tasks.launcher.apps import WLauncherWebAppDescriptor
 

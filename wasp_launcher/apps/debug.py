@@ -33,8 +33,8 @@ import uuid
 
 from wasp_general.verify import verify_type, verify_value
 
-from wasp_network.web.service import WWebRoute
-from wasp_network.web.template import WWebTemplateResponse, WWebTemplateText
+from wasp_general.network.web.service import WWebRoute
+from wasp_general.network.web.template import WWebTemplateResponse, WWebTemplateText
 
 from wasp_launcher.tasks.launcher.apps import WLauncherWebAppDescriptor
 from wasp_launcher.tasks.launcher.web_service import WLauncherWebPresenter
@@ -107,7 +107,6 @@ class WDebugErrorPresenter(WErrorPresenter):
 	@classmethod
 	def __presenter_name__(cls):
 		return 'com.binblob.wasp-launcher.apps.wasp-debug.error-presenter'
-
 
 
 class WWaspDebugApps(WLauncherWebAppDescriptor):

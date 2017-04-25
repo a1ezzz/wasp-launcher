@@ -39,7 +39,7 @@ from tempfile import TemporaryDirectory
 
 from wasp_general.verify import verify_type, verify_subclass, verify_value
 
-from wasp_network.web.template import WWebTemplateFile, WWebTemplate, WWebTemplateText, WWebTemplateLookup
+from wasp_general.network.web.template import WWebTemplateFile, WWebTemplate, WWebTemplateText, WWebTemplateLookup
 
 from wasp_launcher.tasks.launcher.registry import WLauncherTask
 from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
