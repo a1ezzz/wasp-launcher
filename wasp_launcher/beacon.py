@@ -30,10 +30,10 @@ from wasp_launcher.version import __status__
 from wasp_general.verify import verify_type
 from wasp_general.config import WConfig
 
-from wasp_network.primitives import WIPV4SocketInfo
-from wasp_network.beacon.beacon import WNetworkBeacon, WNetworkBeaconCallback
-from wasp_network.beacon.transport import WBroadcastBeaconTransport
-from wasp_network.beacon.messenger import WHostgroupBeaconMessenger
+from wasp_general.network.primitives import WIPV4SocketInfo
+from wasp_general.network.beacon.beacon import WNetworkBeacon, WNetworkBeaconCallback
+from wasp_general.network.beacon.transport import WBroadcastBeaconTransport
+from wasp_general.network.beacon.messenger import WHostgroupBeaconMessenger
 from wasp_launcher.globals import WLauncherGlobals
 
 
@@ -56,7 +56,7 @@ class WLauncherBeaconMessenger(WHostgroupBeaconMessenger):
 		config = WConfig()
 		config.merge(beacon_config)
 		if self.__neighbor_finder is True:
-			config['wasp-network::beacon']['public_address'] = config['wasp-network::beacon']['address']
+			config['wasp-general::network::beacon']['public_address'] = config['wasp-general::network::beacon']['address']
 		return WHostgroupBeaconMessenger._message(self, config, invert_hello=invert_hello)
 
 

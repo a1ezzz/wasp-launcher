@@ -78,8 +78,6 @@ class WLauncherWebServicePreInit(WLauncherTask):
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.launcher.log::log_setup',
-		'com.binblob.wasp-launcher.launcher.config::read_config',
 		'com.binblob.wasp-launcher.launcher.app_loader::load'
 	]
 	""" Task dependency
@@ -124,12 +122,6 @@ class WLauncherWebServiceStart(WLauncherThreadedTask):
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.launcher.log::log_setup',
-		'com.binblob.wasp-launcher.launcher.config::read_config',
-		'com.binblob.wasp-launcher.launcher.app_loader::load',
-		'com.binblob.wasp-launcher.launcher.web_service::pre_init',
-		'com.binblob.wasp-launcher.launcher.model::init',
-		'com.binblob.wasp-launcher.launcher.app_starter::start',
 		'com.binblob.wasp-launcher.launcher.broker::broker_start',
 		'com.binblob.wasp-launcher.launcher.web_templates::load'
 	]

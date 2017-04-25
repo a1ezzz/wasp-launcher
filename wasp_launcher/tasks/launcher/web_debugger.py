@@ -250,9 +250,7 @@ class WLauncherWebDebuggerConnection(WLauncherTask):
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.launcher.log::log_setup',
-		'com.binblob.wasp-launcher.launcher.config::read_config',
-		'com.binblob.wasp-launcher.launcher.app_loader::load',
+		'com.binblob.wasp-launcher.launcher.app_loader::load'
 	]
 
 	__mongo_connection__ = None

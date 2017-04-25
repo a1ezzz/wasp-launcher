@@ -37,7 +37,6 @@ if __name__ == '__main__':
 
 	def shutdown_signal(signum, frame):
 		WLauncherRegistry.stop_task(main_task, stop_requirements=True)
-		WLauncherRegistry.stop_task('com.binblob.wasp - launcher.launcher.broker::broker_start')
 
 	signal.signal(signal.SIGTERM, shutdown_signal)
 	signal.signal(signal.SIGINT, shutdown_signal)
