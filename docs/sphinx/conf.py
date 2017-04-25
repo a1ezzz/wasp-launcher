@@ -22,7 +22,7 @@ import shlex
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
 
-sys.path.insert(0, os.path.abspath(os.path.join('..', '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 # -- General configuration ------------------------------------------------
 
@@ -113,7 +113,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'alabaster'
+#html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -292,3 +292,6 @@ texinfo_documents = [
 from recommonmark.parser import CommonMarkParser
 source_parsers = {'.md': CommonMarkParser}
 source_suffix = ['.rst', '.md']
+
+from sphinx.apidoc import main
+main(['-e', '-o', os.path.join(os.path.dirname(__file__), 'api'), os.path.join(os.path.dirname(__file__), '..', '..', 'wasp_launcher')])
