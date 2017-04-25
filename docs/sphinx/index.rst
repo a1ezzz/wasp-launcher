@@ -10,9 +10,13 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
-   
+
+
    introduction
    api
+   network
+
+.. graphviz:: apps.dot
 
 Indices and tables
 ==================

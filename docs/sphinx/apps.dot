@@ -1,0 +1,11 @@
+
+digraph {
+	rankdir = LR;
+
+	log_host_app [shape="box", label="log start", fontsize=12, fontname="Sans Serif"];
+
+	config_host_app [label="config read", fontsize=12, fontname="Sans Serif"];
+
+	config_host_app -> log_host_app;
+
+}
