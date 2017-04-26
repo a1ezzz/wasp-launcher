@@ -335,5 +335,5 @@ else:
 		print('platnum command: %s' % cmd)
 		plantuml = cmd
 	else:
-		print ('Error. "java" wasn\'t found')
-		sys.exit(-1)
+		print ('Warning. "plantuml" or "java" wasn\'t found')
+
