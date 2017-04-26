@@ -319,7 +319,7 @@ for path in os.environ['PATH'].split(':'):
 	elif java_path is None and os.path.isfile(os.path.join(path, 'java')) is True:
 		java_path = path
 
-if plantuml_found is not None:
+if plantuml_path is not None:
 	print('"plantuml" was found at %s' % plantuml_path)
 else:
 	if 'JAVA_HOME' in os.environ:
