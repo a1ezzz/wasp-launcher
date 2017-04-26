@@ -22,7 +22,10 @@ import shlex
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+sphinx_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(os.path.join(sphinx_dir, '..', 'sphinx-contribs')))
+sys.path.insert(0, os.path.abspath(os.path.join(sphinx_dir, '..', '..')))
+
 
 # -- General configuration ------------------------------------------------
 
@@ -37,6 +40,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
     'sphinx.ext.graphviz',
+    'sphinxcontrib_plantuml.plantuml'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -227,8 +231,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  (master_doc, 'wasp-launcher.tex', 'wasp-launcher Documentation',
-   'Ildar Gafurov', 'manual'),
+	(master_doc, 'wasp-launcher.tex', 'wasp-launcher Documentation',
+	'Ildar Gafurov', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -257,8 +261,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'wasp-launcher', 'wasp-launcher Documentation',
-     [author], 1)
+	(master_doc, 'wasp-launcher', 'wasp-launcher Documentation',
+	[author], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -271,9 +275,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  (master_doc, 'wasp-launcher', 'wasp-launcher Documentation',
-   author, 'wasp-launcher', 'One line description of project.',
-   'Miscellaneous'),
+	(master_doc, 'wasp-launcher', 'wasp-launcher Documentation',
+	author, 'wasp-launcher', 'One line description of project.',
+	'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
@@ -294,4 +298,4 @@ source_parsers = {'.md': CommonMarkParser}
 source_suffix = ['.rst', '.md']
 
 from sphinx.apidoc import main
-main(['-e', '-o', os.path.join(os.path.dirname(__file__), 'api'), os.path.join(os.path.dirname(__file__), '..', '..', 'wasp_launcher')])
+main(['-e', '-o', os.path.join(sphinx_dir, 'api'), os.path.join(os.path.dirname(__file__), '..', '..', 'wasp_launcher')])

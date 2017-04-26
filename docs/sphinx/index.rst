@@ -18,6 +18,8 @@ Contents:
 
 .. graphviz:: apps.dot
 
+.. uml:: apps.puml
+
 Indices and tables
 ==================
 
