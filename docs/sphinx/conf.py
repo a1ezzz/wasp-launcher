@@ -299,3 +299,5 @@ source_suffix = ['.rst', '.md']
 
 from sphinx.apidoc import main
 main(['-e', '-o', os.path.join(sphinx_dir, 'api'), os.path.join(os.path.dirname(__file__), '..', '..', 'wasp_launcher')])
+
+plantuml = 'java -jar %s' % os.path.join(sphinx_dir, '..', 'plantuml.jar')
