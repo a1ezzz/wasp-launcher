@@ -330,10 +330,10 @@ else:
 		else:
 			print('"java" wasn\'t found at JAVA_HOME')
 			
-		if java_path is not None:
-			cmd = '%s -Djava.awt.headless=true -jar %s' % (java_path, os.path.join(sphinx_dir, '..', 'plantuml.jar'))
-			print('platnum command: %s' % cmd)
-			plantuml = cmd
-		else:
-			print ('Error. "java" wasn\'t found')
-			sys.exit(-1)
+	if java_path is not None:
+		cmd = '%s -Djava.awt.headless=true -jar %s' % (java_path, os.path.join(sphinx_dir, '..', 'plantuml.jar'))
+		print('platnum command: %s' % cmd)
+		plantuml = cmd
+	else:
+		print ('Error. "java" wasn\'t found')
+		sys.exit(-1)
