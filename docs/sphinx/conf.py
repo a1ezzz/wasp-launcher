@@ -23,7 +23,6 @@ import shlex
 #sys.path.insert(0, os.path.abspath('.'))
 
 sphinx_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(os.path.join(sphinx_dir, '..', 'sphinx-contribs')))
 sys.path.insert(0, os.path.abspath(os.path.join(sphinx_dir, '..', '..')))
 
 
@@ -39,8 +38,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
-    'sphinx.ext.graphviz',
-    'sphinxcontrib_plantuml.plantuml'
+    'sphinx.ext.graphviz'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -300,4 +298,42 @@ source_suffix = ['.rst', '.md']
 from sphinx.apidoc import main
 main(['-e', '-o', os.path.join(sphinx_dir, 'api'), os.path.join(os.path.dirname(__file__), '..', '..', 'wasp_launcher')])
 
-plantuml = 'java -Djava.awt.headless=true -jar %s' % os.path.join(sphinx_dir, '..', 'plantuml.jar')
+try:
+	plantuml_module = 'sphinxcontrib.plantuml'
+	from importlib import import_module
+	import_module(plantuml_module)
+	print('Regular "%s" module is used' % plantuml_module)
+	extensions.append(plantuml_module)
+except ImportError:
+	plantuml_module = 'sphinxcontrib_plantuml.plantuml'
+	sys.path.insert(0, os.path.abspath(os.path.join(sphinx_dir, '..', 'sphinx-contribs')))
+	print('Builtin "%s" module is used' % plantuml_module)
+	extensions.append(plantuml_module)
+
+plantuml_path = None
+java_path = None
+for path in os.environ['PATH'].split(':'):
+	if os.path.isfile(os.path.join(path, 'plantuml')) is True:
+		plantuml_path = path
+		break
+	elif java_path is None and os.path.isfile(os.path.join(path, 'java')) is True:
+		java_path = path
+
+if plantuml_found is not None:
+	print('"plantuml" was found at %s' % plantuml_path)
+else:
+	if 'JAVA_HOME' in os.environ:
+		print('"JAVA_HOME" variable points to: %s' % os.environ['JAVA_HOME'])
+		if os.path.isfile(os.path.join(os.environ['JAVA_HOME'], 'bin', 'java')) is True:
+			print('"java" was found at %s' % plantuml_path)
+			java_path = '%s/bin/java' % os.environ['JAVA_HOME']
+		else:
+			print('"java" wasn\'t found at JAVA_HOME')
+			
+		if java_path is not None:
+			cmd = '%s -Djava.awt.headless=true -jar %s' % (java_path, os.path.join(sphinx_dir, '..', 'plantuml.jar'))
+			print('platnum command: %s' % cmd)
+			plantuml = cmd
+		else:
+			print ('Error. "java" wasn\'t found')
+			sys.exit(-1)
