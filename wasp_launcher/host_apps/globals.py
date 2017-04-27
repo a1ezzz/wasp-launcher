@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/tasks/launcher/globals.py
+# wasp_launcher/host_apps/globals.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -36,12 +36,12 @@ class WLauncherGlobals:
 	"""
 
 	log = None
-	""" Application logger (logging.Logger instance. See :class:`wasp_launcher.tasks.launcher.log.WLauncherLogSetup`)
+	""" Application logger (logging.Logger instance. See :class:`wasp_launcher.host_apps.log.WLauncherLogSetup`)
 	"""
 
 	config = None
 	""" Current server configuration (wasp_general.config.WConfig instance.
-	See :class:`wasp_launcher.tasks.launcher.config.WLauncherConfig`)
+	See :class:`wasp_launcher.host_apps.config.WLauncherConfig`)
 	"""
 
 	apps_registry = WLauncherAppRegistry

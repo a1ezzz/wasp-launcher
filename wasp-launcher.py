@@ -27,7 +27,7 @@ from wasp_launcher.version import __status__
 
 import signal
 
-from wasp_launcher.tasks.launcher.registry import WLauncherRegistry
+from wasp_launcher.host_apps.registry import WLauncherRegistry
 
 if __name__ == '__main__':
 	print('Launcher is starting')

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/tasks/launcher/web_debugger.py
+# wasp_launcher/host_apps/web_debugger.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -39,8 +39,8 @@ from wasp_general.network.web.proto import WWebRequestProto, WWebResponseProto
 from wasp_general.network.web.service import WWebTargetRoute
 from wasp_general.network.web.headers import WHTTPHeaders
 
-from wasp_launcher.tasks.launcher.registry import WLauncherTask
-from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
+from wasp_launcher.host_apps.registry import WLauncherTask
+from wasp_launcher.host_apps.globals import WLauncherGlobals
 
 
 class WLauncherWebDebugger(WWebDebugInfo):

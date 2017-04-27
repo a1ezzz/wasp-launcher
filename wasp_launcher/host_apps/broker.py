@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/tasks/launcher/broker.py
+# wasp_launcher/host_apps/broker.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -35,8 +35,8 @@ from wasp_general.config import WConfig
 from wasp_general.task.thread import WThreadTask
 from wasp_general.network.service import WZMQBindHandler, WZMQConnectHandler, WZMQService
 
-from wasp_launcher.tasks.launcher.registry import WLauncherTask
-from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
+from wasp_launcher.host_apps.registry import WLauncherTask
+from wasp_launcher.host_apps.globals import WLauncherGlobals
 
 
 class WRemoteControlClientHandler(WZMQConnectHandler):

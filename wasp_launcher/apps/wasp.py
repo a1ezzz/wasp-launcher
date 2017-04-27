@@ -42,7 +42,7 @@ from wasp_general.network.web.proto import WWebPresenter
 from wasp_general.network.web.template import WWebTemplateText, WWebTemplateResponse
 from wasp_general.network.web.service import WWebRoute
 
-from wasp_launcher.tasks.launcher.apps import WLauncherWebAppDescriptor
+from wasp_launcher.host_apps.apps import WLauncherWebAppDescriptor
 
 
 class WRedirectPresenter(WWebPresenter):

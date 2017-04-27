@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
+from wasp_launcher.host_apps.globals import WLauncherGlobals
 
 
 def test_globals():

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/tasks/launcher/registry.py
+# wasp_launcher/host_apps/model.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -19,41 +19,32 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with wasp-launcher.  If not, see <http://www.gnu.org/licenses/>.
 
+# TODO: document the code
+# TODO: write tests for the code
+
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __author__, __version__, __credits__, __license__, __copyright__, __email__
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage, WDependentTask
-from wasp_general.task.base import WTask
-from wasp_general.task.sync import WSyncTask
-from wasp_general.task.thread import WThreadTask
+from wasp_launcher.host_apps.registry import WLauncherTask
+from wasp_launcher.host_apps.globals import WLauncherGlobals
 
 
-class WLauncherRegistry(WTaskDependencyRegistry):
-	""" Main registry to keep tasks responded to the launcher starting
-	"""
-	__registry_storage__ = WTaskDependencyRegistryStorage()
-	""" Default storage for this type of registry
-	"""
-
-
-class WLauncherBaseTask(WTask, metaclass=WDependentTask):
-	""" Base class for launcher tasks. This class defines link to the registry, which holds every launcher tasks
-	"""
-
-	__registry__ = WLauncherRegistry
-	""" Link to registry
-	"""
-
-
-class WLauncherTask(WLauncherBaseTask, WSyncTask, metaclass=WDependentTask):
-	""" Launcher task, that executes in foreground
-	"""
+class WLauncherModelStorage:
 	pass
 
 
-class WLauncherThreadedTask(WLauncherBaseTask, WThreadTask, metaclass=WDependentTask):
-	""" Launcher task, that executes in a separate thread
-	"""
-	pass
+class WLauncherModelLoad(WLauncherTask):
+
+	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.model::init'
+
+	__dependency__ = [
+		'com.binblob.wasp-launcher.launcher.web_service::pre_init'
+	]
+
+	def start(self):
+		WLauncherGlobals.models = WLauncherModelStorage()
+
+	def stop(self):
+		WLauncherGlobals.models = None

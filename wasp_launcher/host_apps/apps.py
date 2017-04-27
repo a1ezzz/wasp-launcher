@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/tasks/launcher/apps.py
+# wasp_launcher/host_apps/apps.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -32,8 +32,8 @@ from importlib import import_module
 from wasp_general.task.sync import WSyncTask
 from wasp_general.task.dependency import WDependentTask
 
-from wasp_launcher.tasks.launcher.registry import WLauncherTask
-from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
+from wasp_launcher.host_apps.registry import WLauncherTask
+from wasp_launcher.host_apps.globals import WLauncherGlobals
 
 
 class WLauncherAppDescriptor(WSyncTask, metaclass=WDependentTask):

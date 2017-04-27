@@ -2,7 +2,7 @@
 
 import pytest
 
-from wasp_launcher.tasks.launcher.registry import WLauncherRegistry, WLauncherTask
+from wasp_launcher.host_apps.registry import WLauncherRegistry, WLauncherTask
 
 from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage, WDependentTask
 from wasp_general.task.sync import WSyncTask

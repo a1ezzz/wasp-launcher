@@ -33,7 +33,7 @@ from wasp_general.cli.curses import WCursesConsole
 from wasp_general.cli.curses_commands import WExitCommand
 from wasp_general.task.thread import WThreadTask
 
-from wasp_launcher.tasks.launcher.broker import WBrokerClientTask
+from wasp_launcher.host_apps.broker import WBrokerClientTask
 
 
 class WBrokerClientCommandSet(WCommandContextSet):

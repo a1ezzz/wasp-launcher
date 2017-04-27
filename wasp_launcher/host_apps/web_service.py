@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/tasks/launcher/web_service.py
+# wasp_launcher/host_apps/web_service.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -37,9 +37,9 @@ from wasp_general.network.web.proto import WWebRequestProto
 from wasp_general.network.web.tornado import WTornadoRequestHandler
 from wasp_general.network.web.template import WWebTemplateResponse
 
-from wasp_launcher.tasks.launcher.registry import WLauncherTask, WLauncherThreadedTask
-from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
-from wasp_launcher.tasks.launcher.web_debugger import WLauncherWebDebugger
+from wasp_launcher.host_apps.registry import WLauncherTask, WLauncherThreadedTask
+from wasp_launcher.host_apps.globals import WLauncherGlobals
+from wasp_launcher.host_apps.web_debugger import WLauncherWebDebugger
 
 
 class WLauncherWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/tasks/launcher/templates.py
+# wasp_launcher/host_apps/templates.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -41,9 +41,9 @@ from wasp_general.verify import verify_type, verify_subclass, verify_value
 
 from wasp_general.network.web.template import WWebTemplateFile, WWebTemplate, WWebTemplateText, WWebTemplateLookup
 
-from wasp_launcher.tasks.launcher.registry import WLauncherTask
-from wasp_launcher.tasks.launcher.globals import WLauncherGlobals
-from wasp_launcher.tasks.launcher.apps import WLauncherWebAppDescriptor
+from wasp_launcher.host_apps.registry import WLauncherTask
+from wasp_launcher.host_apps.globals import WLauncherGlobals
+from wasp_launcher.host_apps.apps import WLauncherWebAppDescriptor
 
 
 class WLauncherTemplateSearcherProto(metaclass=ABCMeta):
