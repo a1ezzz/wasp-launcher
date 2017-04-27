@@ -1,14 +1,74 @@
 @startuml
 
-package "Some Group" {
-HTTP - [First Component]
-[Another Component]
+package "Host Apps" {
+component log [
+WLauncherLogSetup
+"com.binblob.wasp-launcher.launcher.log::log_setup"
+]
+
+component config [
+WLauncherConfig
+"com.binblob.wasp-launcher.launcher.config::read_config"
+]
+
+component loader [
+WLauncherAppLoader
+"com.binblob.wasp-launcher.launcher.app_loader::load"
+]
+
+component model [
+WLauncherModelLoad
+"com.binblob.wasp-launcher.launcher.model::init"
+]
+
+component starter [
+WLauncherAppStarter
+"com.binblob.wasp-launcher.launcher.app_starter::start"
+]
+
+note left of starter
+Task is started in a separate thread
+end note
+
+component template [
+WLauncherWebTemplates
+"com.binblob.wasp-launcher.launcher.web_templates::load"
+]
+
+component debugger [
+WLauncherWebDebuggerConnection
+"com.binblob.wasp-launcher.launcher.web_debugger::connection"
+]
+
+component broker [
+WLauncherBroker
+"com.binblob.wasp-launcher.launcher.broker::broker_start"
+]
+
+component web_host [
+WLauncherWebServiceStart
+"com.binblob.wasp-launcher.launcher.web_service::start"
+]
+
+config .-down-> log
+loader .-down-> config
+model .-down-> loader
+template .-down-> loader
+starter .-down-> model
+broker .-down-> starter
+web_host .-down-> broker
+web_host .-down-> template
+debugger .-down-> loader
+
 }
 
-package "Other Groups" {
-FTP - [Second Component]
+package "Web Apps" {
+component web_apps [
+	Web-applications
+]
 
-[First Component] --> FTP
+loader -> web_apps: load
+starter -> web_apps: start
 }
 
 @enduml

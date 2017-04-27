@@ -16,8 +16,6 @@ Contents:
    api
    network
 
-.. graphviz:: apps.dot
-
 .. uml:: apps.puml
 
 Indices and tables
