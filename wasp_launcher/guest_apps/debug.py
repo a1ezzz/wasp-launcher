@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/apps/debug.py
+# wasp_launcher/guest_apps/debug.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -39,7 +39,7 @@ from wasp_general.network.web.template import WWebTemplateResponse, WWebTemplate
 from wasp_launcher.host_apps.apps import WLauncherWebAppDescriptor
 from wasp_launcher.host_apps.web_service import WLauncherWebPresenter
 from wasp_launcher.host_apps.web_debugger import WLauncherWebDebuggerConnection, WLauncherWebDebugger
-from wasp_launcher.apps.wasp import WErrorPresenter
+from wasp_launcher.guest_apps.wasp import WErrorPresenter
 
 
 class WDebugPresenter(WLauncherWebPresenter):
@@ -106,12 +106,12 @@ class WDebugErrorPresenter(WErrorPresenter):
 
 	@classmethod
 	def __presenter_name__(cls):
-		return 'com.binblob.wasp-launcher.apps.wasp-debug.error-presenter'
+		return 'com.binblob.wasp-launcher.guest-apps.wasp-debug.error-presenter'
 
 
 class WWaspDebugApps(WLauncherWebAppDescriptor):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.apps.wasp-debug'
+	__registry_tag__ = 'com.binblob.wasp-launcher.guest-apps.wasp-debug'
 
 	@classmethod
 	def public_presenters(cls):

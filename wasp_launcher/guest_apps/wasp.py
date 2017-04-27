@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/apps/wasp.py
+# wasp_launcher/guest_apps/wasp.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -227,12 +227,12 @@ class WErrorPresenter(WSimpleErrorPresenter):
 
 	@classmethod
 	def __presenter_name__(cls):
-		return 'com.binblob.wasp-launcher.apps.wasp-basic.error-presenter'
+		return 'com.binblob.wasp-launcher.guest-apps.wasp-basic.error-presenter'
 
 
 class WWaspBasicApps(WLauncherWebAppDescriptor):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.apps.wasp-basic'
+	__registry_tag__ = 'com.binblob.wasp-launcher.guest-apps.wasp-basic'
 
 	@classmethod
 	def public_presenters(cls):
