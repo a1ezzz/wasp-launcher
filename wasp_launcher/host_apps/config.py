@@ -48,7 +48,7 @@ class WLauncherConfig(WLauncherTask):
 	""" Environment variable name that is used for configuration filename which overrides defaults.
 	"""
 
-	__configuration_default__ = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'defaults.ini')
+	__configuration_default__ = os.path.join(os.path.dirname(__file__), '..', 'config', 'defaults.ini')
 	""" Place where default configuration is stored
 	"""
 
