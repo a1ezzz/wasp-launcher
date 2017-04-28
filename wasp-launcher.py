@@ -33,7 +33,7 @@ import wasp_launcher.host_apps
 if __name__ == '__main__':
 	print('Launcher is starting')
 
-	main_task = 'com.binblob.wasp-launcher.launcher.web_service::start'
+	main_task = 'com.binblob.wasp-launcher.host-app.web::start'
 	WHostAppRegistry.start_task(main_task)
 
 	def shutdown_signal(signum, frame):

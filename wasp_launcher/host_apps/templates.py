@@ -266,9 +266,9 @@ class WLauncherTemplateSearcher(TemplateCollection, WLauncherBasicTemplateSearch
 		return WWebTemplateLookup(uri, self)
 
 
-class WLauncherWebTemplatesApp(WSyncHostApp):
+class WTemplateLoadHostApp(WSyncHostApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.web_templates::load'
+	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.template-load'
 	""" Task tag
 	"""
 

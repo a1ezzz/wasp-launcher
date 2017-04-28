@@ -142,9 +142,9 @@ class WLauncherIPCRemoteControlTask(WLauncherRemoteControlTask):
 		return WZMQService(zmq.REP, connection, WRemoteControlServerHandler)
 
 
-class WLauncherBrokerApp(WSyncHostApp):
+class WBrokerHostApp(WSyncHostApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.broker::broker_start'
+	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.broker'
 
 	__dependency__ = [
 		'com.binblob.wasp-launcher.host-app.guest-apps::start'
@@ -159,19 +159,19 @@ class WLauncherBrokerApp(WSyncHostApp):
 		tcp_enabled = config.getboolean('wasp-launcher::messenger::remote_control::connection', 'bind')
 		ipc_enabled = config.getboolean('wasp-launcher::messenger::remote_control::connection', 'named_socket')
 
-		if WLauncherBrokerApp.__remote_control_tcp_task__ is None and tcp_enabled is True:
-			WLauncherBrokerApp.__remote_control_tcp_task__ = WLauncherTCPRemoteControlTask()
-			WLauncherBrokerApp.__remote_control_tcp_task__.start()
+		if WBrokerHostApp.__remote_control_tcp_task__ is None and tcp_enabled is True:
+			WBrokerHostApp.__remote_control_tcp_task__ = WLauncherTCPRemoteControlTask()
+			WBrokerHostApp.__remote_control_tcp_task__.start()
 
-		if WLauncherBrokerApp.__remote_control_ipc_task__ is None and ipc_enabled is True:
-			WLauncherBrokerApp.__remote_control_ipc_task__ = WLauncherIPCRemoteControlTask()
-			WLauncherBrokerApp.__remote_control_ipc_task__.start()
+		if WBrokerHostApp.__remote_control_ipc_task__ is None and ipc_enabled is True:
+			WBrokerHostApp.__remote_control_ipc_task__ = WLauncherIPCRemoteControlTask()
+			WBrokerHostApp.__remote_control_ipc_task__.start()
 
 	def stop(self):
-		if WLauncherBrokerApp.__remote_control_tcp_task__ is not None:
-			WLauncherBrokerApp.__remote_control_tcp_task__.stop()
-			WLauncherBrokerApp.__remote_control_tcp_task__ = None
+		if WBrokerHostApp.__remote_control_tcp_task__ is not None:
+			WBrokerHostApp.__remote_control_tcp_task__.stop()
+			WBrokerHostApp.__remote_control_tcp_task__ = None
 
-		if WLauncherBrokerApp.__remote_control_ipc_task__ is not None:
-			WLauncherBrokerApp.__remote_control_ipc_task__.stop()
-			WLauncherBrokerApp.__remote_control_ipc_task__ = None
+		if WBrokerHostApp.__remote_control_ipc_task__ is not None:
+			WBrokerHostApp.__remote_control_ipc_task__.stop()
+			WBrokerHostApp.__remote_control_ipc_task__ = None

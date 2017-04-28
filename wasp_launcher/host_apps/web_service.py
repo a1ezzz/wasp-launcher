@@ -68,16 +68,16 @@ class WLauncherPresenterFactory(WWebPresenterFactory):
 		)
 
 
-class WLauncherWebServicePreInitApp(WSyncHostApp):
+class WWebInitHostApp(WSyncHostApp):
 	""" Task that prepare web-service
 	"""
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.web_service::pre_init'
+	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.web::init'
 	""" Task tag
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.launcher.app_loader::load'
+		'com.binblob.wasp-launcher.host-app.guest-apps::load'
 	]
 	""" Task dependency
 	"""
@@ -114,15 +114,15 @@ class WLauncherWebServicePreInitApp(WSyncHostApp):
 		WAppsGlobals.log.info('Web-service finalized')
 
 
-class WWebServiceStartApp(WThreadedHostApp):
+class WWebHostApp(WThreadedHostApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.web_service::start'
+	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.web::start'
 	""" Task tag
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.launcher.broker::broker_start',
-		'com.binblob.wasp-launcher.launcher.web_templates::load'
+		'com.binblob.wasp-launcher.host-app.broker',
+		'com.binblob.wasp-launcher.host-app.template-load'
 	]
 
 	def start(self):

@@ -21,6 +21,11 @@ WGuestModelLoadApp
 "com.binblob.wasp-launcher.host-app.model-load"
 ]
 
+component web_init [
+WWebInitHostApp
+"com.binblob.wasp-launcher.host-app.web::init"
+]
+
 component starter [
 WGuestAppStarter
 "com.binblob.wasp-launcher.launcher.app_starter::start"
@@ -31,8 +36,8 @@ App is started in a separate thread
 end note
 
 component template [
-WLauncherWebTemplatesApp
-"com.binblob.wasp-launcher.launcher.web_templates::load"
+WTemplateLoadHostApp
+"com.binblob.wasp-launcher.host-app.template-load"
 ]
 
 component debugger [
@@ -41,19 +46,21 @@ WGuestAppWebDebugger
 ]
 
 component broker [
-WLauncherBrokerApp
-"com.binblob.wasp-launcher.launcher.broker::broker_start"
+WBrokerHostApp
+"com.binblob.wasp-launcher.host-app.broker"
 ]
 
 component web_host [
-WWebServiceStartApp
-"com.binblob.wasp-launcher.launcher.web_service::start"
+WWebHostApp
+"com.binblob.wasp-launcher.host-app.web::start"
 ]
 
 config .-down-> log
 loader .-down-> config
 model .-down-> loader
 template .-down-> loader
+web_init .-down-> loader
+starter .-down-> web_init
 starter .-down-> model
 broker .-down-> starter
 web_host .-down-> broker
