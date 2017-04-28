@@ -12,8 +12,8 @@ WConfigHostApp
 ]
 
 component loader [
-WLauncherAppLoaderApp
-"com.binblob.wasp-launcher.launcher.app_loader::load"
+WGuestAppLoader
+"com.binblob.wasp-launcher.host-app.guest-apps::load"
 ]
 
 component model [
@@ -58,7 +58,7 @@ starter .-down-> model
 broker .-down-> starter
 web_host .-down-> broker
 web_host .-down-> template
-debugger .-down-> loader
+debugger .-down-> config
 
 }
 

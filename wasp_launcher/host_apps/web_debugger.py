@@ -249,7 +249,7 @@ class WLauncherWebDebuggerConnectionApp(WSyncHostApp):
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.launcher.app_loader::load'
+		'com.binblob.wasp-launcher.host-app.config'
 	]
 
 	__mongo_connection__ = None

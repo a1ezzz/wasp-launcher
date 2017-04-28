@@ -39,7 +39,7 @@ class WLauncherModelLoadApp(WSyncHostApp):
 	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.model::init'
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.launcher.web_service::pre_init'
+		'com.binblob.wasp-launcher.host-app.guest-apps::load'
 	]
 
 	def start(self):

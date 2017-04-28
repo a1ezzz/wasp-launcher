@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/host_apps/apps.py
+# wasp_launcher/host_apps/guest_apps.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -29,15 +29,12 @@ from wasp_launcher.version import __status__
 
 from importlib import import_module
 
-from wasp_general.task.sync import WSyncTask
-from wasp_general.task.dependency import WDependentTask
-
 from wasp_launcher.apps import WSyncHostApp, WGuestApp, WAppsGlobals
 
 
-class WLauncherAppLoaderApp(WSyncHostApp):
+class WGuestAppLoader(WSyncHostApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.app_loader::load'
+	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.guest-apps::load'
 	__dependency__ = [
 		'com.binblob.wasp-launcher.host-app.config'
 	]

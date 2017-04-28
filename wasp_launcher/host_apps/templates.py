@@ -273,7 +273,7 @@ class WLauncherWebTemplatesApp(WSyncHostApp):
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.launcher.web_service::pre_init'
+		'com.binblob.wasp-launcher.host-app.guest-apps::load'
 	]
 
 	def start(self):

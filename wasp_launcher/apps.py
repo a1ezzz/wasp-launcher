@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/apps.py
+# wasp_launcher/guest_apps.py
 #
 # Copyright (C) 2016 the wasp-launcher authors and contributors
 # <see AUTHORS file>
