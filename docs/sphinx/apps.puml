@@ -2,8 +2,8 @@
 
 package "Host Apps" {
 component log [
-WLauncherLogSetupApp
-"com.binblob.wasp-launcher.launcher.log::log_setup"
+WLogHostApp
+"com.binblob.wasp-launcher.host-app.log"
 ]
 
 component config [

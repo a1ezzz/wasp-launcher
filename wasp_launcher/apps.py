@@ -19,6 +19,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with wasp-launcher.  If not, see <http://www.gnu.org/licenses/>.
 
+# TODO: document the code
+# TODO: test the code
+
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __author__, __version__, __credits__, __license__, __copyright__, __email__
 # noinspection PyUnresolvedReferences

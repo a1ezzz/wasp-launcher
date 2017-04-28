@@ -31,16 +31,16 @@ import sys
 from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
 
-class WLauncherLogSetupApp(WSyncHostApp):
-	""" Task that initialized logger
+class WLogHostApp(WSyncHostApp):
+	""" Logger application
 	"""
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.log::log_setup'
+	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.log'
 	""" Task tag
 	"""
 
 	def start(self):
-		""" Start this task (all the work is done in :meth:`.WLauncherLogSetupApp.setup_logger` method)
+		""" Start this app (all the work is done in :meth:`.WLogHostApp.setup_logger` method)
 
 		:return: None
 		"""
@@ -48,7 +48,7 @@ class WLauncherLogSetupApp(WSyncHostApp):
 		WAppsGlobals.log.info('Logger initialised')
 
 	def stop(self):
-		""" "Uninitialize" logger. Makes :attr:`wasp_launcher.host_apps.globals.WAppsGlobals.log` logger unavailable
+		""" "Uninitialize" logger. Makes :attr:`wasp_launcher.apps.WAppsGlobals.log` logger unavailable
 
 		:return: None
 		"""
@@ -56,7 +56,7 @@ class WLauncherLogSetupApp(WSyncHostApp):
 
 	@classmethod
 	def setup_logger(cls):
-		""" Initialize :attr:`wasp_launcher.host_apps.globals.WAppsGlobals.log` log.
+		""" Initialize :attr:`wasp_launcher.apps.WAppsGlobals.log` log.
 
 		:return: None
 		"""

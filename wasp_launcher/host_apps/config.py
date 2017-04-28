@@ -39,7 +39,7 @@ class WLauncherConfigApp(WSyncHostApp):
 	""" Task tag
 	"""
 
-	__dependency__ = ['com.binblob.wasp-launcher.launcher.log::log_setup']
+	__dependency__ = ['com.binblob.wasp-launcher.host-app.log']
 	""" Task dependency
 	"""
 
