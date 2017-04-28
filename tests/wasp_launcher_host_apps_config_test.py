@@ -6,14 +6,13 @@ import os
 from wasp_general.config import WConfig
 
 from wasp_launcher.host_apps.config import WLauncherConfigApp
-from wasp_launcher.apps import WSyncHostApp
-from wasp_launcher.host_apps.globals import WLauncherGlobals
+from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
 
 @pytest.fixture
 def fin_config(request):
 	def fin():
-		WLauncherGlobals.config = None
+		WAppsGlobals.config = None
 		del os.environ[WLauncherConfigApp.__environment_var__]
 	request.addfinalizer(fin)
 
@@ -55,13 +54,13 @@ class TestWLauncherConfig:
 		os.environ[WLauncherConfigApp.__environment_var__] = tempfile2
 
 		task = Config.start_dependent_task()
-		assert(isinstance(WLauncherGlobals.config, WConfig) is True)
-		assert(WLauncherGlobals.config['section1']['option1'] == '1')
-		assert(WLauncherGlobals.config['section1']['option2'] == 'bar')
-		assert(WLauncherGlobals.config['section2']['option'] == 'foo')
+		assert(isinstance(WAppsGlobals.config, WConfig) is True)
+		assert(WAppsGlobals.config['section1']['option1'] == '1')
+		assert(WAppsGlobals.config['section1']['option2'] == 'bar')
+		assert(WAppsGlobals.config['section2']['option'] == 'foo')
 
 		task.stop()
-		assert(WLauncherGlobals.config is None)
+		assert(WAppsGlobals.config is None)
 
 		os.unlink(tempfile1)
 		os.unlink(tempfile2)

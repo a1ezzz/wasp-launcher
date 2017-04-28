@@ -4,7 +4,7 @@ import os
 import pytest
 import logging
 
-from wasp_launcher.host_apps.globals import WLauncherGlobals
+from wasp_launcher.apps import WAppsGlobals
 
 
 @pytest.fixture
@@ -20,8 +20,8 @@ def temp_file(request):
 
 @pytest.fixture
 def global_log(request):
-	WLauncherGlobals.log = logging.getLogger('wasp-launcher-pytest')
+	WAppsGlobals.log = logging.getLogger('wasp-launcher-pytest')
 
 	def fin():
-		WLauncherGlobals.log = None
+		WAppsGlobals.log = None
 	request.addfinalizer(fin)

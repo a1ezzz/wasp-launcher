@@ -3,24 +3,23 @@
 import pytest
 import logging
 
-from wasp_launcher.host_apps.log import WLauncherLogSetupApp
-from wasp_launcher.apps import WSyncHostApp
-from wasp_launcher.host_apps.globals import WLauncherGlobals
+from wasp_launcher.host_apps.log import WLogHostApp
+from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
 
 @pytest.fixture
 def fin_log(request):
 	def fin():
-		WLauncherGlobals.log = None
+		WAppsGlobals.log = None
 	request.addfinalizer(fin)
 
 
-class TestWLauncherLogSetup:
+class TestWLogHostApp:
 
 	@pytest.mark.usefixtures('fin_log')
-	def test_task(self):
-		assert(isinstance(WLauncherLogSetupApp(), WSyncHostApp) is True)
-		task = WLauncherLogSetupApp.start_dependent_task()
-		assert(isinstance(WLauncherGlobals.log, logging.Logger) is True)
-		task.stop()
-		assert(WLauncherGlobals.log is None)
+	def test_app(self):
+		assert(isinstance(WLogHostApp(), WSyncHostApp) is True)
+		app = WLogHostApp.start_dependent_task()
+		assert(isinstance(WAppsGlobals.log, logging.Logger) is True)
+		app.stop()
+		assert(WAppsGlobals.log is None)
