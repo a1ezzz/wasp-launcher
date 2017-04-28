@@ -31,11 +31,11 @@ from wasp_general.config import WConfig
 from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
 
-class WLauncherConfigApp(WSyncHostApp):
-	""" Task that load configuration
+class WConfigHostApp(WSyncHostApp):
+	""" Configuration application
 	"""
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.config::read_config'
+	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.config'
 	""" Task tag
 	"""
 
@@ -52,7 +52,7 @@ class WLauncherConfigApp(WSyncHostApp):
 	"""
 
 	def start(self):
-		""" Start this task (all the work is done in :meth:`.WLauncherConfigApp.read_config` method)
+		""" Start this task (all the work is done in :meth:`.WConfigHostApp.read_config` method)
 
 		:return: None
 		"""
@@ -61,7 +61,7 @@ class WLauncherConfigApp(WSyncHostApp):
 
 	def stop(self):
 		""" Remove configuration from application.
-		Makes :attr:`wasp_launcher.globals.WAppsGlobals.config` configuration unavailable
+		Makes :attr:`wasp_launcher.apps.WAppsGlobals.config` configuration unavailable
 
 		:return: None
 		"""
@@ -69,8 +69,8 @@ class WLauncherConfigApp(WSyncHostApp):
 
 	@classmethod
 	def read_config(cls):
-		""" Setup :attr:`wasp_launcher.globals.WAppsGlobals.log` configuration. Reads defaults and
-		override it by a file given via :attr:`WLauncherConfigApp.__environment_var__` environment variable
+		""" Setup :attr:`wasp_launcher.apps.WAppsGlobals.log` configuration. Reads defaults and
+		override it by a file given via :attr:`WConfigHostApp.__environment_var__` environment variable
 
 		:return: None
 		"""

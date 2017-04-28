@@ -39,7 +39,7 @@ class WLauncherAppLoaderApp(WSyncHostApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.app_loader::load'
 	__dependency__ = [
-		'com.binblob.wasp-launcher.launcher.config::read_config'
+		'com.binblob.wasp-launcher.host-app.config'
 	]
 
 	__module_export_function__ = '__wasp_launcher_apps__'

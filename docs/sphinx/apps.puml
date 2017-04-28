@@ -7,8 +7,8 @@ WLogHostApp
 ]
 
 component config [
-WLauncherConfigApp
-"com.binblob.wasp-launcher.launcher.config::read_config"
+WConfigHostApp
+"com.binblob.wasp-launcher.host-app.config"
 ]
 
 component loader [
