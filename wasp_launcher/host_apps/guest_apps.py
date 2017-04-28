@@ -77,12 +77,12 @@ class WGuestAppLoader(WSyncHostApp):
 		WAppsGlobals.log.info('Available local applications: %i' % apps_count)
 
 
-class WLauncherAppStarterApp(WSyncHostApp):
+class WGuestAppStarter(WSyncHostApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.app_starter::start'
+	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.guest-apps::start'
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.launcher.model::init'
+		'com.binblob.wasp-launcher.host-app.model-load'
 	]
 
 	def __init__(self):

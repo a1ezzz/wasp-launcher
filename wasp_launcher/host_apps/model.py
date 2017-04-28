@@ -34,9 +34,9 @@ class WLauncherModelStorage:
 	pass
 
 
-class WLauncherModelLoadApp(WSyncHostApp):
+class WGuestModelLoadApp(WSyncHostApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.model::init'
+	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.model-load'
 
 	__dependency__ = [
 		'com.binblob.wasp-launcher.host-app.guest-apps::load'

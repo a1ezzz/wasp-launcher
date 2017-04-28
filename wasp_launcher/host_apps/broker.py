@@ -147,7 +147,7 @@ class WLauncherBrokerApp(WSyncHostApp):
 	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.broker::broker_start'
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.launcher.app_starter::start'
+		'com.binblob.wasp-launcher.host-app.guest-apps::start'
 	]
 
 	__remote_control_tcp_task__ = None

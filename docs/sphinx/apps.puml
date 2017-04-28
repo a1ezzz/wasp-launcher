@@ -17,12 +17,12 @@ WGuestAppLoader
 ]
 
 component model [
-WLauncherModelLoadApp
-"com.binblob.wasp-launcher.launcher.model::init"
+WGuestModelLoadApp
+"com.binblob.wasp-launcher.host-app.model-load"
 ]
 
 component starter [
-WLauncherAppStarterApp
+WGuestAppStarter
 "com.binblob.wasp-launcher.launcher.app_starter::start"
 ]
 
@@ -36,8 +36,8 @@ WLauncherWebTemplatesApp
 ]
 
 component debugger [
-WLauncherWebDebuggerConnectionApp
-"com.binblob.wasp-launcher.launcher.web_debugger::connection"
+WGuestAppWebDebugger
+"com.binblob.wasp-launcher.host-app.web-debugger"
 ]
 
 component broker [
