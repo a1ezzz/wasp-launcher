@@ -76,7 +76,7 @@ class WLauncherWebDebugger(WWebDebugInfo):
 			return
 
 		session_id = session_data['session']
-		WLauncherWebDebuggerConnectionApp.__mongo_sessions__.insert_one({
+		WGuestAppWebDebugger.__mongo_sessions__.insert_one({
 			'uuid': session_id.uuid,
 			'datetime': session_id.datetime
 		})
@@ -105,7 +105,7 @@ class WLauncherWebDebugger(WWebDebugInfo):
 		protocol_version = session_data['protocol_version']
 		protocol = session_data['protocol']
 
-		WLauncherWebDebuggerConnectionApp.__mongo_requests__.insert_one({
+		WGuestAppWebDebugger.__mongo_requests__.insert_one({
 			'uuid': session_id.uuid,
 			'protocol': protocol,
 			'protocol_version': protocol_version,
@@ -129,7 +129,7 @@ class WLauncherWebDebugger(WWebDebugInfo):
 			return
 
 		response = session_data['response']
-		WLauncherWebDebuggerConnectionApp.__mongo_responses__.insert_one({
+		WGuestAppWebDebugger.__mongo_responses__.insert_one({
 			'uuid': session_id.uuid,
 			'status': response.status(),
 			'headers': self.headers(response.headers()),
@@ -153,7 +153,7 @@ class WLauncherWebDebugger(WWebDebugInfo):
 		if target_route is None:
 			return
 
-		WLauncherWebDebuggerConnectionApp.__mongo_target_routes__.insert_one({
+		WGuestAppWebDebugger.__mongo_target_routes__.insert_one({
 			'uuid': session_id.uuid,
 			'presenter_name': target_route.presenter_name(),
 			'presenter_action': target_route.presenter_action(),
@@ -192,7 +192,7 @@ class WLauncherWebDebugger(WWebDebugInfo):
 			exc = exception_data['exception']
 			traceback_data = exception_data['traceback']
 
-			WLauncherWebDebuggerConnectionApp.__mongo_exceptions__.insert_one({
+			WGuestAppWebDebugger.__mongo_exceptions__.insert_one({
 				'uuid': session_id.uuid,
 				'exception': str(exc),
 				'traceback': traceback_data
@@ -240,11 +240,11 @@ class WLauncherWebDebugger(WWebDebugInfo):
 		return result
 
 
-class WLauncherWebDebuggerConnectionApp(WSyncHostApp):
+class WGuestAppWebDebugger(WSyncHostApp):
 	""" Task that creates connection to a mongodb server
 	"""
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.web_debugger::connection'
+	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.web-debugger'
 	""" Task tag
 	"""
 
@@ -263,27 +263,27 @@ class WLauncherWebDebuggerConnectionApp(WSyncHostApp):
 
 	def start(self):
 		connection = pymongo.MongoClient(WAppsGlobals.config['wasp-launcher::web:debug']['mongo_connection'])
-		WLauncherWebDebuggerConnectionApp.__mongo_connection__ = connection
+		WGuestAppWebDebugger.__mongo_connection__ = connection
 		database_name = WAppsGlobals.config['wasp-launcher::web:debug']['mongo_database']
 		database = connection[database_name]
-		WLauncherWebDebuggerConnectionApp.__mongo_database__ = database
+		WGuestAppWebDebugger.__mongo_database__ = database
 
-		WLauncherWebDebuggerConnectionApp.__mongo_sessions__ = database['sessions']
-		WLauncherWebDebuggerConnectionApp.__mongo_requests__ = database['requests']
-		WLauncherWebDebuggerConnectionApp.__mongo_responses__ = database['responses']
-		WLauncherWebDebuggerConnectionApp.__mongo_target_routes__ = database['target_routes']
-		WLauncherWebDebuggerConnectionApp.__mongo_exceptions__ = database['exceptions']
+		WGuestAppWebDebugger.__mongo_sessions__ = database['sessions']
+		WGuestAppWebDebugger.__mongo_requests__ = database['requests']
+		WGuestAppWebDebugger.__mongo_responses__ = database['responses']
+		WGuestAppWebDebugger.__mongo_target_routes__ = database['target_routes']
+		WGuestAppWebDebugger.__mongo_exceptions__ = database['exceptions']
 
 		WAppsGlobals.log.info('Web-debugger started')
 
 	def stop(self):
-		WLauncherWebDebuggerConnectionApp.__mongo_sessions__ = None
-		WLauncherWebDebuggerConnectionApp.__mongo_requests__ = None
-		WLauncherWebDebuggerConnectionApp.__mongo_responses__ = None
-		WLauncherWebDebuggerConnectionApp.__mongo_target_routes__ = None
-		WLauncherWebDebuggerConnectionApp.__mongo_exceptions__ = None
+		WGuestAppWebDebugger.__mongo_sessions__ = None
+		WGuestAppWebDebugger.__mongo_requests__ = None
+		WGuestAppWebDebugger.__mongo_responses__ = None
+		WGuestAppWebDebugger.__mongo_target_routes__ = None
+		WGuestAppWebDebugger.__mongo_exceptions__ = None
 
-		WLauncherWebDebuggerConnectionApp.__mongo_database__ = None
-		WLauncherWebDebuggerConnectionApp.__mongo_connection__ = None
+		WGuestAppWebDebugger.__mongo_database__ = None
+		WGuestAppWebDebugger.__mongo_connection__ = None
 
 		WAppsGlobals.log.info('Web-debugger stopped')
