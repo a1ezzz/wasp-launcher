@@ -42,7 +42,7 @@ from wasp_general.network.web.proto import WWebPresenter
 from wasp_general.network.web.template import WWebTemplateText, WWebTemplateResponse
 from wasp_general.network.web.service import WWebRoute
 
-from wasp_launcher.host_apps.apps import WLauncherWebAppDescriptor
+from wasp_launcher.apps import WGuestWebApp
 
 
 class WRedirectPresenter(WWebPresenter):
@@ -230,7 +230,7 @@ class WErrorPresenter(WSimpleErrorPresenter):
 		return 'com.binblob.wasp-launcher.guest-apps.wasp-basic.error-presenter'
 
 
-class WWaspBasicApps(WLauncherWebAppDescriptor):
+class WWaspBasicApps(WGuestWebApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.guest-apps.wasp-basic'
 

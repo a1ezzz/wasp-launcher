@@ -37,8 +37,7 @@ from wasp_general.network.web.proto import WWebRequestProto
 from wasp_general.network.web.tornado import WTornadoRequestHandler
 from wasp_general.network.web.template import WWebTemplateResponse
 
-from wasp_launcher.host_apps.registry import WLauncherTask, WLauncherThreadedTask
-from wasp_launcher.host_apps.globals import WLauncherGlobals
+from wasp_launcher.apps import WSyncHostApp, WThreadedHostApp, WAppsGlobals
 from wasp_launcher.host_apps.web_debugger import WLauncherWebDebugger
 
 
@@ -52,7 +51,7 @@ class WLauncherWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
 	@verify_type(template_id=str)
 	@verify_value(template_id=lambda x: len(x) > 0)
 	def __template__(self, template_id):
-		return WLauncherGlobals.templates.lookup(template_id)
+		return WAppsGlobals.templates.lookup(template_id)
 
 	@verify_type(template_id=str)
 	@verify_value(template_id=lambda x: len(x) > 0)
@@ -69,7 +68,7 @@ class WLauncherPresenterFactory(WWebPresenterFactory):
 		)
 
 
-class WLauncherWebServicePreInit(WLauncherTask):
+class WLauncherWebServicePreInitApp(WSyncHostApp):
 	""" Task that prepare web-service
 	"""
 
@@ -84,20 +83,20 @@ class WLauncherWebServicePreInit(WLauncherTask):
 	"""
 
 	def start(self):
-		WLauncherGlobals.wasp_web_service = WWebService(
+		WAppsGlobals.wasp_web_service = WWebService(
 			factory=WLauncherPresenterFactory, debugger=WLauncherWebDebugger()
 		)
-		WLauncherGlobals.tornado_io_loop = IOLoop()
+		WAppsGlobals.tornado_io_loop = IOLoop()
 
-		WLauncherGlobals.tornado_service = tornado.httpserver.HTTPServer(
+		WAppsGlobals.tornado_service = tornado.httpserver.HTTPServer(
 			tornado.web.Application([
-				(r".*", WTornadoRequestHandler.__handler__(WLauncherGlobals.wasp_web_service))
-			]), io_loop=WLauncherGlobals.tornado_io_loop
+				(r".*", WTornadoRequestHandler.__handler__(WAppsGlobals.wasp_web_service))
+			]), io_loop=WAppsGlobals.tornado_io_loop
 		)
 
-		WLauncherGlobals.log.info('Web-service is ready to start (initialized)')
+		WAppsGlobals.log.info('Web-service is ready to start (initialized)')
 
-		if WLauncherGlobals.config["wasp-launcher::web:debug"]["mode"].lower() in ['on', 'on error']:
+		if WAppsGlobals.config["wasp-launcher::web:debug"]["mode"].lower() in ['on', 'on error']:
 			self.__registry__.start_task('com.binblob.wasp-launcher.launcher.web_debugger::connection')
 
 	def stop(self):
@@ -108,14 +107,14 @@ class WLauncherWebServicePreInit(WLauncherTask):
 		if debug_task is not None:
 			debug_task.stop()
 
-		WLauncherGlobals.tornado_service = None
-		WLauncherGlobals.tornado_io_loop = None
-		WLauncherGlobals.wasp_web_service = None
+		WAppsGlobals.tornado_service = None
+		WAppsGlobals.tornado_io_loop = None
+		WAppsGlobals.wasp_web_service = None
 
-		WLauncherGlobals.log.info('Web-service finalized')
+		WAppsGlobals.log.info('Web-service finalized')
 
 
-class WLauncherWebServiceStart(WLauncherThreadedTask):
+class WWebServiceStartApp(WThreadedHostApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.web_service::start'
 	""" Task tag
@@ -129,27 +128,27 @@ class WLauncherWebServiceStart(WLauncherThreadedTask):
 	def start(self):
 		self.setup_app_presenters()
 
-		WLauncherGlobals.tornado_service.listen(8888)
-		WLauncherGlobals.log.info('Web-service is starting')
-		WLauncherGlobals.tornado_io_loop.start()
+		WAppsGlobals.tornado_service.listen(8888)
+		WAppsGlobals.log.info('Web-service is starting')
+		WAppsGlobals.tornado_io_loop.start()
 
 	def stop(self):
-		WLauncherGlobals.tornado_io_loop.stop()
-		WLauncherGlobals.log.info('Web-service is stopped')
+		WAppsGlobals.tornado_io_loop.stop()
+		WAppsGlobals.log.info('Web-service is stopped')
 
 	def setup_app_presenters(self):
-		presenters_count = len(WLauncherGlobals.wasp_web_service.presenter_collection())
-		WLauncherGlobals.log.info('Web-application presenters loaded: %i' % presenters_count)
+		presenters_count = len(WAppsGlobals.wasp_web_service.presenter_collection())
+		WAppsGlobals.log.info('Web-application presenters loaded: %i' % presenters_count)
 
-		error_presenter_name = WLauncherGlobals.config['wasp-launcher::web']['error_presenter']
-		if WLauncherGlobals.wasp_web_service.presenter_collection().has(error_presenter_name) is True:
-			error_presenter = WLauncherGlobals.wasp_web_service.presenter_collection().presenter(
+		error_presenter_name = WAppsGlobals.config['wasp-launcher::web']['error_presenter']
+		if WAppsGlobals.wasp_web_service.presenter_collection().has(error_presenter_name) is True:
+			error_presenter = WAppsGlobals.wasp_web_service.presenter_collection().presenter(
 				error_presenter_name
 			)
-			WLauncherGlobals.wasp_web_service.route_map().set_error_presenter(error_presenter)
-			WLauncherGlobals.log.info('Presenter "%s" set as error presenter' % error_presenter_name)
+			WAppsGlobals.wasp_web_service.route_map().set_error_presenter(error_presenter)
+			WAppsGlobals.log.info('Presenter "%s" set as error presenter' % error_presenter_name)
 		elif len(error_presenter_name) > 0:
-			WLauncherGlobals.log.warn(
+			WAppsGlobals.log.warn(
 				'Presenter "%s" can\'t be set as error presenter (wasn\'t found).' %
 				error_presenter_name
 			)

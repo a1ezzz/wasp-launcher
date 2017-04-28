@@ -32,84 +32,10 @@ from importlib import import_module
 from wasp_general.task.sync import WSyncTask
 from wasp_general.task.dependency import WDependentTask
 
-from wasp_launcher.host_apps.registry import WLauncherTask
-from wasp_launcher.host_apps.globals import WLauncherGlobals
+from wasp_launcher.apps import WSyncHostApp, WGuestApp, WAppsGlobals
 
 
-class WLauncherAppDescriptor(WSyncTask, metaclass=WDependentTask):
-
-	__auto_registry__ = False
-
-	@classmethod
-	def name(cls):
-		return cls.__registry_tag__
-
-	@classmethod
-	def description(cls):
-		return None
-
-
-class WLauncherWebAppDescriptor(WLauncherAppDescriptor):
-
-	@classmethod
-	def public_presenters(cls):
-		return tuple()
-
-	@classmethod
-	def public_routes(cls):
-		""" Return routes which are published by an application
-
-		:return: tuple of WWebRoute
-		"""
-		return tuple()
-
-	@classmethod
-	def template_path(cls):
-		'''
-
-		can be none or non-existens path
-
-		:return:
-		'''
-		return None
-
-	@classmethod
-	def py_templates_package(cls):
-		return None
-
-	@classmethod
-	def static_files_path(cls):
-		'''
-
-		can be none or non-existens path
-
-		:return:
-		'''
-		return None
-
-	def start(self):
-		for presenter in self.public_presenters():
-			WLauncherGlobals.wasp_web_service.add_presenter(presenter)
-			WLauncherGlobals.log.info(
-				'Presenter "%s" was added to the web service registry' % presenter.__presenter_name__()
-			)
-		for route in self.public_routes():
-			WLauncherGlobals.wasp_web_service.route_map().append(route)
-
-	def stop(self):
-		pass
-
-
-class WLauncherModelAppDescriptor(WLauncherAppDescriptor):
-
-	def start(self):
-		pass
-
-	def stop(self):
-		pass
-
-
-class WLauncherAppLoader(WLauncherTask):
+class WLauncherAppLoaderApp(WSyncHostApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.app_loader::load'
 	__dependency__ = [
@@ -119,17 +45,17 @@ class WLauncherAppLoader(WLauncherTask):
 	__module_export_function__ = '__wasp_launcher_apps__'
 
 	def start(self):
-		WLauncherGlobals.apps_registry.clear()
+		WAppsGlobals.apps_registry.clear()
 		self.load_applications()
 
 	def stop(self):
-		WLauncherGlobals.apps_registry.clear()
+		WAppsGlobals.apps_registry.clear()
 
 	@classmethod
 	def load_applications(cls):
-		WLauncherGlobals.log.info('Reading modules for available local applications')
+		WAppsGlobals.log.info('Reading modules for available local applications')
 
-		module_names = WLauncherGlobals.config.split_option(
+		module_names = WAppsGlobals.config.split_option(
 			'wasp-launcher::applications', 'applications_modules'
 		)
 		apps_count = 0
@@ -139,8 +65,8 @@ class WLauncherAppLoader(WLauncherTask):
 				if hasattr(module, cls.__module_export_function__):
 					export_fn = getattr(module, cls.__module_export_function__)
 					for app in export_fn():
-						if issubclass(app, WLauncherAppDescriptor) is True:
-							WLauncherGlobals.apps_registry.add(app)
+						if issubclass(app, WGuestApp) is True:
+							WAppsGlobals.apps_registry.add(app)
 							apps_count += 1
 						else:
 							raise TypeError(
@@ -148,13 +74,13 @@ class WLauncherAppLoader(WLauncherTask):
 							)
 
 			except Exception as e:
-				WLauncherGlobals.log.error(
+				WAppsGlobals.log.error(
 					'Unable to load "%s" module. Exception was thrown: %s' % (name, str(e))
 				)
-		WLauncherGlobals.log.info('Available local applications: %i' % apps_count)
+		WAppsGlobals.log.info('Available local applications: %i' % apps_count)
 
 
-class WLauncherAppStarter(WLauncherTask):
+class WLauncherAppStarterApp(WSyncHostApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.app_starter::start'
 
@@ -163,7 +89,7 @@ class WLauncherAppStarter(WLauncherTask):
 	]
 
 	def __init__(self):
-		WLauncherTask.__init__(self)
+		WSyncHostApp.__init__(self)
 		self.__loaded_apps = []
 
 	def start(self):
@@ -172,23 +98,23 @@ class WLauncherAppStarter(WLauncherTask):
 
 	def stop(self):
 		for app_name in self.__loaded_apps:
-			WLauncherGlobals.log.info('Stopping "%s" application and its dependencies' % app_name)
-			WLauncherGlobals.apps_registry.stop_task(app_name)
+			WAppsGlobals.log.info('Stopping "%s" application and its dependencies' % app_name)
+			WAppsGlobals.apps_registry.stop_task(app_name)
 		self.__loaded_apps.clear()
 
 	def start_apps(self):
 
-		enabled_applications = WLauncherGlobals.config.split_option(
+		enabled_applications = WAppsGlobals.config.split_option(
 			'wasp-launcher::applications', 'load_applications'
 		)
 
-		WLauncherGlobals.log.info('Starting enabled local applications (total: %i)' % len(enabled_applications))
+		WAppsGlobals.log.info('Starting enabled local applications (total: %i)' % len(enabled_applications))
 
 		for app_name in enabled_applications:
-			app = WLauncherGlobals.apps_registry.registry_storage().tasks(app_name)
+			app = WAppsGlobals.apps_registry.registry_storage().tasks(app_name)
 			if app is None:
 				raise RuntimeError('Application "%s" was not found' % app_name)
-			WLauncherGlobals.log.info('Starting "%s" application and its dependencies' % app_name)
-			WLauncherGlobals.apps_registry.start_task(app_name)
+			WAppsGlobals.log.info('Starting "%s" application and its dependencies' % app_name)
+			WAppsGlobals.apps_registry.start_task(app_name)
 			self.__loaded_apps.append(app_name)
-			WLauncherGlobals.log.info('Application "%s" started' % app_name)
+			WAppsGlobals.log.info('Application "%s" started' % app_name)

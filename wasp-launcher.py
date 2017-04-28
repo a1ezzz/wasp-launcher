@@ -27,16 +27,17 @@ from wasp_launcher.version import __status__
 
 import signal
 
-from wasp_launcher.host_apps.registry import WLauncherRegistry
+from wasp_launcher.apps import WHostAppRegistry
+import wasp_launcher.host_apps
 
 if __name__ == '__main__':
 	print('Launcher is starting')
 
 	main_task = 'com.binblob.wasp-launcher.launcher.web_service::start'
-	WLauncherRegistry.start_task(main_task)
+	WHostAppRegistry.start_task(main_task)
 
 	def shutdown_signal(signum, frame):
-		WLauncherRegistry.stop_task(main_task, stop_requirements=True)
+		WHostAppRegistry.stop_task(main_task, stop_requirements=True)
 
 	signal.signal(signal.SIGTERM, shutdown_signal)
 	signal.signal(signal.SIGINT, shutdown_signal)

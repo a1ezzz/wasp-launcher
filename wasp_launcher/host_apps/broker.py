@@ -35,8 +35,7 @@ from wasp_general.config import WConfig
 from wasp_general.task.thread import WThreadTask
 from wasp_general.network.service import WZMQBindHandler, WZMQConnectHandler, WZMQService
 
-from wasp_launcher.host_apps.registry import WLauncherTask
-from wasp_launcher.host_apps.globals import WLauncherGlobals
+from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
 
 class WRemoteControlClientHandler(WZMQConnectHandler):
@@ -79,8 +78,8 @@ class WLauncherBrokerBasicTask(WThreadTask):
 	@classmethod
 	def __merge_configuration(cls, config, general_section, specific_section):
 		config.add_section(specific_section)
-		config.merge_section(WLauncherGlobals.config, specific_section, section_from=general_section)
-		config.merge_section(WLauncherGlobals.config, specific_section)
+		config.merge_section(WAppsGlobals.config, specific_section, section_from=general_section)
+		config.merge_section(WAppsGlobals.config, specific_section)
 
 	@classmethod
 	def config(cls):
@@ -143,7 +142,7 @@ class WLauncherIPCRemoteControlTask(WLauncherRemoteControlTask):
 		return WZMQService(zmq.REP, connection, WRemoteControlServerHandler)
 
 
-class WLauncherBroker(WLauncherTask):
+class WLauncherBrokerApp(WSyncHostApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.broker::broker_start'
 
@@ -160,19 +159,19 @@ class WLauncherBroker(WLauncherTask):
 		tcp_enabled = config.getboolean('wasp-launcher::messenger::remote_control::connection', 'bind')
 		ipc_enabled = config.getboolean('wasp-launcher::messenger::remote_control::connection', 'named_socket')
 
-		if WLauncherBroker.__remote_control_tcp_task__ is None and tcp_enabled is True:
-			WLauncherBroker.__remote_control_tcp_task__ = WLauncherTCPRemoteControlTask()
-			WLauncherBroker.__remote_control_tcp_task__.start()
+		if WLauncherBrokerApp.__remote_control_tcp_task__ is None and tcp_enabled is True:
+			WLauncherBrokerApp.__remote_control_tcp_task__ = WLauncherTCPRemoteControlTask()
+			WLauncherBrokerApp.__remote_control_tcp_task__.start()
 
-		if WLauncherBroker.__remote_control_ipc_task__ is None and ipc_enabled is True:
-			WLauncherBroker.__remote_control_ipc_task__ = WLauncherIPCRemoteControlTask()
-			WLauncherBroker.__remote_control_ipc_task__.start()
+		if WLauncherBrokerApp.__remote_control_ipc_task__ is None and ipc_enabled is True:
+			WLauncherBrokerApp.__remote_control_ipc_task__ = WLauncherIPCRemoteControlTask()
+			WLauncherBrokerApp.__remote_control_ipc_task__.start()
 
 	def stop(self):
-		if WLauncherBroker.__remote_control_tcp_task__ is not None:
-			WLauncherBroker.__remote_control_tcp_task__.stop()
-			WLauncherBroker.__remote_control_tcp_task__ = None
+		if WLauncherBrokerApp.__remote_control_tcp_task__ is not None:
+			WLauncherBrokerApp.__remote_control_tcp_task__.stop()
+			WLauncherBrokerApp.__remote_control_tcp_task__ = None
 
-		if WLauncherBroker.__remote_control_ipc_task__ is not None:
-			WLauncherBroker.__remote_control_ipc_task__.stop()
-			WLauncherBroker.__remote_control_ipc_task__ = None
+		if WLauncherBrokerApp.__remote_control_ipc_task__ is not None:
+			WLauncherBrokerApp.__remote_control_ipc_task__.stop()
+			WLauncherBrokerApp.__remote_control_ipc_task__ = None

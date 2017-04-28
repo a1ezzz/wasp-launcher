@@ -28,11 +28,10 @@ import os
 
 from wasp_general.config import WConfig
 
-from wasp_launcher.host_apps.registry import WLauncherTask
-from wasp_launcher.host_apps.globals import WLauncherGlobals
+from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
 
-class WLauncherConfig(WLauncherTask):
+class WLauncherConfigApp(WSyncHostApp):
 	""" Task that load configuration
 	"""
 
@@ -53,38 +52,38 @@ class WLauncherConfig(WLauncherTask):
 	"""
 
 	def start(self):
-		""" Start this task (all the work is done in :meth:`.WLauncherConfig.read_config` method)
+		""" Start this task (all the work is done in :meth:`.WLauncherConfigApp.read_config` method)
 
 		:return: None
 		"""
 		self.read_config()
-		WLauncherGlobals.log.info('Configuration loading finished')
+		WAppsGlobals.log.info('Configuration loading finished')
 
 	def stop(self):
 		""" Remove configuration from application.
-		Makes :attr:`wasp_launcher.globals.WLauncherGlobals.config` configuration unavailable
+		Makes :attr:`wasp_launcher.globals.WAppsGlobals.config` configuration unavailable
 
 		:return: None
 		"""
-		WLauncherGlobals.config = None
+		WAppsGlobals.config = None
 
 	@classmethod
 	def read_config(cls):
-		""" Setup :attr:`wasp_launcher.globals.WLauncherGlobals.log` configuration. Reads defaults and
-		override it by a file given via :attr:`WLauncherConfig.__environment_var__` environment variable
+		""" Setup :attr:`wasp_launcher.globals.WAppsGlobals.log` configuration. Reads defaults and
+		override it by a file given via :attr:`WLauncherConfigApp.__environment_var__` environment variable
 
 		:return: None
 		"""
-		WLauncherGlobals.config = WConfig()
+		WAppsGlobals.config = WConfig()
 
 		def load(filename):
 			if os.path.isfile(filename) is False:
 				raise RuntimeError("Invalid configuration: '%s'" % filename)
-			WLauncherGlobals.config.merge(filename)
-			WLauncherGlobals.log.info('Configuration loaded from file: %s' % filename)
+			WAppsGlobals.config.merge(filename)
+			WAppsGlobals.log.info('Configuration loaded from file: %s' % filename)
 
 		load(cls.__configuration_default__)
 
 		if cls.__environment_var__ in os.environ:
-			WLauncherGlobals.log.info('Variable %s was set' % cls.__environment_var__)
+			WAppsGlobals.log.info('Variable %s was set' % cls.__environment_var__)
 			load(os.environ[cls.__environment_var__])

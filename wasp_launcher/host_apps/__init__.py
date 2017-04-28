@@ -1,6 +1,4 @@
 
-import wasp_launcher.host_apps.globals
-import wasp_launcher.host_apps.registry
 import wasp_launcher.host_apps.log
 import wasp_launcher.host_apps.config
 import wasp_launcher.host_apps.apps

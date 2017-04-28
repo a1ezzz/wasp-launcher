@@ -34,7 +34,7 @@ from wasp_general.network.primitives import WIPV4SocketInfo
 from wasp_general.network.beacon.beacon import WNetworkBeacon, WNetworkBeaconCallback
 from wasp_general.network.beacon.transport import WBroadcastBeaconTransport
 from wasp_general.network.beacon.messenger import WHostgroupBeaconMessenger
-from wasp_launcher.globals import WLauncherGlobals
+from wasp_launcher.apps import WAppsGlobals
 
 
 class WLauncherBeaconMessenger(WHostgroupBeaconMessenger):
@@ -45,7 +45,7 @@ class WLauncherBeaconMessenger(WHostgroupBeaconMessenger):
 
 	@verify_type(neighbor_finder=bool)
 	def __init__(self, neighbor_finder=False):
-		hostgroups = WLauncherGlobals.config.split_option('wasp-launcher::discovery::beacon', 'hostgroups')
+		hostgroups = WAppsGlobals.config.split_option('wasp-launcher::discovery::beacon', 'hostgroups')
 		WHostgroupBeaconMessenger.__init__(
 			self, WLauncherBeaconMessenger.__hello_message__, *hostgroups, invert_hello=True
 		)
@@ -71,7 +71,7 @@ class WLauncherBeaconServer(WNetworkBeacon):
 
 	def __init__(self):
 		WNetworkBeacon.__init__(
-			self, server_mode=True, config=WLauncherGlobals.config,
+			self, server_mode=True, config=WAppsGlobals.config,
 			config_section='wasp-launcher::discovery::beacon', messenger=WLauncherBeaconMessenger(),
 			transport=WBroadcastBeaconTransport(),
 			callback=WLauncherBeaconServer.WBeaconCallback(), server_receives=True
@@ -90,7 +90,7 @@ class WLauncherBeaconClient(WNetworkBeacon):
 	@verify_type(neighbor_finder=bool)
 	def __init__(self, neighbor_finder=False):
 		WNetworkBeacon.__init__(
-			self, server_mode=False, config=WLauncherGlobals.config,
+			self, server_mode=False, config=WAppsGlobals.config,
 			config_section='wasp-launcher::discovery::beacon',
 			messenger=WLauncherBeaconMessenger(neighbor_finder=neighbor_finder),
 			transport=WBroadcastBeaconTransport(), callback=WLauncherBeaconClient.WBeaconCallback(),

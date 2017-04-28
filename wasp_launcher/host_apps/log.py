@@ -28,11 +28,10 @@ import logging
 import logging.config
 import sys
 
-from wasp_launcher.host_apps.registry import WLauncherTask
-from wasp_launcher.host_apps.globals import WLauncherGlobals
+from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
 
-class WLauncherLogSetup(WLauncherTask):
+class WLauncherLogSetupApp(WSyncHostApp):
 	""" Task that initialized logger
 	"""
 
@@ -41,33 +40,33 @@ class WLauncherLogSetup(WLauncherTask):
 	"""
 
 	def start(self):
-		""" Start this task (all the work is done in :meth:`.WLauncherLogSetup.setup_logger` method)
+		""" Start this task (all the work is done in :meth:`.WLauncherLogSetupApp.setup_logger` method)
 
 		:return: None
 		"""
 		self.setup_logger()
-		WLauncherGlobals.log.info('Logger initialised')
+		WAppsGlobals.log.info('Logger initialised')
 
 	def stop(self):
-		""" "Uninitialize" logger. Makes :attr:`wasp_launcher.host_apps.globals.WLauncherGlobals.log` logger unavailable
+		""" "Uninitialize" logger. Makes :attr:`wasp_launcher.host_apps.globals.WAppsGlobals.log` logger unavailable
 
 		:return: None
 		"""
-		WLauncherGlobals.log = None
+		WAppsGlobals.log = None
 
 	@classmethod
 	def setup_logger(cls):
-		""" Initialize :attr:`wasp_launcher.host_apps.globals.WLauncherGlobals.log` log.
+		""" Initialize :attr:`wasp_launcher.host_apps.globals.WAppsGlobals.log` log.
 
 		:return: None
 		"""
-		if WLauncherGlobals.log is None:
-			WLauncherGlobals.log = logging.getLogger("wasp-launcher")
+		if WAppsGlobals.log is None:
+			WAppsGlobals.log = logging.getLogger("wasp-launcher")
 			formatter = logging.Formatter(
 				'[%(name)s] [%(threadName)s] [%(levelname)s] [%(asctime)s] %(message)s',
 				'%Y-%m-%d %H:%M:%S'
 			)
 			log_handler = logging.StreamHandler(sys.stdout)
 			log_handler.setFormatter(formatter)
-			WLauncherGlobals.log.addHandler(log_handler)
-			WLauncherGlobals.log.setLevel(logging.INFO)
+			WAppsGlobals.log.addHandler(log_handler)
+			WAppsGlobals.log.setLevel(logging.INFO)

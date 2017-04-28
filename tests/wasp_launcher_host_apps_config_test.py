@@ -5,8 +5,8 @@ import os
 
 from wasp_general.config import WConfig
 
-from wasp_launcher.host_apps.config import WLauncherConfig
-from wasp_launcher.host_apps.registry import WLauncherTask
+from wasp_launcher.host_apps.config import WLauncherConfigApp
+from wasp_launcher.apps import WSyncHostApp
 from wasp_launcher.host_apps.globals import WLauncherGlobals
 
 
@@ -14,7 +14,7 @@ from wasp_launcher.host_apps.globals import WLauncherGlobals
 def fin_config(request):
 	def fin():
 		WLauncherGlobals.config = None
-		del os.environ[WLauncherConfig.__environment_var__]
+		del os.environ[WLauncherConfigApp.__environment_var__]
 	request.addfinalizer(fin)
 
 
@@ -29,7 +29,7 @@ class TestWLauncherConfig:
 	@pytest.mark.usefixtures('global_log', 'fin_config')
 	def test_task(self, temp_files):
 		tempfile1, tempfile2 = temp_files
-		assert(isinstance(WLauncherConfig(), WLauncherTask) is True)
+		assert(isinstance(WLauncherConfigApp(), WSyncHostApp) is True)
 
 		with open(tempfile1, 'w') as f1:
 			f1.write('''
@@ -47,12 +47,12 @@ class TestWLauncherConfig:
 				option = foo
 			''')
 
-		class Config(WLauncherConfig):
+		class Config(WLauncherConfigApp):
 
 			__configuration_default__ = tempfile1
-			__registry_tag__ = WLauncherConfig.__registry_tag__ + '_test'
+			__registry_tag__ = WLauncherConfigApp.__registry_tag__ + '_test'
 
-		os.environ[WLauncherConfig.__environment_var__] = tempfile2
+		os.environ[WLauncherConfigApp.__environment_var__] = tempfile2
 
 		task = Config.start_dependent_task()
 		assert(isinstance(WLauncherGlobals.config, WConfig) is True)

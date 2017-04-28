@@ -27,15 +27,14 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from wasp_launcher.host_apps.registry import WLauncherTask
-from wasp_launcher.host_apps.globals import WLauncherGlobals
+from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
 
 class WLauncherModelStorage:
 	pass
 
 
-class WLauncherModelLoad(WLauncherTask):
+class WLauncherModelLoadApp(WSyncHostApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.model::init'
 
@@ -44,7 +43,7 @@ class WLauncherModelLoad(WLauncherTask):
 	]
 
 	def start(self):
-		WLauncherGlobals.models = WLauncherModelStorage()
+		WAppsGlobals.models = WLauncherModelStorage()
 
 	def stop(self):
-		WLauncherGlobals.models = None
+		WAppsGlobals.models = None

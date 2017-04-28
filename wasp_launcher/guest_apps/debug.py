@@ -36,9 +36,9 @@ from wasp_general.verify import verify_type, verify_value
 from wasp_general.network.web.service import WWebRoute
 from wasp_general.network.web.template import WWebTemplateResponse, WWebTemplateText
 
-from wasp_launcher.host_apps.apps import WLauncherWebAppDescriptor
+from wasp_launcher.apps import WGuestWebApp
 from wasp_launcher.host_apps.web_service import WLauncherWebPresenter
-from wasp_launcher.host_apps.web_debugger import WLauncherWebDebuggerConnection, WLauncherWebDebugger
+from wasp_launcher.host_apps.web_debugger import WLauncherWebDebuggerConnectionApp, WLauncherWebDebugger
 from wasp_launcher.guest_apps.wasp import WErrorPresenter
 
 
@@ -52,11 +52,11 @@ class WDebugPresenter(WLauncherWebPresenter):
 		self._context['uuid'] = str(session_uuid)
 
 		query = {'uuid': uuid.UUID(bytes=session_uuid)}
-		self._context['session'] = WLauncherWebDebuggerConnection.__mongo_sessions__.find_one(query)
-		self._context['request'] = WLauncherWebDebuggerConnection.__mongo_requests__.find_one(query)
-		self._context['response'] = WLauncherWebDebuggerConnection.__mongo_responses__.find_one(query)
-		self._context['target_route'] = WLauncherWebDebuggerConnection.__mongo_target_routes__.find_one(query)
-		self._context['wasp_exceptions'] = list(WLauncherWebDebuggerConnection.__mongo_exceptions__.find(query))
+		self._context['session'] = WLauncherWebDebuggerConnectionApp.__mongo_sessions__.find_one(query)
+		self._context['request'] = WLauncherWebDebuggerConnectionApp.__mongo_requests__.find_one(query)
+		self._context['response'] = WLauncherWebDebuggerConnectionApp.__mongo_responses__.find_one(query)
+		self._context['target_route'] = WLauncherWebDebuggerConnectionApp.__mongo_target_routes__.find_one(query)
+		self._context['wasp_exceptions'] = list(WLauncherWebDebuggerConnectionApp.__mongo_exceptions__.find(query))
 
 		return self.__template_response__('mako::com.binblob.wasp-launcher.apps.wasp-debug::session.mako')
 
@@ -109,7 +109,7 @@ class WDebugErrorPresenter(WErrorPresenter):
 		return 'com.binblob.wasp-launcher.guest-apps.wasp-debug.error-presenter'
 
 
-class WWaspDebugApps(WLauncherWebAppDescriptor):
+class WWaspDebugApps(WGuestWebApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.guest-apps.wasp-debug'
 

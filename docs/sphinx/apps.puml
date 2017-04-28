@@ -2,51 +2,51 @@
 
 package "Host Apps" {
 component log [
-WLauncherLogSetup
+WLauncherLogSetupApp
 "com.binblob.wasp-launcher.launcher.log::log_setup"
 ]
 
 component config [
-WLauncherConfig
+WLauncherConfigApp
 "com.binblob.wasp-launcher.launcher.config::read_config"
 ]
 
 component loader [
-WLauncherAppLoader
+WLauncherAppLoaderApp
 "com.binblob.wasp-launcher.launcher.app_loader::load"
 ]
 
 component model [
-WLauncherModelLoad
+WLauncherModelLoadApp
 "com.binblob.wasp-launcher.launcher.model::init"
 ]
 
 component starter [
-WLauncherAppStarter
+WLauncherAppStarterApp
 "com.binblob.wasp-launcher.launcher.app_starter::start"
 ]
 
 note left of starter
-Task is started in a separate thread
+App is started in a separate thread
 end note
 
 component template [
-WLauncherWebTemplates
+WLauncherWebTemplatesApp
 "com.binblob.wasp-launcher.launcher.web_templates::load"
 ]
 
 component debugger [
-WLauncherWebDebuggerConnection
+WLauncherWebDebuggerConnectionApp
 "com.binblob.wasp-launcher.launcher.web_debugger::connection"
 ]
 
 component broker [
-WLauncherBroker
+WLauncherBrokerApp
 "com.binblob.wasp-launcher.launcher.broker::broker_start"
 ]
 
 component web_host [
-WLauncherWebServiceStart
+WWebServiceStartApp
 "com.binblob.wasp-launcher.launcher.web_service::start"
 ]
 
@@ -62,13 +62,13 @@ debugger .-down-> loader
 
 }
 
-package "Web Apps" {
-component web_apps [
-	Web-applications
+package "Guest Apps" {
+component guest_apps [
+	Guest applications
 ]
 
-loader -> web_apps: load
-starter -> web_apps: start
+loader -> guest_apps: load
+starter -> guest_apps: start
 }
 
 @enduml

@@ -41,9 +41,7 @@ from wasp_general.verify import verify_type, verify_subclass, verify_value
 
 from wasp_general.network.web.template import WWebTemplateFile, WWebTemplate, WWebTemplateText, WWebTemplateLookup
 
-from wasp_launcher.host_apps.registry import WLauncherTask
-from wasp_launcher.host_apps.globals import WLauncherGlobals
-from wasp_launcher.host_apps.apps import WLauncherWebAppDescriptor
+from wasp_launcher.apps import WSyncHostApp, WGuestWebApp, WAppsGlobals
 
 
 class WLauncherTemplateSearcherProto(metaclass=ABCMeta):
@@ -102,7 +100,7 @@ class WLauncherAppTemplateSearcher(WLauncherBasicTemplateSearcher, metaclass=ABC
 
 	class Handler(WLauncherBasicTemplateSearcher, metaclass=ABCMeta):
 
-		@verify_subclass(app_description=WLauncherWebAppDescriptor)
+		@verify_subclass(app_description=WGuestWebApp)
 		def __init__(self, app_description):
 			WLauncherBasicTemplateSearcher.__init__(self)
 			self.__app_description = app_description
@@ -113,9 +111,9 @@ class WLauncherAppTemplateSearcher(WLauncherBasicTemplateSearcher, metaclass=ABC
 	def __init__(self):
 		WLauncherBasicTemplateSearcher.__init__(self)
 
-		for app_name in WLauncherGlobals.apps_registry.registry_storage().tags():
-			app = WLauncherGlobals.apps_registry.registry_storage().tasks(app_name)
-			if issubclass(app, WLauncherWebAppDescriptor) is True:
+		for app_name in WAppsGlobals.apps_registry.registry_storage().tags():
+			app = WAppsGlobals.apps_registry.registry_storage().tasks(app_name)
+			if issubclass(app, WGuestWebApp) is True:
 				obj = self.handler_class()(app)
 				self.replace(app_name, obj)
 
@@ -246,11 +244,11 @@ class WLauncherTemplateSearcher(TemplateCollection, WLauncherBasicTemplateSearch
 		self.replace('py', WPyTemplateSearcher())
 
 		self._module_directory = None
-		if WLauncherGlobals.config.getboolean('wasp-launcher::web:templates', 'modules_directory') is True:
+		if WAppsGlobals.config.getboolean('wasp-launcher::web:templates', 'modules_directory') is True:
 			self._module_directory = TemporaryDirectory(suffix='.wasp_mako')
 
 		self._template_encoding = None
-		config_encoding = WLauncherGlobals.config['wasp-launcher::web:templates']['input_encoding']
+		config_encoding = WAppsGlobals.config['wasp-launcher::web:templates']['input_encoding']
 		if len(config_encoding) > 0:
 			self._template_encoding = config_encoding
 
@@ -268,7 +266,7 @@ class WLauncherTemplateSearcher(TemplateCollection, WLauncherBasicTemplateSearch
 		return WWebTemplateLookup(uri, self)
 
 
-class WLauncherWebTemplates(WLauncherTask):
+class WLauncherWebTemplatesApp(WSyncHostApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.launcher.web_templates::load'
 	""" Task tag
@@ -279,9 +277,9 @@ class WLauncherWebTemplates(WLauncherTask):
 	]
 
 	def start(self):
-		WLauncherGlobals.templates = WLauncherTemplateSearcher()
-		WLauncherGlobals.log.info('Web-templates is started')
+		WAppsGlobals.templates = WLauncherTemplateSearcher()
+		WAppsGlobals.log.info('Web-templates is started')
 
 	def stop(self):
-		WLauncherGlobals.templates = None
-		WLauncherGlobals.log.info('Web-templates is stopped')
+		WAppsGlobals.templates = None
+		WAppsGlobals.log.info('Web-templates is stopped')
