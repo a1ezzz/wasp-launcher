@@ -27,13 +27,19 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage, WDependentTask
+from abc import ABCMeta
+
+from wasp_general.verify import verify_type, verify_value
+
+from wasp_general.task.dependency import WDependentTask
 from wasp_general.task.base import WTask
 from wasp_general.task.sync import WSyncTask
 from wasp_general.task.thread import WThreadTask
-
-
 from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage
+
+from wasp_general.network.web.service import WWebService, WWebTargetRoute, WWebEnhancedPresenter
+from wasp_general.network.web.proto import WWebRequestProto
+from wasp_general.network.web.template import WWebTemplateResponse
 
 
 class WHostAppRegistry(WTaskDependencyRegistry):
@@ -164,3 +170,21 @@ class WAppsGlobals:
 	wasp_web_service = None
 	tornado_io_loop = None
 	tornado_service = None
+
+
+class WGuestWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
+
+	@verify_type(request=WWebRequestProto, target_route=WWebTargetRoute, service=WWebService)
+	def __init__(self, request, target_route, service):
+		WWebEnhancedPresenter.__init__(self, request, target_route, service)
+		self._context = {}
+
+	@verify_type(template_id=str)
+	@verify_value(template_id=lambda x: len(x) > 0)
+	def __template__(self, template_id):
+		return WAppsGlobals.templates.lookup(template_id)
+
+	@verify_type(template_id=str)
+	@verify_value(template_id=lambda x: len(x) > 0)
+	def __template_response__(self, template_id):
+		return WWebTemplateResponse(self.__template__(template_id), context=self._context)

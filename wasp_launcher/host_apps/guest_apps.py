@@ -32,24 +32,34 @@ from importlib import import_module
 from wasp_launcher.apps import WSyncHostApp, WGuestApp, WAppsGlobals
 
 
-class WGuestAppLoader(WSyncHostApp):
+class WGuestAppStarter(WSyncHostApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.guest-apps::load'
+	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.guest-apps'
 	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.config'
+		'com.binblob.wasp-launcher.host-app.web::init'
 	]
 
 	__module_export_function__ = '__wasp_launcher_apps__'
 
+	def __init__(self):
+		WSyncHostApp.__init__(self)
+		self.__loaded_apps = []
+
 	def start(self):
 		WAppsGlobals.apps_registry.clear()
-		self.load_applications()
+		self.__loaded_apps.clear()
+		self.import_modules()
+		self.start_apps()
 
 	def stop(self):
+		for app_name in self.__loaded_apps:
+			WAppsGlobals.log.info('Stopping "%s" application and its dependencies' % app_name)
+			WAppsGlobals.apps_registry.stop_task(app_name)
+		self.__loaded_apps.clear()
 		WAppsGlobals.apps_registry.clear()
 
 	@classmethod
-	def load_applications(cls):
+	def import_modules(cls):
 		WAppsGlobals.log.info('Reading modules for available local applications')
 
 		module_names = WAppsGlobals.config.split_option(
@@ -75,30 +85,6 @@ class WGuestAppLoader(WSyncHostApp):
 					'Unable to load "%s" module. Exception was thrown: %s' % (name, str(e))
 				)
 		WAppsGlobals.log.info('Available local applications: %i' % apps_count)
-
-
-class WGuestAppStarter(WSyncHostApp):
-
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.guest-apps::start'
-
-	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.model-load',
-		'com.binblob.wasp-launcher.host-app.web::init'
-	]
-
-	def __init__(self):
-		WSyncHostApp.__init__(self)
-		self.__loaded_apps = []
-
-	def start(self):
-		self.__loaded_apps.clear()
-		self.start_apps()
-
-	def stop(self):
-		for app_name in self.__loaded_apps:
-			WAppsGlobals.log.info('Stopping "%s" application and its dependencies' % app_name)
-			WAppsGlobals.apps_registry.stop_task(app_name)
-		self.__loaded_apps.clear()
 
 	def start_apps(self):
 

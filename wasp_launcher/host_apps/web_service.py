@@ -24,47 +24,23 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from abc import ABCMeta
-
 from tornado.ioloop import IOLoop
 import tornado.web
 import tornado.httpserver
 
-from wasp_general.verify import verify_type, verify_value
-
-from wasp_general.network.web.service import WWebService, WWebTargetRoute, WWebEnhancedPresenter, WWebPresenterFactory
-from wasp_general.network.web.proto import WWebRequestProto
+from wasp_general.network.web.service import WWebService, WWebPresenterFactory
 from wasp_general.network.web.tornado import WTornadoRequestHandler
-from wasp_general.network.web.template import WWebTemplateResponse
 
-from wasp_launcher.apps import WSyncHostApp, WThreadedHostApp, WAppsGlobals
+from wasp_launcher.apps import WSyncHostApp, WThreadedHostApp, WAppsGlobals, WGuestWebPresenter
 from wasp_launcher.host_apps.web_debugger import WLauncherWebDebugger
 
 
-class WLauncherWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
-
-	@verify_type(request=WWebRequestProto, target_route=WWebTargetRoute, service=WWebService)
-	def __init__(self, request, target_route, service):
-		WWebEnhancedPresenter.__init__(self, request, target_route, service)
-		self._context = {}
-
-	@verify_type(template_id=str)
-	@verify_value(template_id=lambda x: len(x) > 0)
-	def __template__(self, template_id):
-		return WAppsGlobals.templates.lookup(template_id)
-
-	@verify_type(template_id=str)
-	@verify_value(template_id=lambda x: len(x) > 0)
-	def __template_response__(self, template_id):
-		return WWebTemplateResponse(self.__template__(template_id), context=self._context)
-
-
-class WLauncherPresenterFactory(WWebPresenterFactory):
+class WGuestWebPresenterFactory(WWebPresenterFactory):
 
 	def __init__(self):
 		WWebPresenterFactory.__init__(self)
 		self._add_constructor(
-			WLauncherWebPresenter, WWebPresenterFactory.enhanced_presenter_constructor
+			WGuestWebPresenter, WWebPresenterFactory.enhanced_presenter_constructor
 		)
 
 
@@ -77,35 +53,42 @@ class WWebInitHostApp(WSyncHostApp):
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.guest-apps::load'
+		'com.binblob.wasp-launcher.host-app.config'
 	]
 	""" Task dependency
 	"""
 
 	def start(self):
+
+		debugger = WAppsGlobals.config["wasp-launcher::web:debug"]["mode"].lower() in ['on', 'on error']
+
 		WAppsGlobals.wasp_web_service = WWebService(
-			factory=WLauncherPresenterFactory, debugger=WLauncherWebDebugger()
+			factory=WGuestWebPresenterFactory,
+			debugger=(WLauncherWebDebugger() if debugger is True else None)
 		)
 		WAppsGlobals.tornado_io_loop = IOLoop()
 
 		WAppsGlobals.tornado_service = tornado.httpserver.HTTPServer(
 			tornado.web.Application([
 				(r".*", WTornadoRequestHandler.__handler__(WAppsGlobals.wasp_web_service))
-			]), io_loop=WAppsGlobals.tornado_io_loop
+			]),
+			io_loop=WAppsGlobals.tornado_io_loop
 		)
 
 		WAppsGlobals.log.info('Web-service is ready to start (initialized)')
 
-		if WAppsGlobals.config["wasp-launcher::web:debug"]["mode"].lower() in ['on', 'on error']:
-			self.__registry__.start_task('com.binblob.wasp-launcher.launcher.web_debugger::connection')
+		if debugger is True:
+			self.__registry__.start_task('com.binblob.wasp-launcher.host-app.web-debugger')
+			WAppsGlobals.log.info('Debugger started')
 
 	def stop(self):
 
 		debug_task = self.__registry__.registry_storage().started_task(
-			'com.binblob.wasp-launcher.launcher.web_debugger::connection'
+			'com.binblob.wasp-launcher.host-app.web-debugger'
 		)
 		if debug_task is not None:
 			debug_task.stop()
+			WAppsGlobals.log.info('Debugger stopped')
 
 		WAppsGlobals.tornado_service = None
 		WAppsGlobals.tornado_io_loop = None
@@ -121,8 +104,9 @@ class WWebHostApp(WThreadedHostApp):
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.broker',
-		'com.binblob.wasp-launcher.host-app.template-load'
+		'com.binblob.wasp-launcher.host-app.model-load',
+		'com.binblob.wasp-launcher.host-app.template-load',
+		'com.binblob.wasp-launcher.host-app.broker'
 	]
 
 	def start(self):

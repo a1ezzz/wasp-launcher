@@ -11,14 +11,9 @@ WConfigHostApp
 "com.binblob.wasp-launcher.host-app.config"
 ]
 
-component loader [
-WGuestAppLoader
-"com.binblob.wasp-launcher.host-app.guest-apps::load"
-]
-
-component model [
-WGuestModelLoadApp
-"com.binblob.wasp-launcher.host-app.model-load"
+component debugger [
+WGuestAppWebDebugger
+"com.binblob.wasp-launcher.host-app.web-debugger"
 ]
 
 component web_init [
@@ -28,21 +23,17 @@ WWebInitHostApp
 
 component starter [
 WGuestAppStarter
-"com.binblob.wasp-launcher.launcher.app_starter::start"
+"com.binblob.wasp-launcher.host-app.guest-apps"
 ]
 
-note left of starter
-App is started in a separate thread
-end note
+component model [
+WGuestModelLoadApp
+"com.binblob.wasp-launcher.host-app.model-load"
+]
 
 component template [
 WTemplateLoadHostApp
 "com.binblob.wasp-launcher.host-app.template-load"
-]
-
-component debugger [
-WGuestAppWebDebugger
-"com.binblob.wasp-launcher.host-app.web-debugger"
 ]
 
 component broker [
@@ -50,32 +41,24 @@ WBrokerHostApp
 "com.binblob.wasp-launcher.host-app.broker"
 ]
 
-component web_host [
+component web_start [
 WWebHostApp
 "com.binblob.wasp-launcher.host-app.web::start"
 ]
 
 config .-down-> log
-loader .-down-> config
-model .-down-> loader
-template .-down-> loader
-web_init .-down-> loader
-starter .-down-> web_init
-starter .-down-> model
-broker .-down-> starter
-web_host .-down-> broker
-web_host .-down-> template
 debugger .-down-> config
+web_init .-down-> config
+starter .-down-> web_init
 
-}
+model .-down-> starter
+template .-down-> starter
+broker .-down-> starter
 
-package "Guest Apps" {
-component guest_apps [
-	Guest applications
-]
+web_start .-down-> model
+web_start .-down-> template
+web_start .-down-> broker
 
-loader -> guest_apps: load
-starter -> guest_apps: start
 }
 
 @enduml
