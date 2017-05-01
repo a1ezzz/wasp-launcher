@@ -21,6 +21,7 @@
 
 # TODO: document the code
 # TODO: write tests for the code
+# TODO: do smthng with WHostAppModelStorage
 
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __author__, __version__, __credits__, __license__, __copyright__, __email__
@@ -30,7 +31,7 @@ from wasp_launcher.version import __status__
 from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
 
-class WLauncherModelStorage:
+class WHostAppModelStorage:
 	pass
 
 
@@ -43,7 +44,7 @@ class WGuestModelLoadApp(WSyncHostApp):
 	]
 
 	def start(self):
-		WAppsGlobals.models = WLauncherModelStorage()
+		WAppsGlobals.models = WHostAppModelStorage()
 
 	def stop(self):
 		WAppsGlobals.models = None

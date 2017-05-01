@@ -44,7 +44,7 @@ from wasp_general.network.web.template import WWebTemplateFile, WWebTemplate, WW
 from wasp_launcher.apps import WSyncHostApp, WGuestWebApp, WAppsGlobals
 
 
-class WLauncherTemplateSearcherProto(metaclass=ABCMeta):
+class WTemplateSearcherProto(metaclass=ABCMeta):
 
 	__separator__ = '::'
 
@@ -61,7 +61,7 @@ class WLauncherTemplateSearcherProto(metaclass=ABCMeta):
 		raise NotImplementedError('This method is abstract')
 
 
-class WLauncherBasicTemplateSearcher(WLauncherTemplateSearcherProto):
+class WBasicTemplateSearcher(WTemplateSearcherProto):
 
 	def __init__(self):
 		self.__views = {}
@@ -83,7 +83,7 @@ class WLauncherBasicTemplateSearcher(WLauncherTemplateSearcherProto):
 
 		search = self.search(view_path[0])
 		if search is not None:
-			if isinstance(search, WLauncherTemplateSearcherProto) is True:
+			if isinstance(search, WTemplateSearcherProto) is True:
 				return search.get(view_path[1:])
 			elif isinstance(search, WWebTemplate) is True:
 				return search
@@ -93,23 +93,23 @@ class WLauncherBasicTemplateSearcher(WLauncherTemplateSearcherProto):
 
 	@verify_type(view_path=str)
 	def get_by_uri(self, view_path):
-		return self.get(view_path.split(WLauncherTemplateSearcherProto.__separator__))
+		return self.get(view_path.split(WTemplateSearcherProto.__separator__))
 
 
-class WLauncherAppTemplateSearcher(WLauncherBasicTemplateSearcher, metaclass=ABCMeta):
+class WGuestAppTemplateSearcher(WBasicTemplateSearcher, metaclass=ABCMeta):
 
-	class Handler(WLauncherBasicTemplateSearcher, metaclass=ABCMeta):
+	class Handler(WBasicTemplateSearcher, metaclass=ABCMeta):
 
 		@verify_subclass(app_description=WGuestWebApp)
 		def __init__(self, app_description):
-			WLauncherBasicTemplateSearcher.__init__(self)
+			WBasicTemplateSearcher.__init__(self)
 			self.__app_description = app_description
 
 		def app_description(self):
 			return self.__app_description
 
 	def __init__(self):
-		WLauncherBasicTemplateSearcher.__init__(self)
+		WBasicTemplateSearcher.__init__(self)
 
 		for app_name in WAppsGlobals.apps_registry.registry_storage().tags():
 			app = WAppsGlobals.apps_registry.registry_storage().tasks(app_name)
@@ -122,7 +122,7 @@ class WLauncherAppTemplateSearcher(WLauncherBasicTemplateSearcher, metaclass=ABC
 		raise NotImplementedError('This method is abstract')
 
 
-class WSearcherFileHandler(WLauncherAppTemplateSearcher.Handler):
+class WSearcherFileHandler(WGuestAppTemplateSearcher.Handler):
 
 	def app_directory(self):
 		return None
@@ -152,7 +152,7 @@ class WSearcherFileHandler(WLauncherAppTemplateSearcher.Handler):
 			raise TemplateLookupException('No such template: ' + str(view_path))
 
 
-class WMakoTemplateSearcher(WLauncherAppTemplateSearcher):
+class WMakoTemplateSearcher(WGuestAppTemplateSearcher):
 
 	class Handler(WSearcherFileHandler):
 
@@ -163,7 +163,7 @@ class WMakoTemplateSearcher(WLauncherAppTemplateSearcher):
 		return WMakoTemplateSearcher.Handler
 
 
-class WStaticFileSearcher(WLauncherAppTemplateSearcher):
+class WStaticFileSearcher(WGuestAppTemplateSearcher):
 
 	class Handler(WSearcherFileHandler):
 
@@ -174,13 +174,13 @@ class WStaticFileSearcher(WLauncherAppTemplateSearcher):
 		return WStaticFileSearcher.Handler
 
 
-class WPyTemplateSearcher(WLauncherAppTemplateSearcher):
+class WPyTemplateSearcher(WGuestAppTemplateSearcher):
 
-	class PyHandler(WLauncherAppTemplateSearcher.Handler):
+	class PyHandler(WGuestAppTemplateSearcher.Handler):
 
-		class PyModuleHandler(WLauncherBasicTemplateSearcher):
+		class PyModuleHandler(WBasicTemplateSearcher):
 			def __init__(self, module):
-				WLauncherBasicTemplateSearcher.__init__(self)
+				WBasicTemplateSearcher.__init__(self)
 				self.__module = module
 				for obj_name in dir(module):
 					obj = getattr(module, obj_name)
@@ -234,11 +234,11 @@ class WPyTemplateSearcher(WLauncherAppTemplateSearcher):
 		return WPyTemplateSearcher.PyHandler
 
 
-class WLauncherTemplateSearcher(TemplateCollection, WLauncherBasicTemplateSearcher):
+class WHostAgentTemplateSearcher(TemplateCollection, WBasicTemplateSearcher):
 
 	def __init__(self):
 		TemplateCollection.__init__(self)
-		WLauncherBasicTemplateSearcher.__init__(self)
+		WBasicTemplateSearcher.__init__(self)
 		self.replace('mako', WMakoTemplateSearcher())
 		self.replace('static-file', WStaticFileSearcher())
 		self.replace('py', WPyTemplateSearcher())
@@ -256,7 +256,7 @@ class WLauncherTemplateSearcher(TemplateCollection, WLauncherBasicTemplateSearch
 	@verify_value(uri=lambda x: len(x) > 0)
 	def get_template(self, uri, relativeto=None):
 		return self.get(
-			uri.strip().split(WLauncherTemplateSearcherProto.__separator__),
+			uri.strip().split(WTemplateSearcherProto.__separator__),
 			lookup_obj=self,
 			module_directory=self._module_directory.name,
 			template_encoding=self._template_encoding
@@ -277,7 +277,7 @@ class WTemplateLoadHostApp(WSyncHostApp):
 	]
 
 	def start(self):
-		WAppsGlobals.templates = WLauncherTemplateSearcher()
+		WAppsGlobals.templates = WHostAgentTemplateSearcher()
 		WAppsGlobals.log.info('Web-templates is started')
 
 	def stop(self):

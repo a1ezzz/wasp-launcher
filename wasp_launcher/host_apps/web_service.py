@@ -32,7 +32,7 @@ from wasp_general.network.web.service import WWebService, WWebPresenterFactory
 from wasp_general.network.web.tornado import WTornadoRequestHandler
 
 from wasp_launcher.apps import WSyncHostApp, WThreadedHostApp, WAppsGlobals, WGuestWebPresenter
-from wasp_launcher.host_apps.web_debugger import WLauncherWebDebugger
+from wasp_launcher.host_apps.web_debugger import WHostAppWebDebugger
 
 
 class WGuestWebPresenterFactory(WWebPresenterFactory):
@@ -64,7 +64,7 @@ class WWebInitHostApp(WSyncHostApp):
 
 		WAppsGlobals.wasp_web_service = WWebService(
 			factory=WGuestWebPresenterFactory,
-			debugger=(WLauncherWebDebugger() if debugger is True else None)
+			debugger=(WHostAppWebDebugger() if debugger is True else None)
 		)
 		WAppsGlobals.tornado_io_loop = IOLoop()
 

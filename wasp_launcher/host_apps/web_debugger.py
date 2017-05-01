@@ -42,7 +42,7 @@ from wasp_general.network.web.headers import WHTTPHeaders
 from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
 
-class WLauncherWebDebugger(WWebDebugInfo):
+class WHostAppWebDebugger(WWebDebugInfo):
 
 	class DebugSession:
 
@@ -61,7 +61,7 @@ class WLauncherWebDebugger(WWebDebugInfo):
 
 	def session_id(self):
 		if self.mode != 'off':
-			session = WLauncherWebDebugger.DebugSession()
+			session = WHostAppWebDebugger.DebugSession()
 			self.__sessions[session.uuid] = {
 				'session': session
 			}
