@@ -33,7 +33,7 @@ from abc import abstractmethod
 from wasp_general.verify import verify_type
 from wasp_general.config import WConfig
 from wasp_general.task.thread import WThreadTask
-from wasp_general.network.service import WZMQBindHandler, WZMQConnectHandler, WZMQService
+from wasp_general.network.service import WZMQBindHandler, WZMQConnectHandler, WZMQService, WLoglessIOLoop
 
 from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
@@ -120,6 +120,8 @@ class WLauncherRemoteControlTask(WLauncherBrokerBasicTask):
 
 class WLauncherTCPRemoteControlTask(WLauncherRemoteControlTask):
 
+	__thread_name__ = 'TCP-RemoteControl'
+
 	def service(self):
 		config = self.config()
 
@@ -129,17 +131,19 @@ class WLauncherTCPRemoteControlTask(WLauncherRemoteControlTask):
 		port = config.getint('wasp-launcher::messenger::remote_control::connection', 'port')
 		connection = 'tcp://%s:%i' % (bind_address, port)
 
-		return WZMQService(zmq.REP, connection, WRemoteControlServerHandler)
+		return WZMQService(zmq.REP, connection, WRemoteControlServerHandler, loop=WLoglessIOLoop())
 
 
 class WLauncherIPCRemoteControlTask(WLauncherRemoteControlTask):
+
+	__thread_name__ = 'IPC-RemoteControl'
 
 	def service(self):
 		config = self.config()
 		named_socket = config['wasp-launcher::messenger::remote_control::connection']['named_socket_path']
 		connection = 'ipc://%s' % named_socket
 
-		return WZMQService(zmq.REP, connection, WRemoteControlServerHandler)
+		return WZMQService(zmq.REP, connection, WRemoteControlServerHandler, loop=WLoglessIOLoop())
 
 
 class WBrokerHostApp(WSyncHostApp):
@@ -154,7 +158,6 @@ class WBrokerHostApp(WSyncHostApp):
 	__remote_control_ipc_task__ = None
 
 	def start(self):
-
 		config = WLauncherRemoteControlTask.config()
 		tcp_enabled = config.getboolean('wasp-launcher::messenger::remote_control::connection', 'bind')
 		ipc_enabled = config.getboolean('wasp-launcher::messenger::remote_control::connection', 'named_socket')

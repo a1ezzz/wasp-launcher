@@ -24,10 +24,10 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from tornado.ioloop import IOLoop
 import tornado.web
 import tornado.httpserver
 
+from wasp_general.network.service import WLoglessIOLoop
 from wasp_general.network.web.service import WWebService, WWebPresenterFactory
 from wasp_general.network.web.tornado import WTornadoRequestHandler
 
@@ -66,7 +66,8 @@ class WWebInitHostApp(WSyncHostApp):
 			factory=WGuestWebPresenterFactory,
 			debugger=(WHostAppWebDebugger() if debugger is True else None)
 		)
-		WAppsGlobals.tornado_io_loop = IOLoop()
+
+		WAppsGlobals.tornado_io_loop = WLoglessIOLoop()
 
 		WAppsGlobals.tornado_service = tornado.httpserver.HTTPServer(
 			tornado.web.Application([
@@ -109,6 +110,8 @@ class WWebHostApp(WThreadedHostApp):
 		'com.binblob.wasp-launcher.host-app.broker'
 	]
 
+	__thread_name__ = "WWebHostApp"
+
 	def start(self):
 		self.setup_app_presenters()
 
@@ -120,7 +123,8 @@ class WWebHostApp(WThreadedHostApp):
 		WAppsGlobals.tornado_io_loop.stop()
 		WAppsGlobals.log.info('Web-service is stopped')
 
-	def setup_app_presenters(self):
+	@classmethod
+	def setup_app_presenters(cls):
 		presenters_count = len(WAppsGlobals.wasp_web_service.presenter_collection())
 		WAppsGlobals.log.info('Web-application presenters loaded: %i' % presenters_count)
 
