@@ -27,17 +27,22 @@ from wasp_launcher.version import __status__
 
 import signal
 
-from wasp_launcher.apps import WHostAppRegistry
+from wasp_launcher.apps import WHostAppRegistry, WAppsGlobals
+# noinspection PyUnresolvedReferences
 import wasp_launcher.host_apps
 
 if __name__ == '__main__':
 	print('Launcher is starting')
 
-	main_task = 'com.binblob.wasp-launcher.host-app.web::start'
+	config_task = 'com.binblob.wasp-launcher.host-app.config'
+	WHostAppRegistry.start_task(config_task)
+
+	main_task = WAppsGlobals.config['wasp-launcher::applications']['main_application']
 	WHostAppRegistry.start_task(main_task)
 
 	def shutdown_signal(signum, frame):
 		WHostAppRegistry.stop_task(main_task, stop_requirements=True)
+		WHostAppRegistry.stop_task(config_task, stop_requirements=True)
 
 	signal.signal(signal.SIGTERM, shutdown_signal)
 	signal.signal(signal.SIGINT, shutdown_signal)
