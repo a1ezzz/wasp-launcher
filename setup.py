@@ -11,7 +11,7 @@ from wasp_launcher.version import __version__, __author__, __email__, __license_
 
 
 def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+	return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
 def require(fname):
