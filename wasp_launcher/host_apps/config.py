@@ -80,7 +80,7 @@ class WConfigHostApp(WSyncHostApp):
 			if os.path.isfile(filename) is False:
 				raise RuntimeError("Invalid configuration: '%s'" % filename)
 			WAppsGlobals.config.merge(filename)
-			WAppsGlobals.log.info('Configuration loaded from file: %s' % filename)
+			WAppsGlobals.log.info('Configuration loaded from file: %s' % os.path.abspath(filename))
 
 		load(cls.__configuration_default__)
 
