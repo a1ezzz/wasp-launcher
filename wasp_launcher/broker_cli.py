@@ -29,11 +29,28 @@ from wasp_launcher.version import __status__
 
 from wasp_general.verify import verify_type
 from wasp_general.command.context import WCommandContextSet
+from wasp_general.command.command import WCommandProto, WCommandResult
 from wasp_general.cli.curses import WCursesConsole
-from wasp_general.cli.curses_commands import WExitCommand
+from wasp_general.cli.curses_commands import WExitCommand, WEmptyCommand
 from wasp_general.task.thread import WThreadTask
 
 from wasp_launcher.host_apps.broker import WBrokerClientTask
+
+
+class WBrokerCommandProxy(WCommandProto):
+
+	@verify_type(console=WCursesConsole)
+	def __init__(self, console):
+		WCommandProto.__init__(self)
+		self.__console = console
+
+	@verify_type(command_tokens=str)
+	def match(self, *command_tokens):
+		return len(command_tokens) > 0
+
+	@verify_type(command_tokens=str)
+	def exec(self, *command_tokens):
+		return WCommandResult(output='Command entered: "%s"' % str(command_tokens))
 
 
 class WBrokerClientCommandSet(WCommandContextSet):
@@ -42,6 +59,8 @@ class WBrokerClientCommandSet(WCommandContextSet):
 	def __init__(self, console):
 		WCommandContextSet.__init__(self)
 		self.commands().add(WExitCommand(console))
+		self.commands().add(WEmptyCommand())
+		self.commands().add_prioritized(WBrokerCommandProxy(console), 40)
 
 	def context_prompt(self):
 		context = self.context()
@@ -55,9 +74,12 @@ class WBrokerClientCommandSet(WCommandContextSet):
 
 class WBrokerCLI(WCursesConsole, WThreadTask):
 
+	__thread_name__ = 'Broker-CLI'
+
 	@verify_type(connction=str)
 	def __init__(self, connection):
 		WCursesConsole.__init__(self, WBrokerClientCommandSet(self))
+		WThreadTask.__init__(self)
 		self.__broker = WBrokerClientTask(connection)
 
 	def start(self):
