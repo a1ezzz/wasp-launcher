@@ -31,18 +31,16 @@ import zmq
 from abc import abstractmethod
 
 from wasp_general.verify import verify_type
-from wasp_general.config import WConfig
 from wasp_general.task.thread import WThreadTask
 from wasp_general.network.service import WZMQBindHandler, WZMQConnectHandler, WZMQService, WLoglessIOLoop
 
 from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
 
-class WRemoteControlClientHandler(WZMQConnectHandler):
+class WBrokerClientHandler(WZMQConnectHandler):
 
 	def on_recv(self, msg):
 		print('RESPONSE: ' + str(msg))
-		pass
 
 	def setup_handler(self, io_loop):
 		WZMQConnectHandler.setup_handler(self, io_loop)
@@ -54,11 +52,11 @@ class WBrokerClientTask(WZMQService, WThreadTask):
 
 	@verify_type(connection=str)
 	def __init__(self, connection):
-		WZMQService.__init__(self, zmq.REQ, connection, WRemoteControlClientHandler)
+		WZMQService.__init__(self, zmq.REQ, connection, WBrokerClientHandler)
 		WThreadTask.__init__(self)
 
 
-class WRemoteControlServerHandler(WZMQBindHandler):
+class WBrokerServerHandler(WZMQBindHandler):
 
 	def on_recv(self, msg):
 		print('REQUEST: ' + str(msg))
@@ -68,35 +66,7 @@ class WRemoteControlServerHandler(WZMQBindHandler):
 
 class WLauncherBrokerBasicTask(WThreadTask):
 
-	__messenger_section_prefix__ = 'wasp-launcher::messenger'
-	__messenger_general_section__ = 'general'
-	__messenger_subsections__ = ['connection', 'tunnel', 'auth', 'auth::static', 'auth::pk']
-	__messenger_specific_section__ = None
-
 	__service__ = None
-
-	@classmethod
-	def __merge_configuration(cls, config, general_section, specific_section):
-		config.add_section(specific_section)
-		config.merge_section(WAppsGlobals.config, specific_section, section_from=general_section)
-		config.merge_section(WAppsGlobals.config, specific_section)
-
-	@classmethod
-	def config(cls):
-		config = WConfig()
-
-		for subsection in cls.__messenger_subsections__:
-
-			general_section = '%s::%s::%s' % (
-				cls.__messenger_section_prefix__, cls.__messenger_general_section__, subsection
-			)
-			specific_section = '%s::%s::%s' % (
-				cls.__messenger_section_prefix__, cls.__messenger_specific_section__, subsection
-			)
-
-			cls.__merge_configuration(config, general_section, specific_section)
-
-		return config
 
 	def start(self):
 		if self.__service__ is None:
@@ -109,41 +79,32 @@ class WLauncherBrokerBasicTask(WThreadTask):
 			self.__service__ = None
 
 	@abstractmethod
-	def service(self):
+	def connection(self):
 		raise NotImplementedError('This method is abstract')
 
-
-class WLauncherRemoteControlTask(WLauncherBrokerBasicTask):
-
-	__messenger_specific_section__ = 'remote_control'
-
-
-class WLauncherTCPRemoteControlTask(WLauncherRemoteControlTask):
-
-	__thread_name__ = 'TCP-RemoteControl'
-
 	def service(self):
-		config = self.config()
+		return WZMQService(zmq.REP, self.connection(), WBrokerServerHandler, loop=WLoglessIOLoop())
 
-		bind_address = config['wasp-launcher::messenger::remote_control::connection']['bind_address']
+
+class WLauncherBrokerTCPTask(WLauncherBrokerBasicTask):
+
+	__thread_name__ = 'Broker-TCP'
+
+	def connection(self):
+		bind_address = WAppsGlobals.config['wasp-launcher::broker::connection']['bind_address']
 		if len(bind_address) == 0:
 			bind_address = '*'
-		port = config.getint('wasp-launcher::messenger::remote_control::connection', 'port')
-		connection = 'tcp://%s:%i' % (bind_address, port)
-
-		return WZMQService(zmq.REP, connection, WRemoteControlServerHandler, loop=WLoglessIOLoop())
+		port = WAppsGlobals.config.getint('wasp-launcher::broker::connection', 'port')
+		return 'tcp://%s:%i' % (bind_address, port)
 
 
-class WLauncherIPCRemoteControlTask(WLauncherRemoteControlTask):
+class WLauncherBrokerIPCTask(WLauncherBrokerBasicTask):
 
-	__thread_name__ = 'IPC-RemoteControl'
+	__thread_name__ = 'Broker-IPC'
 
-	def service(self):
-		config = self.config()
-		named_socket = config['wasp-launcher::messenger::remote_control::connection']['named_socket_path']
-		connection = 'ipc://%s' % named_socket
-
-		return WZMQService(zmq.REP, connection, WRemoteControlServerHandler, loop=WLoglessIOLoop())
+	def connection(self):
+		named_socket = WAppsGlobals.config['wasp-launcher::broker::connection']['named_socket_path']
+		return 'ipc://%s' % named_socket
 
 
 class WBrokerHostApp(WSyncHostApp):
@@ -154,27 +115,26 @@ class WBrokerHostApp(WSyncHostApp):
 		'com.binblob.wasp-launcher.host-app.guest-apps'
 	]
 
-	__remote_control_tcp_task__ = None
-	__remote_control_ipc_task__ = None
+	__broker_tcp_task__ = None
+	__broker_ipc_task__ = None
 
 	def start(self):
-		config = WLauncherRemoteControlTask.config()
-		tcp_enabled = config.getboolean('wasp-launcher::messenger::remote_control::connection', 'bind')
-		ipc_enabled = config.getboolean('wasp-launcher::messenger::remote_control::connection', 'named_socket')
+		tcp_enabled = WAppsGlobals.config.getboolean('wasp-launcher::broker::connection', 'bind')
+		ipc_enabled = WAppsGlobals.config.getboolean('wasp-launcher::broker::connection', 'named_socket')
 
-		if WBrokerHostApp.__remote_control_tcp_task__ is None and tcp_enabled is True:
-			WBrokerHostApp.__remote_control_tcp_task__ = WLauncherTCPRemoteControlTask()
-			WBrokerHostApp.__remote_control_tcp_task__.start()
+		if WBrokerHostApp.__broker_tcp_task__ is None and tcp_enabled is True:
+			WBrokerHostApp.__broker_tcp_task__ = WLauncherBrokerTCPTask()
+			WBrokerHostApp.__broker_tcp_task__.start()
 
-		if WBrokerHostApp.__remote_control_ipc_task__ is None and ipc_enabled is True:
-			WBrokerHostApp.__remote_control_ipc_task__ = WLauncherIPCRemoteControlTask()
-			WBrokerHostApp.__remote_control_ipc_task__.start()
+		if WBrokerHostApp.__broker_ipc_task__ is None and ipc_enabled is True:
+			WBrokerHostApp.__broker_ipc_task__ = WLauncherBrokerIPCTask()
+			WBrokerHostApp.__broker_ipc_task__.start()
 
 	def stop(self):
-		if WBrokerHostApp.__remote_control_tcp_task__ is not None:
-			WBrokerHostApp.__remote_control_tcp_task__.stop()
-			WBrokerHostApp.__remote_control_tcp_task__ = None
+		if WBrokerHostApp.__broker_tcp_task__ is not None:
+			WBrokerHostApp.__broker_tcp_task__.stop()
+			WBrokerHostApp.__broker_tcp_task__ = None
 
-		if WBrokerHostApp.__remote_control_ipc_task__ is not None:
-			WBrokerHostApp.__remote_control_ipc_task__.stop()
-			WBrokerHostApp.__remote_control_ipc_task__ = None
+		if WBrokerHostApp.__broker_ipc_task__ is not None:
+			WBrokerHostApp.__broker_ipc_task__.stop()
+			WBrokerHostApp.__broker_ipc_task__ = None
