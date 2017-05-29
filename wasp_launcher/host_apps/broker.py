@@ -32,27 +32,16 @@ from abc import abstractmethod
 
 from wasp_general.verify import verify_type
 from wasp_general.task.thread import WThreadTask
-from wasp_general.network.service import WZMQBindHandler, WZMQConnectHandler, WZMQService, WLoglessIOLoop
+from wasp_general.network.service import WZMQBindHandler, WSingleResponseZMQConnectHandler, WZMQService, WLoglessIOLoop
 
 from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
-
-
-class WBrokerClientHandler(WZMQConnectHandler):
-
-	def on_recv(self, msg):
-		print('RESPONSE: ' + str(msg))
-
-	def setup_handler(self, io_loop):
-		WZMQConnectHandler.setup_handler(self, io_loop)
-		self.stream().send(b'QUERY')
-		self.stream().flush()
 
 
 class WBrokerClientTask(WZMQService, WThreadTask):
 
 	@verify_type(connection=str)
 	def __init__(self, connection):
-		WZMQService.__init__(self, zmq.REQ, connection, WBrokerClientHandler)
+		WZMQService.__init__(self, zmq.REQ, connection, WSingleResponseZMQConnectHandler)
 		WThreadTask.__init__(self)
 
 
@@ -60,7 +49,7 @@ class WBrokerServerHandler(WZMQBindHandler):
 
 	def on_recv(self, msg):
 		print('REQUEST: ' + str(msg))
-		self.stream().send(b'STREAM RESPONSE')
+		self.stream().send(b'STREAM RESPONSE: ' + str(msg).encode())
 		self.stream().flush()
 
 
