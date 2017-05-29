@@ -35,22 +35,7 @@ from wasp_general.cli.curses_commands import WExitCommand, WEmptyCommand
 from wasp_general.task.thread import WThreadTask
 
 from wasp_launcher.host_apps.broker import WBrokerClientTask
-
-
-class WBrokerCommandProxy(WCommandProto):
-
-	@verify_type(console=WCursesConsole)
-	def __init__(self, console):
-		WCommandProto.__init__(self)
-		self.__console = console
-
-	@verify_type(command_tokens=str)
-	def match(self, *command_tokens):
-		return len(command_tokens) > 0
-
-	@verify_type(command_tokens=str)
-	def exec(self, *command_tokens):
-		return WCommandResult(output='Command entered: "%s"' % str(command_tokens))
+from wasp_launcher.apps import WAppsGlobals
 
 
 class WBrokerClientCommandSet(WCommandContextSet):
@@ -82,6 +67,9 @@ class WBrokerCLI(WCursesConsole, WThreadTask):
 		WThreadTask.__init__(self)
 		self.__broker = WBrokerClientTask(connection)
 
+	def broker_handler(self):
+		return self.__broker.handler()
+
 	def start(self):
 		self.__broker.start()
 		WCursesConsole.start(self)
@@ -92,3 +80,39 @@ class WBrokerCLI(WCursesConsole, WThreadTask):
 
 	def prompt(self):
 		return self.command_set().context_prompt() + '> '
+
+
+class WBrokerCommandProxy(WCommandProto):
+
+	@verify_type(console=WBrokerCLI)
+	def __init__(self, console):
+		WCommandProto.__init__(self)
+		self.__console = console
+		self.__command_timeout = WAppsGlobals.config.getint(
+			'wasp-launcher::broker::connection::cli', 'command_timeout'
+		)
+
+	@verify_type(command_tokens=str)
+	def match(self, *command_tokens):
+		return len(command_tokens) > 0
+
+	@verify_type(command_tokens=str)
+	def exec(self, *command_tokens):
+		sending_command_message = 'Command is sending'
+		self.__console.write(sending_command_message)
+		self.__console.refresh_window()
+
+		broker_handler = self.__console.broker_handler()
+		broker_handler.stream_send(str(command_tokens).encode())
+
+		self.__console.truncate(len(sending_command_message) + 1)
+		response_awaiting_message = 'Response awaiting'
+		self.__console.write(response_awaiting_message)
+		self.__console.refresh_window()
+
+		status = broker_handler.receive_event().wait(self.__command_timeout)
+		self.__console.truncate(len(response_awaiting_message) + 1)
+		if status is True:
+			return WCommandResult(output=str(broker_handler.received_data()))
+		else:
+			return WCommandResult(error='Command completion timeout expired')
