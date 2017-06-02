@@ -32,7 +32,7 @@ from abc import abstractmethod
 
 from wasp_general.verify import verify_type
 from wasp_general.task.thread import WThreadTask
-from wasp_general.network.service import WZMQBindHandler, WSingleResponseZMQConnectHandler, WZMQService, WLoglessIOLoop
+from wasp_general.network.service import WZMQHandler, WZMQService, WLoglessIOLoop, WZMQSyncAgent
 
 from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
@@ -41,19 +41,32 @@ class WBrokerClientTask(WZMQService, WThreadTask):
 
 	@verify_type(connection=str)
 	def __init__(self, connection):
-		WZMQService.__init__(self, zmq.REQ, connection, WSingleResponseZMQConnectHandler)
+		setup_agent = WZMQHandler.ConnectSetupAgent(zmq.REQ, connection)
+
+		timeout = WAppsGlobals.config.getint(
+			'wasp-launcher::broker::connection::cli', 'command_timeout'
+		)
+
+		self.__receive_agent = WZMQSyncAgent(timeout=timeout)
+
+		WZMQService.__init__(self, setup_agent, receive_agent=self.__receive_agent)
 		WThreadTask.__init__(self)
 
-
-class WBrokerServerHandler(WZMQBindHandler):
-
-	def on_recv(self, msg):
-		print('REQUEST: ' + str(msg))
-		self.stream().send(b'STREAM RESPONSE: ' + str(msg).encode())
-		self.stream().flush()
+	def receive_agent(self):
+		return self.__receive_agent
 
 
 class WLauncherBrokerBasicTask(WThreadTask):
+
+	class ReceiveAgent(WZMQHandler.ReceiveAgent):
+
+		def on_receive(self, handler, msg):
+			print('REQUEST: ' + str(msg))
+			import json
+			msg = json.loads((b''.join(msg)).decode())
+			send_agent = WZMQHandler.SendAgent()
+			send_agent.send(handler, json.dumps({'response': 'OK', 'request': msg}).encode())
+
 
 	__service__ = None
 
@@ -72,7 +85,10 @@ class WLauncherBrokerBasicTask(WThreadTask):
 		raise NotImplementedError('This method is abstract')
 
 	def service(self):
-		return WZMQService(zmq.REP, self.connection(), WBrokerServerHandler, loop=WLoglessIOLoop())
+		setup_agent = WZMQHandler.BindSetupAgent(zmq.REP, self.connection())
+		receive_agent = WLauncherBrokerBasicTask.ReceiveAgent()
+
+		return WZMQService(setup_agent, loop=WLoglessIOLoop(), receive_agent=receive_agent)
 
 
 class WLauncherBrokerTCPTask(WLauncherBrokerBasicTask):
