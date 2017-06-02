@@ -46,7 +46,7 @@ if __name__ == '__main__':
 		named_socket = WAppsGlobals.config['wasp-launcher::broker::connection']['named_socket_path'].strip()
 		connection = connection = 'ipc://%s' %  named_socket
 	else:
-		tcp_address = WAppsGlobals.config['wasp-launcher::broker::connection::cli', 'tcp_address'].strip()
+		tcp_address = WAppsGlobals.config['wasp-launcher::broker::connection::cli']['tcp_address'].strip()
 		if len(tcp_address) > 0:
 			if ':' not in tcp_address:
 				tcp_port = WAppsGlobals.config.getint('wasp-launcher::broker::connection', 'port')
@@ -75,10 +75,15 @@ if __name__ == '__main__':
 # -- db-deploy scheme
 # -- db-deploy data
 # -- db-deploy uninstall
+# -- applications list (or apps list)
 # -- model list
 # -- presenter list
 # -- schedule list
-# app context
+# general app context
+# -- list
+# -- model list
+# -- presenter list
+# specific app context
 # -- model list
 # -- presenter list
 # app-model context
