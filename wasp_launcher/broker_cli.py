@@ -30,7 +30,8 @@ from wasp_launcher.version import __status__
 from wasp_general.verify import verify_type
 
 from wasp_general.command.context import WCommandContextSet
-from wasp_general.command.command import WCommandProto, WCommandResult
+from wasp_general.command.command import WCommandResult, WCommand
+from wasp_general.command.context import WCommandContext, WContextProto, WCommandContextAdapter
 
 from wasp_general.cli.cli import WConsoleBase
 from wasp_general.cli.curses import WCursesConsole
@@ -42,12 +43,11 @@ from wasp_general.network.messenger.proto import WMessengerOnionSessionFlowProto
 from wasp_general.network.messenger.proto import WMessengerEnvelopeProto, WMessengerOnionSessionProto
 from wasp_general.network.messenger.onion import WMessengerOnion
 from wasp_general.network.messenger.layers import WMessengerOnionCoderLayerProto, WMessengerOnionPackerLayerProto
-from wasp_general.network.messenger.envelope import WMessengerEnvelope, WMessengerBytesEnvelope
+from wasp_general.network.messenger.envelope import WMessengerEnvelope
 from wasp_general.network.messenger.session import WMessengerOnionSessionFlow, WMessengerOnionSession
 
-from wasp_general.network.service import WZMQHandler, WZMQSyncAgent
-
-from wasp_launcher.host_apps.broker import WBrokerClientTask
+from wasp_launcher.host_apps.broker import WBrokerClientTask, WManagementCommandPackerLayer
+from wasp_launcher.host_apps.broker import WManagementResultPackerLayer
 from wasp_launcher.apps import WAppsGlobals
 
 
@@ -95,7 +95,7 @@ class WBrokerCLI(WCursesConsole, WThreadTask):
 		return self.command_set().context_prompt() + '> '
 
 
-class WBrokerCommandProxy(WCommandProto):
+class WBrokerCommandProxy(WCommandContext):
 
 	class ConsoleOutputLayer(WMessengerOnionLayerProto):
 
@@ -117,8 +117,13 @@ class WBrokerCommandProxy(WCommandProto):
 				self.console().truncate(self.__last_feedback_length)
 				self.__last_feedback_length = None
 
-		@verify_type(envelope=WMessengerEnvelopeProto, session=WMessengerOnionSessionProto, feedback=(str, None), undo_previous=(bool, None), cr=(bool, None), refresh_window=(bool, None))
-		def process(self, envelope, session, feedback=None, undo_previous=None, cr=None, refresh_window=None, **kwargs):
+		@verify_type(envelope=WMessengerEnvelopeProto, session=WMessengerOnionSessionProto)
+		@verify_type(feedback=(str, None), undo_previous=(bool, None), cr=(bool, None))
+		@verify_type(refresh_window=(bool, None))
+		def process(
+			self, envelope, session, feedback=None, undo_previous=None, cr=None, refresh_window=None,
+			**kwargs
+		):
 			if undo_previous is not None and undo_previous is True:
 				self.undo_feedback()
 			if feedback is not None:
@@ -134,7 +139,16 @@ class WBrokerCommandProxy(WCommandProto):
 
 	@verify_type(console=WBrokerCLI)
 	def __init__(self, console):
-		WCommandProto.__init__(self)
+
+		class DummyCommand(WCommand):
+			def _exec(self, *command_tokens):
+				pass
+
+		class DummyAdapter(WCommandContextAdapter):
+			def adapt(self, *command_tokens, request_context=None):
+				pass
+
+		WCommandContext.__init__(self, DummyCommand(), DummyAdapter(None))
 		self.__console = console
 		self.__command_timeout = WAppsGlobals.config.getint(
 			'wasp-launcher::broker::connection::cli', 'command_timeout'
@@ -142,21 +156,33 @@ class WBrokerCommandProxy(WCommandProto):
 
 		self.__onion = WMessengerOnion()
 		self.__console_output_layer = WBrokerCommandProxy.ConsoleOutputLayer(self.__console)
-		self.__onion.add_layers(self.__console_output_layer)
+		self.__onion.add_layers(
+			self.__console_output_layer, WManagementCommandPackerLayer(), WManagementResultPackerLayer()
+		)
 
 	@verify_type(command_tokens=str)
 	def match(self, *command_tokens):
 		return len(command_tokens) > 0
 
-	@verify_type(command_tokens=str)
-	def exec(self, *command_tokens):
+	@verify_type(command_tokens=str, request_context=(WContextProto, None))
+	def match_context(self, *command_tokens, request_context=None):
+		return len(command_tokens) > 0
 
+	@verify_type(command_tokens=str, request_context=(WContextProto, None))
+	def exec_context(self, *command_tokens, request_context=None):
 		broker = self.__console.broker()
 		handler = broker.handler()
 		receive_agent = broker.receive_agent()
 		send_agent = broker.send_agent()
 
 		session_flow = WMessengerOnionSessionFlow.sequence_flow(
+			WMessengerOnionSessionFlowProto.IteratorInfo(
+				'com.binblob.wasp-launcher.broker-management-command-packer',
+				mode=WMessengerOnionPackerLayerProto.Mode.pack,
+				command=WManagementCommandPackerLayer.Command.create(
+					*command_tokens, request_context=request_context
+				)
+			),
 			WMessengerOnionSessionFlowProto.IteratorInfo(
 				'com.binblob.wasp-general.json-packer-layer',
 				mode=WMessengerOnionPackerLayerProto.Mode.pack
@@ -192,13 +218,17 @@ class WBrokerCommandProxy(WCommandProto):
 			WMessengerOnionSessionFlowProto.IteratorInfo(
 				'com.binblob.wasp-general.json-packer-layer',
 				mode=WMessengerOnionPackerLayerProto.Mode.unpack
+			),
+			WMessengerOnionSessionFlowProto.IteratorInfo(
+				'com.binblob.wasp-launcher.broker-management-result-packer',
+				mode=WMessengerOnionPackerLayerProto.Mode.unpack
 			)
 		)
 
 		session = WMessengerOnionSession(self.__onion, session_flow)
 		try:
-			envelope = session.process(WMessengerEnvelope(command_tokens))
-			return WCommandResult(output=str(envelope.message()))
+			envelope = session.process(WMessengerEnvelope(None))
+			return envelope.message()
 		except TimeoutError:
 			self.__console_output_layer.undo_feedback()
 			return WCommandResult(error='Command completion timeout expired')

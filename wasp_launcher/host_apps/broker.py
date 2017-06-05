@@ -41,7 +41,118 @@ from wasp_general.network.messenger.proto import WMessengerEnvelopeProto, WMesse
 from wasp_general.network.messenger.layers import WMessengerOnionPackerLayerProto, WMessengerOnionCoderLayerProto
 from wasp_general.network.messenger.envelope import WMessengerBytesEnvelope, WMessengerEnvelope
 
+from wasp_general.command.command import WCommandResult
+from wasp_general.command.context import WContextProto, WContext, WCommandContextResult
+
 from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
+
+
+class WManagementCommandPackerLayer(WMessengerOnionPackerLayerProto):
+	__layer_name__ = "com.binblob.wasp-launcher.broker-management-command-packer"
+	""" Layer name
+	"""
+
+	def __init__(self):
+		""" Construct new layer
+		"""
+		WMessengerOnionPackerLayerProto.__init__(
+			self, WManagementCommandPackerLayer.__layer_name__
+		)
+
+	class Command:
+		tokens = []
+		context = None
+
+		@staticmethod
+		@verify_type(command_tokens=str, request_context=(WContextProto, None))
+		def create(*command_tokens, request_context=None):
+			command = WManagementCommandPackerLayer.Command()
+			command.tokens = list(command_tokens)
+			command.context = request_context
+			return command
+
+	@verify_type(envelope=WMessengerEnvelopeProto, session=WMessengerOnionSessionProto)
+	def pack(self, envelope, session, command=None, **kwargs):
+		if command is None:
+			raise ValueError("'command parameter must be defined for this layer")
+
+		if isinstance(command, WManagementCommandPackerLayer.Command) is False:
+			raise TypeError("Invalid type for 'command' parameter")
+
+		return WMessengerEnvelope({
+			'tokens': command.tokens,
+			'context': None if command.context is None else WContext.export_context(command.context)
+		}, meta=envelope)
+
+	@verify_type(envelope=WMessengerEnvelopeProto, session=WMessengerOnionSessionProto)
+	def unpack(self, envelope, session, **kwargs):
+		command = envelope.message()
+		if isinstance(command, dict) is False:
+			raise TypeError('Invalid envelope message type')
+
+		for attr_name in ['tokens', 'context']:
+			if attr_name not in command.keys():
+				raise ValueError("No '%s' attribute for command envelope" % attr_name)
+
+		return WMessengerEnvelope(
+			WManagementCommandPackerLayer.Command.create(
+				*(command['tokens']), request_context=WContext.import_context(command['context'])
+			), meta=envelope.meta()
+		)
+
+
+class WManagementResultPackerLayer(WMessengerOnionPackerLayerProto):
+	__layer_name__ = "com.binblob.wasp-launcher.broker-management-result-packer"
+	""" Layer name
+	"""
+
+	def __init__(self):
+		""" Construct new layer
+		"""
+		WMessengerOnionPackerLayerProto.__init__(
+			self, WManagementResultPackerLayer.__layer_name__
+		)
+
+	@verify_type(envelope=WMessengerEnvelopeProto, session=WMessengerOnionSessionProto)
+	def pack(self, envelope, session, **kwargs):
+
+		command_result = envelope.message()
+		if isinstance(command_result, WCommandResult) is False:
+			raise TypeError('Invalid envelope message type')
+
+		result = {
+			'output': command_result.output,
+			'error': command_result.error,
+			'context_mode': False,
+			'context': None
+		}
+
+		if isinstance(command_result, WCommandContextResult):
+			result['context_mode'] = True
+			if command_result.context is not None:
+				result['context'] = WContext.export_context(command_result.context)
+
+		return WMessengerEnvelope(result, meta=envelope)
+
+	@verify_type(envelope=WMessengerEnvelopeProto, session=WMessengerOnionSessionProto)
+	def unpack(self, envelope, session, **kwargs):
+		result_dict = envelope.message()
+		if isinstance(result_dict, dict) is False:
+			raise TypeError('Invalid envelope message type')
+
+		for attr_name in ['output', 'error', 'context_mode', 'context']:
+			if attr_name not in result_dict.keys():
+				raise ValueError("No '%s' attribute for result envelope" % attr_name)
+
+		if result_dict['context_mode'] is True:
+			result_obj = WCommandContextResult(
+				output=result_dict['output'], error=result_dict['error'],
+				context=WContext.import_context(result_dict['context'])
+			)
+		else:
+			result_obj = WCommandResult(output=result_dict['output'], error=result_dict['error'])
+
+		return WMessengerEnvelope(result_obj, meta=envelope)
 
 
 class WBrokerClientTask(WZMQService, WThreadTask):
@@ -82,10 +193,18 @@ class WLauncherBrokerBasicTask(WThreadTask):
 
 		@verify_type(envelope=WMessengerEnvelopeProto, session=WMessengerOnionSessionProto)
 		def process(self, envelope, session, **kwargs):
-			return WMessengerEnvelope({
-				'response': 'OK',
-				'request': envelope.message()
-			})
+			print('Process broker message:')
+			command = envelope.message()
+			print(str(command))
+			return WMessengerEnvelope(
+				WCommandResult(
+					'RRR:' + str({
+						'response': 'OK',
+						'request_tokens': command.tokens,
+						'request_context': None if command.context is None else WContext.export_context(command.context)
+					})
+				)
+			)
 
 
 	class ReceiveAgent(WZMQHandler.ReceiveAgent):
@@ -93,7 +212,10 @@ class WLauncherBrokerBasicTask(WThreadTask):
 		def __init__(self):
 			WZMQHandler.ReceiveAgent.__init__(self)
 			self.__onion = WMessengerOnion()
-			self.__onion.add_layers(WLauncherBrokerBasicTask.ManagementProcessingLayer())
+			self.__onion.add_layers(
+				WLauncherBrokerBasicTask.ManagementProcessingLayer(),
+				WManagementCommandPackerLayer(), WManagementResultPackerLayer()
+			)
 			self.__send_agent = WZMQHandler.SendAgent()
 
 		def on_receive(self, handler, msg):
@@ -107,7 +229,15 @@ class WLauncherBrokerBasicTask(WThreadTask):
 					mode=WMessengerOnionPackerLayerProto.Mode.unpack
 				),
 				WMessengerOnionSessionFlowProto.IteratorInfo(
+					'com.binblob.wasp-launcher.broker-management-command-packer',
+					mode=WMessengerOnionPackerLayerProto.Mode.unpack
+				),
+				WMessengerOnionSessionFlowProto.IteratorInfo(
 					'com.binblob.wasp-launcher.broker-management-processing-layer',
+				),
+				WMessengerOnionSessionFlowProto.IteratorInfo(
+					'com.binblob.wasp-launcher.broker-management-result-packer',
+					mode=WMessengerOnionPackerLayerProto.Mode.pack
 				),
 				WMessengerOnionSessionFlowProto.IteratorInfo(
 					'com.binblob.wasp-general.json-packer-layer',
