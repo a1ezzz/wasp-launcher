@@ -34,6 +34,13 @@ from wasp_general.verify import verify_type
 from wasp_general.task.thread import WThreadTask
 from wasp_general.network.service import WZMQHandler, WZMQService, WLoglessIOLoop, WZMQSyncAgent
 
+from wasp_general.network.messenger.onion import WMessengerOnion
+from wasp_general.network.messenger.session import WMessengerOnionSessionFlow, WMessengerOnionSession
+from wasp_general.network.messenger.proto import WMessengerOnionSessionFlowProto, WMessengerOnionLayerProto
+from wasp_general.network.messenger.proto import WMessengerEnvelopeProto, WMessengerOnionSessionProto
+from wasp_general.network.messenger.layers import WMessengerOnionPackerLayerProto, WMessengerOnionCoderLayerProto
+from wasp_general.network.messenger.envelope import WMessengerBytesEnvelope, WMessengerEnvelope
+
 from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
 
@@ -48,6 +55,7 @@ class WBrokerClientTask(WZMQService, WThreadTask):
 		)
 
 		self.__receive_agent = WZMQSyncAgent(timeout=timeout)
+		self.__send_agent = WZMQHandler.SendAgent()
 
 		WZMQService.__init__(self, setup_agent, receive_agent=self.__receive_agent)
 		WThreadTask.__init__(self)
@@ -55,18 +63,68 @@ class WBrokerClientTask(WZMQService, WThreadTask):
 	def receive_agent(self):
 		return self.__receive_agent
 
+	def send_agent(self):
+		return self.__send_agent
+
 
 class WLauncherBrokerBasicTask(WThreadTask):
 
+	class ManagementProcessingLayer(WMessengerOnionLayerProto):
+
+		__layer_name__ = "com.binblob.wasp-launcher.broker-management-processing-layer"
+		""" Layer name
+		"""
+
+		def __init__(self):
+			WMessengerOnionLayerProto.__init__(
+				self, WLauncherBrokerBasicTask.ManagementProcessingLayer.__layer_name__
+			)
+
+		@verify_type(envelope=WMessengerEnvelopeProto, session=WMessengerOnionSessionProto)
+		def process(self, envelope, session, **kwargs):
+			return WMessengerEnvelope({
+				'response': 'OK',
+				'request': envelope.message()
+			})
+
+
 	class ReceiveAgent(WZMQHandler.ReceiveAgent):
 
-		def on_receive(self, handler, msg):
-			print('REQUEST: ' + str(msg))
-			import json
-			msg = json.loads((b''.join(msg)).decode())
-			send_agent = WZMQHandler.SendAgent()
-			send_agent.send(handler, json.dumps({'response': 'OK', 'request': msg}).encode())
+		def __init__(self):
+			WZMQHandler.ReceiveAgent.__init__(self)
+			self.__onion = WMessengerOnion()
+			self.__onion.add_layers(WLauncherBrokerBasicTask.ManagementProcessingLayer())
+			self.__send_agent = WZMQHandler.SendAgent()
 
+		def on_receive(self, handler, msg):
+			session_flow = WMessengerOnionSessionFlow.sequence_flow(
+				WMessengerOnionSessionFlowProto.IteratorInfo(
+					'com.binblob.wasp-general.encoding-layer',
+					mode=WMessengerOnionCoderLayerProto.Mode.decode
+				),
+				WMessengerOnionSessionFlowProto.IteratorInfo(
+					'com.binblob.wasp-general.json-packer-layer',
+					mode=WMessengerOnionPackerLayerProto.Mode.unpack
+				),
+				WMessengerOnionSessionFlowProto.IteratorInfo(
+					'com.binblob.wasp-launcher.broker-management-processing-layer',
+				),
+				WMessengerOnionSessionFlowProto.IteratorInfo(
+					'com.binblob.wasp-general.json-packer-layer',
+					mode=WMessengerOnionPackerLayerProto.Mode.pack
+				),
+				WMessengerOnionSessionFlowProto.IteratorInfo(
+					'com.binblob.wasp-general.encoding-layer',
+					mode=WMessengerOnionCoderLayerProto.Mode.encode
+				),
+				WMessengerOnionSessionFlowProto.IteratorInfo(
+					'com.binblob.wasp-general.send-agent-layer',
+					send_agent=self.__send_agent, handler=handler
+				)
+			)
+
+			session = WMessengerOnionSession(self.__onion, session_flow)
+			session.process(WMessengerBytesEnvelope(b''.join(msg)))
 
 	__service__ = None
 
