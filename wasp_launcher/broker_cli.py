@@ -136,7 +136,6 @@ class WBrokerCommandProxy(WCommandContext):
 				self.console().refresh_window()
 			return envelope
 
-
 	@verify_type(console=WBrokerCLI)
 	def __init__(self, console):
 
