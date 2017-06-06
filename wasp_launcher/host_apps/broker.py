@@ -46,7 +46,7 @@ from wasp_general.command.command import WCommandResult
 from wasp_general.command.context import WContextProto, WContext, WCommandContextResult, WCommandContextSet
 from wasp_general.command.context import WCommandContext
 
-from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
+from wasp_launcher.apps import WSyncHostApp, WAppsGlobals, WBrokerCommands
 
 
 class WManagementCommandPackerLayer(WMessengerOnionPackerLayerProto):
@@ -348,3 +348,28 @@ class WBrokerHostApp(WSyncHostApp):
 
 	def setup_commands(self):
 		WAppsGlobals.broker_commands = WBrokerManagementCommands()
+
+		WAppsGlobals.log.info('Populating broker with commands')
+
+		total_commands = 0
+		for app in WAppsGlobals.started_apps:
+			if issubclass(app, WBrokerCommands) is True:
+				has_commands = False
+				for command in app.commands():
+					WAppsGlobals.broker_commands.commands().add(command)
+					has_commands = True
+					total_commands += 1
+
+				if has_commands is True:
+					WAppsGlobals.log.info(
+						'Broker extended by the "%s" application commands' % app.name()
+					)
+				else:
+					WAppsGlobals.log.info(
+						'No commands was specified by the guest application: %s' % app.name()
+					)
+
+		if total_commands == 0:
+			WAppsGlobals.log.warn('No commands was set for the broker')
+		else:
+			WAppsGlobals.log.info('Loaded broker commands: %i' % total_commands)

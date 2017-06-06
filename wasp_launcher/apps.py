@@ -149,6 +149,19 @@ class WGuestModelApp(WGuestApp):
 		pass
 
 
+class WBrokerCommands(WGuestApp):
+
+	def start(self):
+		pass
+
+	def stop(self):
+		pass
+
+	@classmethod
+	def commands(cls):
+		return tuple()
+
+
 class WAppsGlobals:
 	""" Storage of global variables, that are widely used across all application
 	"""
