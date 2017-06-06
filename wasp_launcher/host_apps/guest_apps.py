@@ -48,7 +48,7 @@ class WGuestAppStarter(WSyncHostApp):
 		self.start_apps()
 
 	def stop(self):
-		for app_name in WAppsGlobals.started_apps:
+		for app_name in [x.name() for x in WAppsGlobals.started_apps]:
 			WAppsGlobals.log.info('Stopping "%s" application and its dependencies' % app_name)
 			WAppsGlobals.apps_registry.stop_task(app_name)
 		WAppsGlobals.started_apps.clear()
@@ -96,5 +96,5 @@ class WGuestAppStarter(WSyncHostApp):
 				raise RuntimeError('Application "%s" was not found' % app_name)
 			WAppsGlobals.log.info('Starting "%s" application and its dependencies' % app_name)
 			WAppsGlobals.apps_registry.start_task(app_name)
-			WAppsGlobals.started_apps.append(app_name)
+			WAppsGlobals.started_apps.append(app)
 			WAppsGlobals.log.info('Application "%s" started' % app_name)

@@ -112,7 +112,7 @@ class WGuestAppTemplateSearcher(WBasicTemplateSearcher, metaclass=ABCMeta):
 		WBasicTemplateSearcher.__init__(self)
 
 		for app in WAppsGlobals.started_apps:
-			if isinstance(app, WGuestWebApp) is True:
+			if issubclass(app, WGuestWebApp) is True:
 				obj = self.handler_class()(app)
 				self.replace(app.name(), obj)
 
