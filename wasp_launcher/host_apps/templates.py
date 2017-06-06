@@ -111,11 +111,10 @@ class WGuestAppTemplateSearcher(WBasicTemplateSearcher, metaclass=ABCMeta):
 	def __init__(self):
 		WBasicTemplateSearcher.__init__(self)
 
-		for app_name in WAppsGlobals.apps_registry.registry_storage().tags():
-			app = WAppsGlobals.apps_registry.registry_storage().tasks(app_name)
-			if issubclass(app, WGuestWebApp) is True:
+		for app in WAppsGlobals.started_apps:
+			if isinstance(app, WGuestWebApp) is True:
 				obj = self.handler_class()(app)
-				self.replace(app_name, obj)
+				self.replace(app.name(), obj)
 
 	@abstractmethod
 	def handler_class(self):

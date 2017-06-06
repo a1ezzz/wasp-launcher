@@ -163,6 +163,7 @@ class WAppsGlobals:
 	"""
 
 	apps_registry = WGuestAppRegistry
+	started_apps = []
 	templates = None
 
 	models = None
