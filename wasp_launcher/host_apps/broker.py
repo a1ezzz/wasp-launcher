@@ -28,6 +28,7 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 from wasp_launcher.version import __status__
 
 import zmq
+import traceback
 from abc import abstractmethod
 
 from wasp_general.verify import verify_type
@@ -42,7 +43,8 @@ from wasp_general.network.messenger.layers import WMessengerOnionPackerLayerProt
 from wasp_general.network.messenger.envelope import WMessengerBytesEnvelope, WMessengerEnvelope
 
 from wasp_general.command.command import WCommandResult
-from wasp_general.command.context import WContextProto, WContext, WCommandContextResult
+from wasp_general.command.context import WContextProto, WContext, WCommandContextResult, WCommandContextSet
+from wasp_general.command.context import WCommandContext
 
 from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
@@ -193,19 +195,7 @@ class WLauncherBrokerBasicTask(WThreadTask):
 
 		@verify_type(envelope=WMessengerEnvelopeProto, session=WMessengerOnionSessionProto)
 		def process(self, envelope, session, **kwargs):
-			print('Process broker message:')
-			command = envelope.message()
-			print(str(command))
-			return WMessengerEnvelope(
-				WCommandResult(
-					'RRR:' + str({
-						'response': 'OK',
-						'request_tokens': command.tokens,
-						'request_context': None if command.context is None else WContext.export_context(command.context)
-					})
-				)
-			)
-
+			return WMessengerEnvelope(WAppsGlobals.broker_commands.exec_mgmt_command(envelope.message()))
 
 	class ReceiveAgent(WZMQHandler.ReceiveAgent):
 
@@ -300,6 +290,25 @@ class WLauncherBrokerIPCTask(WLauncherBrokerBasicTask):
 		return 'ipc://%s' % named_socket
 
 
+class WBrokerManagementCommands(WCommandContextSet):
+
+	@verify_type(command=WManagementCommandPackerLayer.Command)
+	def exec_mgmt_command(self, command):
+		command_obj = self.commands().select(*command.tokens, request_context=command.context)
+		if command_obj is None:
+			return WCommandResult(error='No suitable command found')
+
+		try:
+			if isinstance(command_obj, WCommandContext) is True:
+				result = command_obj.exec_context(*command.tokens, request_context=command.context)
+			else:
+				result = command_obj.exec(*command.tokens)
+			return result
+
+		except Exception:
+			return WCommandResult(error='Command execution error. Traceback\n%s' % traceback.format_exc())
+
+
 class WBrokerHostApp(WSyncHostApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.broker'
@@ -312,6 +321,9 @@ class WBrokerHostApp(WSyncHostApp):
 	__broker_ipc_task__ = None
 
 	def start(self):
+
+		self.setup_commands()
+
 		tcp_enabled = WAppsGlobals.config.getboolean('wasp-launcher::broker::connection', 'bind')
 		ipc_enabled = WAppsGlobals.config.getboolean('wasp-launcher::broker::connection', 'named_socket')
 
@@ -331,3 +343,8 @@ class WBrokerHostApp(WSyncHostApp):
 		if WBrokerHostApp.__broker_ipc_task__ is not None:
 			WBrokerHostApp.__broker_ipc_task__.stop()
 			WBrokerHostApp.__broker_ipc_task__ = None
+
+		WAppsGlobals.broker_commands = None
+
+	def setup_commands(self):
+		WAppsGlobals.broker_commands = WBrokerManagementCommands()

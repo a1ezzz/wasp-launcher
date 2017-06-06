@@ -171,6 +171,10 @@ class WAppsGlobals:
 	tornado_io_loop = None
 	tornado_service = None
 
+	broker_commands = None
+	""" Brokers management commands
+	"""
+
 
 class WGuestWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
 
