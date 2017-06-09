@@ -189,6 +189,8 @@ class WAppsGlobals:
 	""" Brokers management commands
 	"""
 
+	scheduler = None
+
 
 class WGuestWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
 
