@@ -27,7 +27,29 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
+import threading
+
 from wasp_launcher.apps import WBrokerCommands
+
+from wasp_general.command.command import WCommand, WCommandResult
+
+
+class WSystemCommands:
+
+	class Threads(WCommand):
+
+		def __init__(self):
+			WCommand.__init__(self, 'system', 'threads')
+
+		def _exec(self, *command_tokens):
+			threads = threading.enumerate()
+			output = 'Total threads: %i' % len(threads)
+			if len(threads) > 0:
+				output += '\n\tThread name\n\t==========='
+				for thread in threads:
+					output += '\n\t' + thread.name
+
+			return WCommandResult(output=output)
 
 
 class WWaspBrokerCommands(WBrokerCommands):
@@ -36,4 +58,4 @@ class WWaspBrokerCommands(WBrokerCommands):
 
 	@classmethod
 	def commands(cls):
-		return []
+		return [WSystemCommands.Threads()]
