@@ -54,6 +54,9 @@ class WSchedulerHostApp(WSyncHostApp):
 	def start(self):
 		if WAppsGlobals.scheduler is None:
 			WAppsGlobals.scheduler = WTaskSchedulerService(watching_dog_cls=WLauncherWatchingDog)
+			# TODO: make cron source public
+			#WAppsGlobals.scheduler_cron_source = WCronTaskSource(WAppsGlobals.scheduler)
+			#WAppsGlobals.scheduler.add_task_source(WAppsGlobals.scheduler_cron_source)
 			WAppsGlobals.scheduler.start()
 
 	def stop(self):
