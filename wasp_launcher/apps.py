@@ -28,6 +28,7 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 from wasp_launcher.version import __status__
 
 from abc import ABCMeta
+from itertools import product
 
 from wasp_general.verify import verify_type, verify_value
 
@@ -36,6 +37,7 @@ from wasp_general.task.base import WTask
 from wasp_general.task.sync import WSyncTask
 from wasp_general.task.thread import WThreadTask
 from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage
+from wasp_general.task.scheduler.task_source import WCronUTCSchedule, WCronTaskSchedule
 
 from wasp_general.network.web.service import WWebService, WWebTargetRoute, WWebEnhancedPresenter
 from wasp_general.network.web.proto import WWebRequestProto
@@ -76,6 +78,36 @@ class WGuestAppRegistry(WTaskDependencyRegistry):
 	__registry_storage__ = WTaskDependencyRegistryStorage()
 
 
+class WAppsGlobals:
+	""" Storage of global variables, that are widely used across all application
+	"""
+
+	log = None
+	""" Application logger (logging.Logger instance. See :class:`wasp_launcher.host_apps.log.WLauncherLogSetupApp`)
+	"""
+
+	config = None
+	""" Current server configuration (wasp_general.config.WConfig instance.
+	See :class:`wasp_launcher.host_apps.config.WLauncherConfigApp`)
+	"""
+
+	apps_registry = WGuestAppRegistry
+	started_apps = []
+	templates = None
+
+	models = None
+
+	wasp_web_service = None
+	tornado_io_loop = None
+	tornado_service = None
+
+	broker_commands = None
+	""" Brokers management commands
+	"""
+
+	scheduler = None
+
+
 class WGuestApp(WSyncTask, metaclass=WDependentTask):
 
 	__auto_registry__ = False
@@ -87,6 +119,33 @@ class WGuestApp(WSyncTask, metaclass=WDependentTask):
 	@classmethod
 	def description(cls):
 		return None
+
+
+class WDeclarativeGuestApp(WGuestApp):
+
+	def start(self):
+		pass
+
+	def stop(self):
+		pass
+
+
+class WGuestWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
+
+	@verify_type(request=WWebRequestProto, target_route=WWebTargetRoute, service=WWebService)
+	def __init__(self, request, target_route, service):
+		WWebEnhancedPresenter.__init__(self, request, target_route, service)
+		self._context = {}
+
+	@verify_type(template_id=str)
+	@verify_value(template_id=lambda x: len(x) > 0)
+	def __template__(self, template_id):
+		return WAppsGlobals.templates.lookup(template_id)
+
+	@verify_type(template_id=str)
+	@verify_value(template_id=lambda x: len(x) > 0)
+	def __template_response__(self, template_id):
+		return WWebTemplateResponse(self.__template__(template_id), context=self._context)
 
 
 class WGuestWebApp(WGuestApp):
@@ -140,71 +199,77 @@ class WGuestWebApp(WGuestApp):
 		pass
 
 
-class WGuestModelApp(WGuestApp):
-
-	def start(self):
-		pass
-
-	def stop(self):
-		pass
+class WGuestModelApp(WDeclarativeGuestApp):
+	pass
 
 
 class WBrokerCommands(WGuestApp):
-
-	def start(self):
-		pass
-
-	def stop(self):
-		pass
 
 	@classmethod
 	def commands(cls):
 		return tuple()
 
+	def start(self):
+		commands = self.commands()
+		if len(commands) > 0:
+			for command in commands:
+				WAppsGlobals.broker_commands.commands().add(command)
 
-class WAppsGlobals:
-	""" Storage of global variables, that are widely used across all application
-	"""
+			WAppsGlobals.log.info(
+				'Broker extended by the "%s" application commands' % self.name()
+			)
+		else:
+			WAppsGlobals.log.warn(
+				'No commands was specified by the guest application: %s' % self.name()
+			)
 
-	log = None
-	""" Application logger (logging.Logger instance. See :class:`wasp_launcher.host_apps.log.WLauncherLogSetupApp`)
-	"""
-
-	config = None
-	""" Current server configuration (wasp_general.config.WConfig instance.
-	See :class:`wasp_launcher.host_apps.config.WLauncherConfigApp`)
-	"""
-
-	apps_registry = WGuestAppRegistry
-	started_apps = []
-	templates = None
-
-	models = None
-
-	wasp_web_service = None
-	tornado_io_loop = None
-	tornado_service = None
-
-	broker_commands = None
-	""" Brokers management commands
-	"""
-
-	scheduler = None
+	def stop(self):
+		pass
 
 
-class WGuestWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
+class WCronTasks(WGuestApp):
 
-	@verify_type(request=WWebRequestProto, target_route=WWebTargetRoute, service=WWebService)
-	def __init__(self, request, target_route, service):
-		WWebEnhancedPresenter.__init__(self, request, target_route, service)
-		self._context = {}
+	__cron_tasks__ = []
 
-	@verify_type(template_id=str)
-	@verify_value(template_id=lambda x: len(x) > 0)
-	def __template__(self, template_id):
-		return WAppsGlobals.templates.lookup(template_id)
+	def start(self):
+		tasks = self.tasks()
 
-	@verify_type(template_id=str)
-	@verify_value(template_id=lambda x: len(x) > 0)
-	def __template_response__(self, template_id):
-		return WWebTemplateResponse(self.__template__(template_id), context=self._context)
+		for task in tasks:
+			WAppsGlobals.scheduler.cron_source().add_task(task)
+
+		if len(tasks) > 0:
+			WAppsGlobals.log.info(
+				'Cron scheduler extended by the "%s" application tasks' % self.name()
+			)
+		else:
+			WAppsGlobals.log.warn(
+				'No cron tasks was specified by the guest application: %s' % self.name()
+			)
+
+	def stop(self):
+		pass
+
+	@classmethod
+	def tasks(cls):
+		result = []
+		for task, schedule in product(cls.__cron_tasks__, cls.schedule()):
+			result.append(WCronTaskSchedule(schedule, task))
+		return result
+
+	@classmethod
+	def schedule(cls):
+		result = []
+
+		section = 'wasp-launcher::scheduler::cron'
+		option = cls.name()
+
+		if WAppsGlobals.config.has_option(section, option) is True:
+			schedule_config = WAppsGlobals.config.split_option(section, option)
+			if len(schedule_config) > 0:
+				for value in schedule_config:
+					schedule = WCronUTCSchedule.from_string(value)
+					result.append(schedule)
+
+		if len(result) == 0:
+			result.append(WCronUTCSchedule())
+		return result

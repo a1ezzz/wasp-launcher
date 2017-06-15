@@ -21,6 +21,16 @@ WWebInitHostApp
 "com.binblob.wasp-launcher.host-app.web::init"
 ]
 
+component broker_init [
+WBrokerInitHostApp
+"com.binblob.wasp-launcher.host-app.broker::init"
+]
+
+component scheduler_init [
+WSchedulerInitHostApp
+"com.binblob.wasp-launcher.host-app.scheduler::init"
+]
+
 component starter [
 WGuestAppStarter
 "com.binblob.wasp-launcher.host-app.guest-apps"
@@ -36,9 +46,14 @@ WTemplateLoadHostApp
 "com.binblob.wasp-launcher.host-app.template-load"
 ]
 
-component broker [
+component broker_start [
 WBrokerHostApp
-"com.binblob.wasp-launcher.host-app.broker"
+"com.binblob.wasp-launcher.host-app.broker::start"
+]
+
+component scheduler_start [
+WSchedulerHostApp
+"com.binblob.wasp-launcher.host-app.scheduler::start"
 ]
 
 component web_start [
@@ -49,15 +64,22 @@ WWebHostApp
 config .-down-> log
 debugger .-down-> config
 web_init .-down-> config
+broker_init .-down-> config
+scheduler_init .-down-> config
+
 starter .-down-> web_init
+starter .-down-> broker_init
+starter .-down-> scheduler_init
 
 model .-down-> starter
 template .-down-> starter
-broker .-down-> starter
+broker_start .-down-> starter
+scheduler_start .-down-> starter
 
 web_start .-down-> model
 web_start .-down-> template
-web_start .-down-> broker
+web_start .-down-> broker_start
+web_start .-down-> scheduler_start
 
 }
 

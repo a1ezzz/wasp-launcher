@@ -31,7 +31,7 @@ from wasp_general.network.service import WLoglessIOLoop
 from wasp_general.network.web.service import WWebService, WWebPresenterFactory
 from wasp_general.network.web.tornado import WTornadoRequestHandler
 
-from wasp_launcher.apps import WSyncHostApp, WThreadedHostApp, WAppsGlobals, WGuestWebPresenter
+from wasp_launcher.apps import WSyncHostApp, WThreadedHostApp, WAppsGlobals, WGuestWebPresenter, WGuestWebApp
 from wasp_launcher.host_apps.web_debugger import WHostAppWebDebugger
 
 
@@ -59,6 +59,7 @@ class WWebInitHostApp(WSyncHostApp):
 	"""
 
 	def start(self):
+		WAppsGlobals.log.info('Web-service is initializing')
 
 		debugger = WAppsGlobals.config["wasp-launcher::web:debug"]["mode"].lower() in ['on', 'on error']
 
@@ -76,13 +77,12 @@ class WWebInitHostApp(WSyncHostApp):
 			io_loop=WAppsGlobals.tornado_io_loop
 		)
 
-		WAppsGlobals.log.info('Web-service is ready to start (initialized)')
-
 		if debugger is True:
 			self.__registry__.start_task('com.binblob.wasp-launcher.host-app.web-debugger')
 			WAppsGlobals.log.info('Debugger started')
 
 	def stop(self):
+		WAppsGlobals.log.info('Web-service is finalizing')
 
 		debug_task = self.__registry__.registry_storage().started_task(
 			'com.binblob.wasp-launcher.host-app.web-debugger'
@@ -95,8 +95,6 @@ class WWebInitHostApp(WSyncHostApp):
 		WAppsGlobals.tornado_io_loop = None
 		WAppsGlobals.wasp_web_service = None
 
-		WAppsGlobals.log.info('Web-service finalized')
-
 
 class WWebHostApp(WThreadedHostApp):
 
@@ -107,14 +105,14 @@ class WWebHostApp(WThreadedHostApp):
 	__dependency__ = [
 		'com.binblob.wasp-launcher.host-app.model-load',
 		'com.binblob.wasp-launcher.host-app.template-load',
-		'com.binblob.wasp-launcher.host-app.broker',
-		'com.binblob.wasp-launcher.host-app.scheduler'
+		'com.binblob.wasp-launcher.host-app.broker::start',
+		'com.binblob.wasp-launcher.host-app.scheduler::start'
 	]
 
 	__thread_name__ = "WWebHostApp"
 
 	def start(self):
-		self.setup_app_presenters()
+		self.setup_presenters()
 
 		WAppsGlobals.tornado_service.listen(8888)
 		WAppsGlobals.log.info('Web-service is starting')
@@ -122,10 +120,10 @@ class WWebHostApp(WThreadedHostApp):
 
 	def stop(self):
 		WAppsGlobals.tornado_io_loop.stop()
-		WAppsGlobals.log.info('Web-service is stopped')
+		WAppsGlobals.log.info('Web-service was stopped')
 
 	@classmethod
-	def setup_app_presenters(cls):
+	def setup_presenters(cls):
 		presenters_count = len(WAppsGlobals.wasp_web_service.presenter_collection())
 		WAppsGlobals.log.info('Web-application presenters loaded: %i' % presenters_count)
 

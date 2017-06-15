@@ -36,7 +36,9 @@ class WGuestAppStarter(WSyncHostApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.guest-apps'
 	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.web::init'
+		'com.binblob.wasp-launcher.host-app.web::init',
+		'com.binblob.wasp-launcher.host-app.broker::init',
+		'com.binblob.wasp-launcher.host-app.scheduler::init'
 	]
 
 	__module_export_function__ = '__wasp_launcher_apps__'

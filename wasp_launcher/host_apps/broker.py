@@ -309,67 +309,70 @@ class WBrokerManagementCommands(WCommandContextSet):
 			return WCommandResult(error='Command execution error. Traceback\n%s' % traceback.format_exc())
 
 
+class WBrokerHostAppTasks:
+	__broker_tcp_task__ = None
+	__broker_ipc_task__ = None
+
+
+class WBrokerInitHostApp(WSyncHostApp):
+
+	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.broker::init'
+
+	__dependency__ = [
+		'com.binblob.wasp-launcher.host-app.config'
+	]
+
+	def start(self):
+		WAppsGlobals.log.info('Broker is initializing')
+
+		tcp_enabled = WAppsGlobals.config.getboolean('wasp-launcher::broker::connection', 'bind')
+		ipc_enabled = WAppsGlobals.config.getboolean('wasp-launcher::broker::connection', 'named_socket')
+
+		if WBrokerHostAppTasks.__broker_tcp_task__ is None and tcp_enabled is True:
+			WBrokerHostAppTasks.__broker_tcp_task__ = WLauncherBrokerTCPTask()
+
+		if WBrokerHostAppTasks.__broker_ipc_task__ is None and ipc_enabled is True:
+			WBrokerHostAppTasks.__broker_ipc_task__ = WLauncherBrokerIPCTask()
+
+		if WAppsGlobals.broker_commands is None:
+			WAppsGlobals.broker_commands = WBrokerManagementCommands()
+
+	def stop(self):
+		WAppsGlobals.log.info('Broker is finalizing')
+		WBrokerHostAppTasks.__broker_tcp_task__ = None
+		WBrokerHostAppTasks.__broker_ipc_task__ = None
+		WAppsGlobals.broker_commands = None
+
+
 class WBrokerHostApp(WSyncHostApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.broker'
+	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.broker::start'
 
 	__dependency__ = [
 		'com.binblob.wasp-launcher.host-app.guest-apps'
 	]
 
-	__broker_tcp_task__ = None
-	__broker_ipc_task__ = None
-
 	def start(self):
 
-		self.setup_commands()
-
-		tcp_enabled = WAppsGlobals.config.getboolean('wasp-launcher::broker::connection', 'bind')
-		ipc_enabled = WAppsGlobals.config.getboolean('wasp-launcher::broker::connection', 'named_socket')
-
-		if WBrokerHostApp.__broker_tcp_task__ is None and tcp_enabled is True:
-			WBrokerHostApp.__broker_tcp_task__ = WLauncherBrokerTCPTask()
-			WBrokerHostApp.__broker_tcp_task__.start()
-
-		if WBrokerHostApp.__broker_ipc_task__ is None and ipc_enabled is True:
-			WBrokerHostApp.__broker_ipc_task__ = WLauncherBrokerIPCTask()
-			WBrokerHostApp.__broker_ipc_task__.start()
-
-	def stop(self):
-		if WBrokerHostApp.__broker_tcp_task__ is not None:
-			WBrokerHostApp.__broker_tcp_task__.stop()
-			WBrokerHostApp.__broker_tcp_task__ = None
-
-		if WBrokerHostApp.__broker_ipc_task__ is not None:
-			WBrokerHostApp.__broker_ipc_task__.stop()
-			WBrokerHostApp.__broker_ipc_task__ = None
-
-		WAppsGlobals.broker_commands = None
-
-	def setup_commands(self):
-		WAppsGlobals.broker_commands = WBrokerManagementCommands()
-
-		WAppsGlobals.log.info('Populating broker with commands')
-
-		total_commands = 0
-		for app in WAppsGlobals.started_apps:
-			if issubclass(app, WBrokerCommands) is True:
-				has_commands = False
-				for command in app.commands():
-					WAppsGlobals.broker_commands.commands().add(command)
-					has_commands = True
-					total_commands += 1
-
-				if has_commands is True:
-					WAppsGlobals.log.info(
-						'Broker extended by the "%s" application commands' % app.name()
-					)
-				else:
-					WAppsGlobals.log.info(
-						'No commands was specified by the guest application: %s' % app.name()
-					)
-
+		total_commands = len(WAppsGlobals.broker_commands.commands())
 		if total_commands == 0:
 			WAppsGlobals.log.warn('No commands was set for the broker')
 		else:
 			WAppsGlobals.log.info('Loaded broker commands: %i' % total_commands)
+
+		WAppsGlobals.log.info('Broker is starting')
+
+		if WBrokerHostAppTasks.__broker_tcp_task__ is not None:
+			WBrokerHostAppTasks.__broker_tcp_task__.start()
+
+		if WBrokerHostAppTasks.__broker_ipc_task__ is not None:
+			WBrokerHostAppTasks.__broker_ipc_task__.start()
+
+	def stop(self):
+		WAppsGlobals.log.info('Broker is stopping')
+
+		if WBrokerHostAppTasks.__broker_tcp_task__ is not None:
+			WBrokerHostAppTasks.__broker_tcp_task__.stop()
+
+		if WBrokerHostAppTasks.__broker_ipc_task__ is not None:
+			WBrokerHostAppTasks.__broker_ipc_task__.stop()

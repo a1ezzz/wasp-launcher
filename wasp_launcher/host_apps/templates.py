@@ -276,9 +276,9 @@ class WTemplateLoadHostApp(WSyncHostApp):
 	]
 
 	def start(self):
+		WAppsGlobals.log.info('Web-templates is starting')
 		WAppsGlobals.templates = WHostAgentTemplateSearcher()
-		WAppsGlobals.log.info('Web-templates is started')
 
 	def stop(self):
+		WAppsGlobals.log.info('Web-templates is stopping')
 		WAppsGlobals.templates = None
-		WAppsGlobals.log.info('Web-templates is stopped')
