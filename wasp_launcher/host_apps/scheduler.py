@@ -33,7 +33,7 @@ from wasp_general.task.thread import WThreadJoiningTimeoutError
 from wasp_general.task.scheduler.scheduler import WTaskSchedulerService, WSchedulerWatchingDog
 from wasp_general.task.scheduler.task_source import WCronTaskSource
 
-from wasp_launcher.apps import WSyncHostApp, WAppsGlobals, WCronTasks
+from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
 
 
 class WLauncherWatchingDog(WSchedulerWatchingDog):
@@ -107,6 +107,7 @@ class WSchedulerHostApp(WSyncHostApp):
 		WAppsGlobals.log.info('Scheduler is starting')
 		if WAppsGlobals.scheduler is not None:
 			WAppsGlobals.scheduler.start()
+			WAppsGlobals.scheduler.update()
 
 	def stop(self):
 		WAppsGlobals.log.info('Scheduler is stopping')
