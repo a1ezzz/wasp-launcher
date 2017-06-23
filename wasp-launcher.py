@@ -37,12 +37,15 @@ if __name__ == '__main__':
 	config_task = 'com.binblob.wasp-launcher.host-app.config'
 	WHostAppRegistry.start_task(config_task)
 
-	main_task = WAppsGlobals.config['wasp-launcher::applications']['main_application']
-	WHostAppRegistry.start_task(main_task)
+	host_apps = WAppsGlobals.config.split_option('wasp-launcher::applications', 'host_applications')
+	for app in host_apps:
+		WHostAppRegistry.start_task(app)
 
 	def shutdown_signal(signum, frame):
-		WHostAppRegistry.stop_task(main_task, stop_requirements=True)
-		WHostAppRegistry.stop_task(config_task, stop_requirements=True)
+		for app in host_apps:
+			WHostAppRegistry.stop_task(app)
+		WHostAppRegistry.stop_task(config_task)
+		WHostAppRegistry.all_stop()
 
 	signal.signal(signal.SIGTERM, shutdown_signal)
 	signal.signal(signal.SIGINT, shutdown_signal)

@@ -61,7 +61,7 @@ class WGuestAppStarter(WSyncHostApp):
 		WAppsGlobals.log.info('Reading modules for available local applications')
 
 		module_names = WAppsGlobals.config.split_option(
-			'wasp-launcher::applications', 'applications_modules'
+			'wasp-launcher::applications', 'guest_applications_modules'
 		)
 		apps_count = 0
 		for name in module_names:
@@ -87,7 +87,7 @@ class WGuestAppStarter(WSyncHostApp):
 	def start_apps(self):
 
 		enabled_applications = WAppsGlobals.config.split_option(
-			'wasp-launcher::applications', 'load_applications'
+			'wasp-launcher::applications', 'guest_applications'
 		)
 
 		WAppsGlobals.log.info('Starting enabled local applications (total: %i)' % len(enabled_applications))
