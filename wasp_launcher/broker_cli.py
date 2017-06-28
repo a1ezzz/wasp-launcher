@@ -84,10 +84,16 @@ class WBrokerCLI(WCursesConsole, WThreadTask):
 		return self.__broker
 
 	def start(self):
+		WThreadTask.start(self)
+
+	def stop(self):
+		WThreadTask.stop(self)
+
+	def thread_started(self):
 		self.__broker.start()
 		WCursesConsole.start(self)
 
-	def stop(self):
+	def thread_stopped(self):
 		self.__broker.stop()
 		WCursesConsole.stop(self)
 

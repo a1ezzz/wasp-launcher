@@ -179,6 +179,18 @@ class WBrokerClientTask(WZMQService, WThreadTask):
 	def send_agent(self):
 		return self.__send_agent
 
+	def start(self):
+		WThreadTask.start(self)
+
+	def stop(self):
+		WThreadTask.stop(self)
+
+	def thread_started(self):
+		WZMQService.start(self)
+
+	def thread_stopped(self):
+		WZMQService.stop(self)
+
 
 class WLauncherBrokerBasicTask(WThreadTask):
 
@@ -248,12 +260,12 @@ class WLauncherBrokerBasicTask(WThreadTask):
 
 	__service__ = None
 
-	def start(self):
+	def thread_started(self):
 		if self.__service__ is None:
 			self.__service__ = self.service()
 			self.__service__.start()
 
-	def stop(self):
+	def thread_stopped(self):
 		if self.__service__ is not None:
 			self.__service__.stop()
 			self.__service__ = None

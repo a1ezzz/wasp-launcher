@@ -111,14 +111,14 @@ class WWebHostApp(WThreadedHostApp):
 
 	__thread_name__ = "WWebHostApp"
 
-	def start(self):
+	def thread_started(self):
 		self.setup_presenters()
 
 		WAppsGlobals.tornado_service.listen(8888)
 		WAppsGlobals.log.info('Web-service is starting')
 		WAppsGlobals.tornado_io_loop.start()
 
-	def stop(self):
+	def thread_stopped(self):
 		WAppsGlobals.tornado_io_loop.stop()
 		WAppsGlobals.log.info('Web-service was stopped')
 
