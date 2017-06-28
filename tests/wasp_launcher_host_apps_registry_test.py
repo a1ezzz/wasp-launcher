@@ -5,7 +5,7 @@ import pytest
 from wasp_launcher.apps import WHostAppRegistry, WSyncHostApp
 
 from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage, WDependentTask
-from wasp_general.task.sync import WSyncTask
+from wasp_general.task.base import WSyncTask
 
 
 class TestWAppRegistry:

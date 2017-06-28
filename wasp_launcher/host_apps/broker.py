@@ -73,7 +73,8 @@ class WManagementCommandPackerLayer(WMessengerOnionPackerLayerProto):
 			command.context = request_context
 			return command
 
-	@verify_type(envelope=WMessengerEnvelopeProto, session=WMessengerOnionSessionProto)
+	@verify_type('paranoid', session=WMessengerOnionSessionProto)
+	@verify_type(envelope=WMessengerEnvelopeProto)
 	def pack(self, envelope, session, command=None, **kwargs):
 		if command is None:
 			raise ValueError("'command parameter must be defined for this layer")
@@ -86,7 +87,8 @@ class WManagementCommandPackerLayer(WMessengerOnionPackerLayerProto):
 			'context': None if command.context is None else WContext.export_context(command.context)
 		}, meta=envelope)
 
-	@verify_type(envelope=WMessengerEnvelopeProto, session=WMessengerOnionSessionProto)
+	@verify_type('paranoid', session=WMessengerOnionSessionProto)
+	@verify_type(envelope=WMessengerEnvelopeProto)
 	def unpack(self, envelope, session, **kwargs):
 		command = envelope.message()
 		if isinstance(command, dict) is False:
@@ -115,7 +117,8 @@ class WManagementResultPackerLayer(WMessengerOnionPackerLayerProto):
 			self, WManagementResultPackerLayer.__layer_name__
 		)
 
-	@verify_type(envelope=WMessengerEnvelopeProto, session=WMessengerOnionSessionProto)
+	@verify_type('paranoid', session=WMessengerOnionSessionProto)
+	@verify_type(envelope=WMessengerEnvelopeProto)
 	def pack(self, envelope, session, **kwargs):
 
 		command_result = envelope.message()
@@ -136,7 +139,8 @@ class WManagementResultPackerLayer(WMessengerOnionPackerLayerProto):
 
 		return WMessengerEnvelope(result, meta=envelope)
 
-	@verify_type(envelope=WMessengerEnvelopeProto, session=WMessengerOnionSessionProto)
+	@verify_type('paranoid', session=WMessengerOnionSessionProto)
+	@verify_type(envelope=WMessengerEnvelopeProto)
 	def unpack(self, envelope, session, **kwargs):
 		result_dict = envelope.message()
 		if isinstance(result_dict, dict) is False:
@@ -159,7 +163,7 @@ class WManagementResultPackerLayer(WMessengerOnionPackerLayerProto):
 
 class WBrokerClientTask(WZMQService, WThreadTask):
 
-	@verify_type(connection=str)
+	@verify_type('paranoid', connection=str)
 	def __init__(self, connection):
 		setup_agent = WZMQHandler.ConnectSetupAgent(zmq.REQ, connection)
 
@@ -205,7 +209,8 @@ class WLauncherBrokerBasicTask(WThreadTask):
 				self, WLauncherBrokerBasicTask.ManagementProcessingLayer.__layer_name__
 			)
 
-		@verify_type(envelope=WMessengerEnvelopeProto, session=WMessengerOnionSessionProto)
+		@verify_type('paranoid', session=WMessengerOnionSessionProto)
+		@verify_type(envelope=WMessengerEnvelopeProto)
 		def process(self, envelope, session, **kwargs):
 			return WMessengerEnvelope(WAppsGlobals.broker_commands.exec_mgmt_command(envelope.message()))
 
@@ -308,7 +313,7 @@ class WBrokerManagementCommands(WCommandContextSet):
 	def exec_mgmt_command(self, command):
 		command_obj = self.commands().select(*command.tokens, request_context=command.context)
 		if command_obj is None:
-			return WCommandResult(error='No suitable command found')
+			return WCommandResult(output='No suitable command found', error=1)
 
 		try:
 			if isinstance(command_obj, WCommandContext) is True:
@@ -318,7 +323,9 @@ class WBrokerManagementCommands(WCommandContextSet):
 			return result
 
 		except Exception:
-			return WCommandResult(error='Command execution error. Traceback\n%s' % traceback.format_exc())
+			return WCommandResult(
+				output='Command execution error. Traceback\n%s' % traceback.format_exc(), error=1
+			)
 
 
 class WBrokerHostAppTasks:

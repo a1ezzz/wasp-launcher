@@ -48,9 +48,9 @@ class WLauncherWatchingDog(WSchedulerWatchingDog):
 
 class WLauncherScheduler(WTaskSchedulerService):
 
-	@verify_type(maximum_running_tasks=(int, None), maximum_postponed_tasks=(int, None))
-	@verify_value(maximum_running_tasks=lambda x: x is None or x > 0)
-	@verify_value(maximum_postponed_tasks=lambda x: x is None or x > 0)
+	@verify_type('paranoid', maximum_running_tasks=(int, None), maximum_postponed_tasks=(int, None))
+	@verify_value('paranoid', maximum_running_tasks=lambda x: x is None or x > 0)
+	@verify_value('paranoid', maximum_postponed_tasks=lambda x: x is None or x > 0)
 	def __init__(self, maximum_running_tasks=None, maximum_postponed_tasks=None):
 		WTaskSchedulerService.__init__(
 			self, maximum_running_tasks=maximum_running_tasks,

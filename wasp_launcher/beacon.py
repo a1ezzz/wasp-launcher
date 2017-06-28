@@ -51,7 +51,7 @@ class WLauncherBeaconMessenger(WHostgroupBeaconMessenger):
 		)
 		self.__neighbor_finder = neighbor_finder
 
-	@verify_type(beacon_config=WConfig, invert_hello=bool)
+	@verify_type('paranoid', beacon_config=WConfig, invert_hello=bool)
 	def _message(self, beacon_config, invert_hello=False):
 		config = WConfig()
 		config.merge(beacon_config)
@@ -87,7 +87,7 @@ class WLauncherBeaconClient(WNetworkBeacon):
 		def __call__(self, message, source, description):
 			pass
 
-	@verify_type(neighbor_finder=bool)
+	@verify_type('paranoid', neighbor_finder=bool)
 	def __init__(self, neighbor_finder=False):
 		WNetworkBeacon.__init__(
 			self, server_mode=False, config=WAppsGlobals.config,

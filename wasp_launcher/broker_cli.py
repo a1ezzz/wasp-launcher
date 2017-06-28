@@ -53,7 +53,7 @@ from wasp_launcher.apps import WAppsGlobals
 
 class WBrokerClientCommandSet(WCommandContextSet):
 
-	@verify_type(console=WCursesConsole)
+	@verify_type('paranoid', console=WCursesConsole)
 	def __init__(self, console):
 		WCommandContextSet.__init__(self)
 		self.commands().add(WExitCommand(console))
@@ -74,7 +74,7 @@ class WBrokerCLI(WCursesConsole, WThreadTask):
 
 	__thread_name__ = 'Broker-CLI'
 
-	@verify_type(connction=str)
+	@verify_type('paranoid', connction=str)
 	def __init__(self, connection):
 		WCursesConsole.__init__(self, WBrokerClientCommandSet(self))
 		WThreadTask.__init__(self)
@@ -173,7 +173,7 @@ class WBrokerCommandProxy(WCommandContext):
 	def match_context(self, *command_tokens, request_context=None):
 		return len(command_tokens) > 0
 
-	@verify_type(command_tokens=str, request_context=(WContextProto, None))
+	@verify_type('paranoid', command_tokens=str, request_context=(WContextProto, None))
 	def exec_context(self, *command_tokens, request_context=None):
 		broker = self.__console.broker()
 		handler = broker.handler()
@@ -236,4 +236,4 @@ class WBrokerCommandProxy(WCommandContext):
 			return envelope.message()
 		except TimeoutError:
 			self.__console_output_layer.undo_feedback()
-			return WCommandResult(error='Command completion timeout expired')
+			return WCommandResult(output='Command completion timeout expired', error=1)

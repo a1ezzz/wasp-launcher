@@ -33,8 +33,7 @@ from itertools import product
 from wasp_general.verify import verify_type, verify_value
 
 from wasp_general.task.dependency import WDependentTask
-from wasp_general.task.base import WTask
-from wasp_general.task.sync import WSyncTask
+from wasp_general.task.base import WTask, WSyncTask
 from wasp_general.task.thread import WThreadTask
 from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage
 from wasp_general.task.scheduler.task_source import WCronUTCSchedule, WCronTaskSchedule
@@ -132,18 +131,18 @@ class WDeclarativeGuestApp(WGuestApp):
 
 class WGuestWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
 
-	@verify_type(request=WWebRequestProto, target_route=WWebTargetRoute, service=WWebService)
+	@verify_type('paranoid', request=WWebRequestProto, target_route=WWebTargetRoute, service=WWebService)
 	def __init__(self, request, target_route, service):
 		WWebEnhancedPresenter.__init__(self, request, target_route, service)
 		self._context = {}
 
-	@verify_type(template_id=str)
-	@verify_value(template_id=lambda x: len(x) > 0)
+	@verify_type('paranoid', template_id=str)
+	@verify_value('paranoid', template_id=lambda x: len(x) > 0)
 	def __template__(self, template_id):
 		return WAppsGlobals.templates.lookup(template_id)
 
-	@verify_type(template_id=str)
-	@verify_value(template_id=lambda x: len(x) > 0)
+	@verify_type('paranoid', template_id=str)
+	@verify_value('paranoid', template_id=lambda x: len(x) > 0)
 	def __template_response__(self, template_id):
 		return WWebTemplateResponse(self.__template__(template_id), context=self._context)
 
