@@ -228,8 +228,6 @@ class WBrokerCommands(WGuestApp):
 
 class WCronTasks(WGuestApp):
 
-	__cron_tasks__ = []
-
 	def start(self):
 		tasks = self.tasks()
 
@@ -249,9 +247,13 @@ class WCronTasks(WGuestApp):
 		pass
 
 	@classmethod
+	def _cron_tasks(cls):
+		return []
+
+	@classmethod
 	def tasks(cls):
 		result = []
-		for task, schedule in product(cls.__cron_tasks__, cls.schedule()):
+		for task, schedule in product(cls._cron_tasks(), cls.schedule()):
 			result.append(WCronTaskSchedule(schedule, task))
 		return result
 
