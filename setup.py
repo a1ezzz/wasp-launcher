@@ -28,6 +28,7 @@ setup(
 	keywords = "",
 	url = "",
 	packages=find_packages(),
+	scripts=['wasp-launcher.py', 'wasp-launcher-cli.py'],
 	include_package_data=True,
 	long_description=read('README'),
 	classifiers=[],
