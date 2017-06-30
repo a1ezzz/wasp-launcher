@@ -46,7 +46,7 @@ from wasp_general.command.command import WCommandResult
 from wasp_general.command.context import WContextProto, WContext, WCommandContextResult, WCommandContextSet
 from wasp_general.command.context import WCommandContext
 
-from wasp_launcher.apps import WSyncHostApp, WAppsGlobals, WBrokerCommands
+from wasp_launcher.apps import WSyncHostApp, WAppsGlobals, WThreadTaskLoggingHandler
 
 
 class WManagementCommandPackerLayer(WMessengerOnionPackerLayerProto):
@@ -196,7 +196,7 @@ class WBrokerClientTask(WZMQService, WThreadTask):
 		WZMQService.stop(self)
 
 
-class WLauncherBrokerBasicTask(WThreadTask):
+class WLauncherBrokerBasicTask(WThreadTaskLoggingHandler, WThreadTask):
 
 	class ManagementProcessingLayer(WMessengerOnionLayerProto):
 

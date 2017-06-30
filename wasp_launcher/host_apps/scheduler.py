@@ -33,10 +33,10 @@ from wasp_general.task.thread import WThreadJoiningTimeoutError
 from wasp_general.task.scheduler.scheduler import WTaskSchedulerService, WSchedulerWatchingDog
 from wasp_general.task.scheduler.task_source import WCronTaskSource
 
-from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
+from wasp_launcher.apps import WSyncHostApp, WAppsGlobals, WThreadTaskLoggingHandler
 
 
-class WLauncherWatchingDog(WSchedulerWatchingDog):
+class WLauncherWatchingDog(WThreadTaskLoggingHandler, WSchedulerWatchingDog):
 
 	def stop(self):
 		try:
@@ -46,7 +46,7 @@ class WLauncherWatchingDog(WSchedulerWatchingDog):
 			WAppsGlobals.log.error('Unable to stop scheduled task gracefully. Task id: %s' % str(task_id))
 
 
-class WLauncherScheduler(WTaskSchedulerService):
+class WLauncherScheduler(WThreadTaskLoggingHandler, WTaskSchedulerService):
 
 	@verify_type('paranoid', maximum_running_tasks=(int, None), maximum_postponed_tasks=(int, None))
 	@verify_value('paranoid', maximum_running_tasks=lambda x: x is None or x > 0)

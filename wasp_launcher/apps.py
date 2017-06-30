@@ -27,6 +27,8 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
+import traceback
+
 from abc import ABCMeta
 from itertools import product
 
@@ -41,6 +43,17 @@ from wasp_general.task.scheduler.task_source import WCronUTCSchedule, WCronTaskS
 from wasp_general.network.web.service import WWebService, WWebTargetRoute, WWebEnhancedPresenter
 from wasp_general.network.web.proto import WWebRequestProto
 from wasp_general.network.web.template import WWebTemplateResponse
+
+
+class WThreadTaskLoggingHandler:
+
+	def thread_exception(self, raised_exception):
+		if WAppsGlobals.log is not None:
+			msg = 'Thread execution was stopped by the exception. Exception: %s' % str(raised_exception)
+			WAppsGlobals.log.error(msg)
+			WAppsGlobals.log.error('Traceback:\n' + traceback.format_exc())
+		else:
+			WThreadTask.thread_exception(self, raised_exception)
 
 
 class WHostAppRegistry(WTaskDependencyRegistry):
@@ -67,10 +80,9 @@ class WSyncHostApp(WRegisteredHostApp, WSyncTask, metaclass=WDependentTask):
 	pass
 
 
-class WThreadedHostApp(WRegisteredHostApp, WThreadTask, metaclass=WDependentTask):
+class WThreadedHostApp(WRegisteredHostApp, WThreadTaskLoggingHandler, WThreadTask, metaclass=WDependentTask):
 	""" Host application, that executes in a separate thread
 	"""
-	pass
 
 
 class WGuestAppRegistry(WTaskDependencyRegistry):
