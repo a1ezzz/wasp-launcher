@@ -42,9 +42,6 @@ if __name__ == '__main__':
 		WHostAppRegistry.start_task(app)
 
 	def shutdown_signal(signum, frame):
-		for app in host_apps:
-			WHostAppRegistry.stop_task(app)
-		WHostAppRegistry.stop_task(config_task)
 		WHostAppRegistry.all_stop()
 
 	signal.signal(signal.SIGTERM, shutdown_signal)
