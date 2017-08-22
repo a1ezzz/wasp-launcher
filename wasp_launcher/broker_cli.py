@@ -146,11 +146,11 @@ class WBrokerCommandProxy(WCommandContext):
 	def __init__(self, console):
 
 		class DummyCommand(WCommand):
-			def _exec(self, *command_tokens):
+			def _exec(self, *command_tokens, **command_env):
 				pass
 
 		class DummyAdapter(WCommandContextAdapter):
-			def adapt(self, *command_tokens, request_context=None):
+			def adapt(self, *command_tokens, request_context=None, **command_env):
 				pass
 
 		WCommandContext.__init__(self, DummyCommand(), DummyAdapter(None))
@@ -166,15 +166,11 @@ class WBrokerCommandProxy(WCommandContext):
 		)
 
 	@verify_type(command_tokens=str)
-	def match(self, *command_tokens):
-		return len(command_tokens) > 0
-
-	@verify_type(command_tokens=str, request_context=(WContextProto, None))
-	def match_context(self, *command_tokens, request_context=None):
+	def match(self, *command_tokens, **command_env):
 		return len(command_tokens) > 0
 
 	@verify_type('paranoid', command_tokens=str, request_context=(WContextProto, None))
-	def exec_context(self, *command_tokens, request_context=None):
+	def exec(self, *command_tokens, request_context=None, **command_env):
 		broker = self.__console.broker()
 		handler = broker.handler()
 		receive_agent = broker.receive_agent()
