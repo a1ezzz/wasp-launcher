@@ -29,7 +29,7 @@ from wasp_launcher.version import __status__
 
 import traceback
 
-from abc import ABCMeta
+from abc import ABCMeta, abstractclassmethod
 from itertools import product
 
 from wasp_general.verify import verify_type, verify_value
@@ -73,7 +73,6 @@ class WRegisteredHostApp(WTask, metaclass=WDependentTask):
 	""" Link to registry
 	"""
 
-
 class WSyncHostApp(WRegisteredHostApp, WSyncTask, metaclass=WDependentTask):
 	""" Host application, that executes in foreground
 	"""
@@ -83,6 +82,23 @@ class WSyncHostApp(WRegisteredHostApp, WSyncTask, metaclass=WDependentTask):
 class WThreadedHostApp(WRegisteredHostApp, WThreadTaskLoggingHandler, WThreadTask, metaclass=WDependentTask):
 	""" Host application, that executes in a separate thread
 	"""
+	pass
+
+
+class WHostAppCommandKit(WRegisteredHostApp):
+
+	@classmethod
+	def name(cls):
+		return cls.__registry_tag__
+
+	@abstractclassmethod
+	def commands(self):
+		"""
+
+		:return: WCommand
+		"""
+		raise NotImplementedError('This method is abstract')
+
 
 
 class WGuestAppRegistry(WTaskDependencyRegistry):
@@ -214,25 +230,14 @@ class WGuestModelApp(WDeclarativeGuestApp):
 	pass
 
 
-class WBrokerCommands(WGuestApp):
+class WGuestAppCommandKit(WGuestApp):
 
 	@classmethod
 	def commands(cls):
 		return tuple()
 
 	def start(self):
-		commands = self.commands()
-		if len(commands) > 0:
-			for command in commands:
-				WAppsGlobals.broker_commands.commands().add(command)
-
-			WAppsGlobals.log.info(
-				'Broker extended by the "%s" application commands' % self.name()
-			)
-		else:
-			WAppsGlobals.log.warn(
-				'No commands was specified by the guest application: %s' % self.name()
-			)
+		WAppsGlobals.broker_commands.add_guest_app(self)
 
 	def stop(self):
 		pass

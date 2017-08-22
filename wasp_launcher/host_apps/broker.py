@@ -28,7 +28,6 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 from wasp_launcher.version import __status__
 
 import zmq
-import traceback
 from abc import abstractmethod
 
 from wasp_general.verify import verify_type
@@ -43,10 +42,10 @@ from wasp_general.network.messenger.layers import WMessengerOnionPackerLayerProt
 from wasp_general.network.messenger.envelope import WMessengerBytesEnvelope, WMessengerEnvelope
 
 from wasp_general.command.command import WCommandResult
-from wasp_general.command.context import WContextProto, WContext, WCommandContextResult, WCommandContextSet
-from wasp_general.command.context import WCommandContext
+from wasp_general.command.context import WContextProto, WContext, WCommandContextResult
 
 from wasp_launcher.apps import WSyncHostApp, WAppsGlobals, WThreadTaskLoggingHandler
+from wasp_launcher.host_apps.broker_commands import WBrokerCommandManager
 
 
 class WManagementCommandPackerLayer(WMessengerOnionPackerLayerProto):
@@ -212,7 +211,16 @@ class WLauncherBrokerBasicTask(WThreadTaskLoggingHandler, WThreadTask):
 		@verify_type('paranoid', session=WMessengerOnionSessionProto)
 		@verify_type(envelope=WMessengerEnvelopeProto)
 		def process(self, envelope, session, **kwargs):
-			return WMessengerEnvelope(WAppsGlobals.broker_commands.exec_mgmt_command(envelope.message()))
+			return self.exec(envelope.message())
+
+		@classmethod
+		@verify_type(command=WManagementCommandPackerLayer.Command)
+		def exec(cls, command):
+			return WMessengerEnvelope(
+				WAppsGlobals.broker_commands.exec_broker_command(
+					*command.tokens, request_context=command.context
+				)
+			)
 
 	class ReceiveAgent(WZMQHandler.ReceiveAgent):
 
@@ -307,27 +315,6 @@ class WLauncherBrokerIPCTask(WLauncherBrokerBasicTask):
 		return 'ipc://%s' % named_socket
 
 
-class WBrokerManagementCommands(WCommandContextSet):
-
-	@verify_type(command=WManagementCommandPackerLayer.Command)
-	def exec_mgmt_command(self, command):
-		command_obj = self.commands().select(*command.tokens, request_context=command.context)
-		if command_obj is None:
-			return WCommandResult(output='No suitable command found', error=1)
-
-		try:
-			if isinstance(command_obj, WCommandContext) is True:
-				result = command_obj.exec_context(*command.tokens, request_context=command.context)
-			else:
-				result = command_obj.exec(*command.tokens)
-			return result
-
-		except Exception:
-			return WCommandResult(
-				output='Command execution error. Traceback\n%s' % traceback.format_exc(), error=1
-			)
-
-
 class WBrokerHostAppTasks:
 	__broker_tcp_task__ = None
 	__broker_ipc_task__ = None
@@ -354,7 +341,7 @@ class WBrokerInitHostApp(WSyncHostApp):
 			WBrokerHostAppTasks.__broker_ipc_task__ = WLauncherBrokerIPCTask()
 
 		if WAppsGlobals.broker_commands is None:
-			WAppsGlobals.broker_commands = WBrokerManagementCommands()
+			WAppsGlobals.broker_commands = WBrokerCommandManager()
 
 	def stop(self):
 		WAppsGlobals.log.info('Broker is finalizing')
@@ -372,12 +359,17 @@ class WBrokerHostApp(WSyncHostApp):
 	]
 
 	def start(self):
+		host_app_commands = WAppsGlobals.broker_commands.host_app_commands()
+		guest_app_commands = WAppsGlobals.broker_commands.guest_app_commands()
 
-		total_commands = len(WAppsGlobals.broker_commands.commands())
+		total_commands = host_app_commands + guest_app_commands
 		if total_commands == 0:
 			WAppsGlobals.log.warn('No commands was set for the broker')
 		else:
-			WAppsGlobals.log.info('Loaded broker commands: %i' % total_commands)
+			WAppsGlobals.log.info(
+				'Loaded broker commands: %i (host: %i, guest: %i)' %
+				(total_commands, host_app_commands, guest_app_commands)
+			)
 
 		WAppsGlobals.log.info('Broker is starting')
 
