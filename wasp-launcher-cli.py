@@ -66,38 +66,40 @@ if __name__ == '__main__':
 
 	cli.start()
 
-# any-context
+# any-context:
 # -- exit
 # -- quit
 # -- help
 # -- ..
-# global-context:
-# -- db-deploy scheme
-# -- db-deploy data
-# -- db-deploy uninstall
-# -- applications list (or apps list)
-# -- model list
-# -- presenter list
-# -- schedule list
-# general app context
-# -- list
-# -- model list
-# -- presenter list
-# specific app context
-# -- model list
-# -- presenter list
-# app-model context
-# -- list
-# app-model-specific_model context
-# -- list
-# -- list-verbose
-# -- create
-# -- delete
-# -- update
-# -- exec
-# app-presenter context
-# -- list
-# app-presenter-specific_presenter context
-# -- exec
-# schedule context:
-# -- list
+# -- .
+# host-app context:
+# host-app [full qualified application name|application alias] <commands>
+# like:
+# <for com.binblob.wasp-launcher.host-app.command::core - core>
+# -- host-app core threads
+# like:
+# <for com.binblob.wasp-launcher.host-app.command::model-db - model-db>
+# -- host-app model-db deploy
+# -- host-app model-db deploy scheme
+# -- host-app model-db deploy data
+# -- host-app model-db deploy uninstall
+# -- host-app model-db deploy uninstall
+# <for com.binblob.wasp-launcher.host-app.command::model-obj - model-obj>
+# -- host-app model-obj [model-cls] list <query args>
+# -- host-app model-obj [model-cls] list-verbose <query args>
+# -- host-app model-obj [model-cls] create <create args>
+# -- host-app model-obj [model-cls] delete <query args>
+# -- host-app model-obj [model-cls] update <query args>
+# -- host model-obj [model-cls] exec <query args> [method name] <method args>
+# <for com.binblob.wasp-launcher.host-app.command::guest - guest>
+# -- host-app guest list
+# -- host-app guest model list
+# -- host-app guest presenter list
+# -- host-app guest schedule list
+# -- host-app guest [guest-app] model list
+# -- host-app guest [guest-app] presenter list
+# -- host-app guest [guest-app] schedule list
+# <for com.binblob.wasp-launcher.host-app.command::schedule - schedule>
+# -- host-app schedule
+# guest-app context:
+# guest-app [full qualified application name|application alias] <commands>
