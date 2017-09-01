@@ -29,8 +29,7 @@ from wasp_launcher.version import __status__
 
 import traceback
 
-from abc import ABCMeta, abstractclassmethod
-from itertools import product
+from abc import ABCMeta, abstractmethod, abstractclassmethod
 
 from wasp_general.verify import verify_type, verify_value
 
@@ -38,7 +37,7 @@ from wasp_general.task.dependency import WDependentTask
 from wasp_general.task.base import WTask, WSyncTask
 from wasp_general.task.thread import WThreadTask
 from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage
-from wasp_general.task.scheduler.task_source import WCronUTCSchedule, WCronTaskSchedule
+from wasp_general.command.enhanced import WEnhancedCommand
 
 from wasp_general.network.web.service import WWebService, WWebTargetRoute, WWebEnhancedPresenter
 from wasp_general.network.web.proto import WWebRequestProto
@@ -85,11 +84,34 @@ class WThreadedHostApp(WRegisteredHostApp, WThreadTaskLoggingHandler, WThreadTas
 	pass
 
 
-class WHostAppCommandKit(WRegisteredHostApp):
+class WBrokerCommand(WEnhancedCommand):
 
-	@classmethod
-	def name(cls):
-		return cls.__registry_tag__
+	@abstractmethod
+	def brief_description(self):
+		raise NotImplementedError('This method is abstract')
+
+	def detailed_description(self):
+		help = 'This is help information for "%s" command (%s). ' % (self.command(), self.brief_description())
+
+		arguments_help = self.arguments_help()
+		if len(arguments_help) == 0:
+			help += 'Command does not have arguments\n'
+		else:
+			help += 'Command arguments:\n'
+			for argument_name, argument_description in arguments_help:
+				help += '\t%s - %s\n' % (argument_name, argument_description)
+		return help
+
+
+class WCommandKit(metaclass=ABCMeta):
+
+	@abstractclassmethod
+	def brief_description(self):
+		"""
+
+		:return: str
+		"""
+		raise NotImplementedError('This method is abstract')
 
 	@abstractclassmethod
 	def commands(self):
@@ -99,6 +121,12 @@ class WHostAppCommandKit(WRegisteredHostApp):
 		"""
 		raise NotImplementedError('This method is abstract')
 
+
+class WHostAppCommandKit(WRegisteredHostApp, WCommandKit):
+
+	@classmethod
+	def name(cls):
+		return cls.__registry_tag__
 
 
 class WGuestAppRegistry(WTaskDependencyRegistry):
@@ -146,15 +174,6 @@ class WGuestApp(WSyncTask, metaclass=WDependentTask):
 	@classmethod
 	def description(cls):
 		return None
-
-
-class WDeclarativeGuestApp(WGuestApp):
-
-	def start(self):
-		pass
-
-	def stop(self):
-		pass
 
 
 class WGuestWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
@@ -226,68 +245,19 @@ class WGuestWebApp(WGuestApp):
 		pass
 
 
-class WGuestModelApp(WDeclarativeGuestApp):
-	pass
+class WGuestModelApp(WGuestApp):
+
+	def start(self):
+		pass
+
+	def stop(self):
+		pass
 
 
-class WGuestAppCommandKit(WGuestApp):
-
-	@classmethod
-	def commands(cls):
-		return tuple()
+class WGuestAppCommandKit(WGuestApp, WCommandKit):
 
 	def start(self):
 		WAppsGlobals.broker_commands.add_guest_app(self)
 
 	def stop(self):
 		pass
-
-
-class WCronTasks(WGuestApp):
-
-	def start(self):
-		tasks = self.tasks()
-
-		for task in tasks:
-			WAppsGlobals.scheduler.cron_source().add_task(task)
-
-		if len(tasks) > 0:
-			WAppsGlobals.log.info(
-				'Cron scheduler extended by the "%s" application tasks' % self.name()
-			)
-		else:
-			WAppsGlobals.log.warn(
-				'No cron tasks was specified by the guest application: %s' % self.name()
-			)
-
-	def stop(self):
-		pass
-
-	@classmethod
-	def _cron_tasks(cls):
-		return []
-
-	@classmethod
-	def tasks(cls):
-		result = []
-		for task, schedule in product(cls._cron_tasks(), cls.schedule()):
-			result.append(WCronTaskSchedule(schedule, task))
-		return result
-
-	@classmethod
-	def schedule(cls):
-		result = []
-
-		section = 'wasp-launcher::scheduler::cron'
-		option = cls.name()
-
-		if WAppsGlobals.config.has_option(section, option) is True:
-			schedule_config = WAppsGlobals.config.split_option(section, option)
-			if len(schedule_config) > 0:
-				for value in schedule_config:
-					schedule = WCronUTCSchedule.from_string(value)
-					result.append(schedule)
-
-		if len(result) == 0:
-			result.append(WCronUTCSchedule())
-		return result
