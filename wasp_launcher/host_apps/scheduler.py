@@ -77,7 +77,7 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 					)
 				)
 			else:
-				WAppsGlobals.log.info('Scheduled config-task "%s" completed sucessfuly' % self.__option)
+				WAppsGlobals.log.info('Scheduled config-task "%s" completed successfully' % self.__option)
 
 		def thread_stopped(self):
 			pass
