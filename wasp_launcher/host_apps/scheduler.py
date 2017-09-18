@@ -60,10 +60,10 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 
 	class BrokerClient(WThreadTaskLoggingHandler, WScheduledTask):
 
-		__thread_name_suffix__ = 'Scheduler-Config-Worker'
+		__thread_name_suffix__ = 'Config-Task-%s'
 
 		def __init__(self, config_option, broker_command):
-			WScheduledTask.__init__(self, self.__thread_name_suffix__)
+			WScheduledTask.__init__(self, self.__thread_name_suffix__ % config_option)
 			self.__option = config_option
 			self.__command = broker_command
 
