@@ -29,6 +29,7 @@ from wasp_launcher.version import __status__
 
 import traceback
 import threading
+import time
 
 from wasp_general.verify import verify_type, verify_value
 
@@ -36,6 +37,7 @@ from wasp_general.command.command import WCommandResult, WCommandProto, WCommand
 from wasp_general.command.command import WCommandSelector, WCommandPrioritizedSelector
 from wasp_general.command.context import WContextProto, WContext, WCommandContextResult, WCommandContextAdapter
 from wasp_general.command.context import WCommandContext, WCommandContextSet
+from wasp_general.datetime import local_datetime
 
 from wasp_launcher.apps import WAppsGlobals, WGuestAppCommandKit, WHostAppRegistry, WHostAppCommandKit, WBrokerCommand
 
@@ -77,8 +79,9 @@ double dot command ('..').
 You can call a specific command in any context by the following pattern:
 	- [host-app|guest-app] [module or alias] [command] <command_arg1> <command_arg2...>
 """
-	__general_usage_tip__ = """For detailed information about command line usage - type 'help help' 
+	__general_usage_tip__ = """For detailed information about command line usage - type 'help help'
 """
+
 	__main_context_help__ = """This is a main or root context. Suitable sub-context are:
 	- host-app
 	- guest-app
@@ -87,12 +90,11 @@ You can call a specific command in any context by the following pattern:
 interact with "host-apps". You are able to switch to next context:
 """
 	__guest_apps_level_context_help__ = """This is a 'guest-app' context. Context for modules and commands that \
-interact with "guest-apps". You are able to switch to next context: 
+interact with "guest-apps". You are able to switch to next context:
 """
 
-	__specific_app_context_help__ = """This is help for "%s" of "%s" context. Suitable commands are: 
+	__specific_app_context_help__ = """This is help for "%s" of "%s" context. Suitable commands are:
 """
-
 
 	class DoubleDotCommand(WCommand):
 
@@ -376,7 +378,8 @@ interact with "guest-apps". You are able to switch to next context:
 
 			commands = host_app.commands()
 			self.__host_apps_command_set.add_commands(
-				app_name, self.__specific_host_app_context_help, *commands, alias=alias
+				app_name, self.__specific_host_app_context_help, *commands, alias=alias,
+				force_context_command=True
 			)
 			self.__total_host_apps_commands += len(commands)
 
@@ -524,10 +527,40 @@ class WScheduleCommandKit(WHostAppCommandKit):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.broker.kits.schedule'
 
+	class TaskSources(WBrokerCommand):
+
+		def __init__(self):
+			WBrokerCommand.__init__(self, 'sources')
+
+		@verify_type(command_arguments=dict)
+		def _exec(self, command_arguments):
+			if WAppsGlobals.scheduler is None:
+				return WCommandResult(output='Scheduler was not loaded', error=1)
+
+			task_sources = WAppsGlobals.scheduler.task_sources()
+			output = 'Total sources count: %i\n' % len(task_sources)
+			if len(task_sources) > 0:
+				output += '################################################################\n'
+				dt_fn = lambda x: '%s%s' % (local_datetime(dt=x).isoformat(), time.strftime('%Z'))
+				for source in task_sources:
+					next_start = source.next_start()
+					next_start = dt_fn(next_start) if next_start is not None else '(not available)'
+					output += ' # '.join((
+						source.name(),
+						source.description(),
+						str(source.tasks_planned()),
+						str(next_start)
+					))
+			return WCommandResult(output=output)
+
+		@classmethod
+		def brief_description(cls):
+			return 'show tasks sources information'
+
 	@classmethod
 	def brief_description(cls):
 		return 'scheduler commands'
 
 	@classmethod
 	def commands(cls):
-		return []
+		return [WScheduleCommandKit.TaskSources()]
