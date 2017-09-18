@@ -27,20 +27,115 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
+from abc import abstractmethod
+import re
+
 from wasp_general.verify import verify_type, verify_value
+from wasp_general.command.command import WCommandProto
 
 from wasp_general.task.thread import WThreadJoiningTimeoutError
-from wasp_general.task.scheduler.scheduler import WTaskSchedulerService, WSchedulerWatchingDog
-from wasp_general.task.scheduler.task_source import WCronTaskSource
+from wasp_general.task.scheduler.proto import WTaskSourceProto, WScheduledTask
+from wasp_general.task.scheduler.scheduler import WTaskSchedulerService, WRunningTaskRegistry, WSchedulerWatchdog
+from wasp_general.task.scheduler.task_source import WCronTaskSource, WCronLocalTZSchedule, WCronTaskSchedule
+from wasp_general.task.scheduler.task_source import WCronUTCSchedule
 
 from wasp_launcher.apps import WSyncHostApp, WAppsGlobals, WThreadTaskLoggingHandler
 
 
-class WLauncherWatchingDog(WThreadTaskLoggingHandler, WSchedulerWatchingDog):
+class WLauncherTaskSource(WTaskSourceProto):
+
+	@abstractmethod
+	def name(self):
+		raise NotImplementedError('This method is abstract')
+
+	def description(self):
+		return None
+
+	@abstractmethod
+	def tasks_planned(self):
+		raise NotImplementedError('This method is abstract')
+
+
+class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
+
+	class BrokerClient(WThreadTaskLoggingHandler, WScheduledTask):
+
+		__thread_name_suffix__ = 'Scheduler-Config-Worker'
+
+		def __init__(self, config_option, broker_command):
+			WScheduledTask.__init__(self, self.__thread_name_suffix__)
+			self.__option = config_option
+			self.__command = broker_command
+
+		def thread_started(self):
+			tokens = WCommandProto.split_command(self.__command)
+			result = WAppsGlobals.broker_commands.exec_broker_command(*tokens)
+			if result.error is not None:
+				WAppsGlobals.log.error(
+					'Error in processing scheduled config-task "%s": %s' % (
+						self.__option, result.output
+					)
+				)
+			else:
+				WAppsGlobals.log.info('Scheduled config-task "%s" completed sucessfuly' % self.__option)
+
+		def thread_stopped(self):
+			pass
+
+	__task_source_name__ = 'com.binblob.wasp-launcher.host-app.scheduler.config'
+
+	__task_import_re__ = re.compile(
+		'^(local|utc)?\\s*(\\d+|\*)\\s*(\\d+|\*)\\s*(\\d+|\*)\\s*(\\d+|\*)\\s*(\\d+|\*)\\s*(\\w+.*)$'
+	)
+
+	__config_section__ = 'wasp-launcher::scheduler::cron'
+
+	def __init__(self, scheduler):
+		WLauncherTaskSource.__init__(self)
+		WCronTaskSource.__init__(self, scheduler)
+
+	def name(self):
+		return self.__task_source_name__
+
+	def description(self):
+		return 'Fixed tasks that were specified in configuration during start'
+
+	def tasks_planned(self):
+		return WCronTaskSource.tasks_planned(self)
+
+	def load_tasks(self):
+		tasks_options = WAppsGlobals.config.options(self.__config_section__)
+		for option_name in tasks_options:
+			task_cmd = WAppsGlobals.config[self.__config_section__][option_name]
+			task_re = self.__task_import_re__.search(task_cmd.lower())
+			if task_re is None:
+				WAppsGlobals.log.error(
+					'Unable to parse configuration task (option: %s). '
+					'Task configuration malformed. Check documentation' % option_name
+				)
+				continue
+			task_tokens = task_re.groups()
+			schedule_timezone = task_tokens[0]
+
+			if schedule_timezone is None or schedule_timezone == 'local':
+				schedule_cls = WCronLocalTZSchedule
+			elif schedule_timezone == 'utc':
+				schedule_cls = WCronUTCSchedule
+			else:
+				raise RuntimeError('Internal error. Scheduler is corrupted')
+
+			task_schedule = schedule_cls.from_string_tokens(*task_tokens[1:6])
+			broker_command = WLauncherConfigTasks.BrokerClient(option_name, task_tokens[6])
+			task = WCronTaskSchedule(task_schedule, broker_command)
+			self.add_task(task)
+			WAppsGlobals.log.info('Scheduled config-task "%s" loaded' % option_name)
+
+
+class WLauncherWatchdog(WThreadTaskLoggingHandler, WSchedulerWatchdog):
 
 	def stop(self):
 		try:
-			WSchedulerWatchingDog.stop(self)
+			WSchedulerWatchdog.stop(self)
 		except WThreadJoiningTimeoutError:
 			task_id = self.task_schedule().task_id()
 			WAppsGlobals.log.error('Unable to stop scheduled task gracefully. Task id: %s' % str(task_id))
@@ -54,13 +149,19 @@ class WLauncherScheduler(WThreadTaskLoggingHandler, WTaskSchedulerService):
 	def __init__(self, maximum_running_tasks=None, maximum_postponed_tasks=None):
 		WTaskSchedulerService.__init__(
 			self, maximum_running_tasks=maximum_running_tasks,
-			maximum_postponed_tasks=maximum_postponed_tasks, watching_dog_cls=WLauncherWatchingDog
+			maximum_postponed_tasks=maximum_postponed_tasks, running_tasks_registry=WRunningTaskRegistry(
+				watchdog_cls=WLauncherWatchdog
+			)
 		)
-		self.__cron_source = WCronTaskSource(self)
+		self.__cron_source = WLauncherConfigTasks(self)
 		self.add_task_source(self.__cron_source)
 
 	def cron_source(self):
 		return self.__cron_source
+
+	@verify_type(task_source=WLauncherTaskSource)
+	def add_task_source(self, task_source):
+		WTaskSchedulerService.add_task_source(self, task_source)
 
 
 class WSchedulerInitHostApp(WSyncHostApp):
@@ -107,6 +208,7 @@ class WSchedulerHostApp(WSyncHostApp):
 		WAppsGlobals.log.info('Scheduler is starting')
 		if WAppsGlobals.scheduler is not None:
 			WAppsGlobals.scheduler.start()
+			WAppsGlobals.scheduler.cron_source().load_tasks()
 			WAppsGlobals.scheduler.update()
 
 	def stop(self):
