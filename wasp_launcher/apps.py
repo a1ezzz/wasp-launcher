@@ -72,6 +72,7 @@ class WRegisteredHostApp(WTask, metaclass=WDependentTask):
 	""" Link to registry
 	"""
 
+
 class WSyncHostApp(WRegisteredHostApp, WSyncTask, metaclass=WDependentTask):
 	""" Host application, that executes in foreground
 	"""
