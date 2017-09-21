@@ -3,3 +3,4 @@ mako
 tornado
 decorator
 pyzmq
+wasp-general
