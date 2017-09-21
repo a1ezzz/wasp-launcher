@@ -12,4 +12,4 @@ fi
 cd "$PACKAGE_DIR"
 rm -rf dist/
 python3 setup.py sdist
-twine upload -s dist/wasp-general-* -r "$REPO"
+twine upload -s dist/wasp-launcher-* -r "$REPO"

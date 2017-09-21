@@ -2,7 +2,7 @@
 import os
 from setuptools import setup, find_packages
 
-from wasp_general.version import __numeric_version__, __author__, __email__, __license__
+from wasp_launcher.version import __numeric_version__, __author__, __email__, __license__
 
 
 class SetupPySpec:
@@ -26,7 +26,7 @@ class SetupPySpec:
 		"Topic :: Internet",
 		"Topic :: Internet :: WWW/HTTP",
 		"Topic :: Internet :: WWW/HTTP :: Dynamic Content",
-		"Topic :: Internet :: WWW/HTTP :: HTTP Servers"
+		"Topic :: Internet :: WWW/HTTP :: HTTP Servers",
 		"Topic :: Internet :: WWW/HTTP :: Session",
 		"Topic :: Internet :: WWW/HTTP :: Site Management",
 		"Topic :: Software Development"
