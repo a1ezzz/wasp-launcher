@@ -1,0 +1,2 @@
+WASP_LAUNCHER_CONFIG_FILE=/etc/wasp-launcher.conf
+WASP_LAUNCHER_CONFIG_DIR=/etc/wasp-launcher.conf.d

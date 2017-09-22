@@ -1,0 +1,5 @@
+#!/usr/bin/dh-exec
+
+wasp-launcher.py => usr/bin/wasp-launcher.py
+wasp-launcher-cli.py  => usr/bin/wasp-launcher-cli.py
+extra/wasp-launcher.conf.sample => etc/wasp-launcher.conf

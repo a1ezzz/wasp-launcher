@@ -1,0 +1,12 @@
+[Unit]
+Description=WASP-Launcher Service
+After=network.target
+
+[Service]
+EnvironmentFile=-/etc/default/python3-wasp-launcher
+ExecStart=/usr/bin/wasp-launcher.py
+
+[Install]
+WantedBy=mutli-user.target
+Alias=wasp-launcher.service
+
