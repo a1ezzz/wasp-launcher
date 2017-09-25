@@ -4,7 +4,10 @@ After=network.target
 
 [Service]
 EnvironmentFile=-/etc/default/python3-wasp-launcher
-ExecStart=/usr/bin/wasp-launcher.py
+ExecStart=/usr/sbin/wasp-launcher
+User=wasp_daemon
+Group=wasp_daemon
+RuntimeDirectory=wasp-launcher
 
 [Install]
 WantedBy=mutli-user.target

@@ -1,0 +1,18 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+
+	install)
+		useradd --system wasp_daemon --home-dir /var/run/wasp-launcher
+		;;
+	upgrade|abort-upgrade)
+		;;
+	*)
+		echo "unknown paramater is specified '$1'" >&2
+		exit 1
+esac
+
+exit 0
+

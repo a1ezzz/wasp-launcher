@@ -2,13 +2,13 @@ Source: wasp-launcher
 Section: python
 Priority: optional
 Maintainer: Ildar Gafurov <dev@binblob.com>
-Build-Depends: debhelper (>=9), python3 (>=3.4), dh-exec
+Build-Depends: debhelper (>=9), python3 (>=3.4), dh-exec, libcap2-dev, gcc
 X-Python3-Version: >= 3.4
 Standards-Version: 3.9.5
 
 Package: python3-wasp-launcher
 Architecture: any
-Pre-Depends: dpkg (>= 1.16.1), python3.4 | python3.5 | python3.6 ${misc:Pre-Depends}
+Pre-Depends: dpkg (>= 1.16.1), libcap2-bin, python3.4 | python3.5 | python3.6 ${misc:Pre-Depends}
 Depends: python3-wasp-general, python3-pymongo ${misc:Depends}
 Description: python library
 

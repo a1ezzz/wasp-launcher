@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+
+	purge|remove|abort-install|dissapear)
+		userdel wasp_daemon
+		;;
+	upgrade|failed-upgrade|abort-upgrade)
+		;;
+	*)
+		echo "unknown paramater is specified '$1'" >&2
+		exit 1
+esac
+
+exit 0
