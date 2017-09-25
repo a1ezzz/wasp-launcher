@@ -28,6 +28,7 @@ import tornado.web
 import tornado.httpserver
 
 from wasp_general.network.service import WLoglessIOLoop
+from wasp_general.network.primitives import WIPV4SocketInfo
 from wasp_general.network.web.service import WWebService, WWebPresenterFactory
 from wasp_general.network.web.tornado import WTornadoRequestHandler
 
@@ -114,7 +115,13 @@ class WWebHostApp(WThreadedHostApp):
 	def thread_started(self):
 		self.setup_presenters()
 
-		WAppsGlobals.tornado_service.listen(8888)
+		info = WIPV4SocketInfo.parse_socket_info(
+			WAppsGlobals.config['wasp-launcher::web']['bind_address']
+		)
+		if info.port() is None:
+			raise RuntimeError('Invalid bind address in the configuration')
+
+		WAppsGlobals.tornado_service.listen(int(info.port()), address=str(info.address()))
 		WAppsGlobals.log.info('Web-service is starting')
 		WAppsGlobals.tornado_io_loop.start()
 
