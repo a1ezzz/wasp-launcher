@@ -47,6 +47,9 @@ class WConfigHostApp(WSyncHostApp):
 	""" Environment variable name that is used for configuration filename which overrides defaults.
 	"""
 
+	__environment_dir_var__ = 'WASP_LAUNCHER_CONFIG_DIR'
+	# TODO: apply configurations from this directory
+
 	__configuration_default__ = os.path.join(os.path.dirname(__file__), '..', 'config', 'defaults.ini')
 	""" Place where default configuration is stored
 	"""
