@@ -32,7 +32,7 @@ from wasp_general.network.primitives import WIPV4SocketInfo
 from wasp_general.network.web.service import WWebService, WWebPresenterFactory
 from wasp_general.network.web.tornado import WTornadoRequestHandler
 
-from wasp_launcher.apps import WSyncHostApp, WThreadedHostApp, WAppsGlobals, WGuestWebPresenter, WGuestWebApp
+from wasp_launcher.apps import WSyncHostApp, WThreadedHostApp, WAppsGlobals, WGuestWebPresenter
 from wasp_launcher.host_apps.web_debugger import WHostAppWebDebugger
 
 
@@ -64,6 +64,19 @@ class WWebInitHostApp(WSyncHostApp):
 
 		debugger = WAppsGlobals.config["wasp-launcher::web:debug"]["mode"].lower() in ['on', 'on error']
 
+		debugger_app_section = \
+			'wasp-launcher::applications::host::com.binblob.wasp-launcher.host-app.web-debugger'
+		debugger_app_enabled = WAppsGlobals.config.getboolean(debugger_app_section, 'enabled')
+		debugger_app_auto_start = WAppsGlobals.config.getboolean(debugger_app_section, 'auto_start')
+
+		if debugger is True:
+			if debugger_app_enabled is False or debugger_app_auto_start is False:
+				WAppsGlobals.log.error(
+					'Web debugger service is disabled (and/or removed from auto start). '
+					'Debug of web-session is disabled'
+				)
+				debugger = False
+
 		WAppsGlobals.wasp_web_service = WWebService(
 			factory=WGuestWebPresenterFactory,
 			debugger=(WHostAppWebDebugger() if debugger is True else None)
@@ -78,19 +91,8 @@ class WWebInitHostApp(WSyncHostApp):
 			io_loop=WAppsGlobals.tornado_io_loop
 		)
 
-		if debugger is True:
-			self.__registry__.start_task('com.binblob.wasp-launcher.host-app.web-debugger')
-			WAppsGlobals.log.info('Debugger started')
-
 	def stop(self):
 		WAppsGlobals.log.info('Web-service is finalizing')
-
-		debug_task = self.__registry__.registry_storage().started_task(
-			'com.binblob.wasp-launcher.host-app.web-debugger'
-		)
-		if debug_task is not None:
-			debug_task.stop()
-			WAppsGlobals.log.info('Debugger stopped')
 
 		WAppsGlobals.tornado_service = None
 		WAppsGlobals.tornado_io_loop = None

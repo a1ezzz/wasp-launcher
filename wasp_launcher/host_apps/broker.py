@@ -342,6 +342,7 @@ class WBrokerInitHostApp(WSyncHostApp):
 
 		if WAppsGlobals.broker_commands is None:
 			WAppsGlobals.broker_commands = WBrokerCommandManager()
+			WAppsGlobals.broker_commands.load_apps()
 
 	def stop(self):
 		WAppsGlobals.log.info('Broker is finalizing')

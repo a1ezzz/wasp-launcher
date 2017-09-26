@@ -39,7 +39,8 @@ from wasp_general.command.context import WContextProto, WContext, WCommandContex
 from wasp_general.command.context import WCommandContext, WCommandContextSet
 from wasp_general.datetime import local_datetime
 
-from wasp_launcher.apps import WAppsGlobals, WGuestAppCommandKit, WHostAppRegistry, WHostAppCommandKit, WBrokerCommand
+from wasp_launcher.apps import WAppsGlobals, WCommandKit, WBrokerCommand
+from wasp_launcher.loader import WClassLoader
 
 
 class WBrokerCommandManager:
@@ -326,7 +327,11 @@ interact with "guest-apps". You are able to switch to next context:
 				self.__main_command_set.add_prioritized(app_context_command, 20)
 				self.add_prioritized(WReduceCommand(app_commands, *app_names), 30)
 
+	__kit_section_prefix__ = 'wasp-launcher::broker::kits'
+
 	def __init__(self):
+		self.__loader = WClassLoader(self.__kit_section_prefix__, WCommandKit, tag_fn=lambda x: x.name())
+
 		self.__internal_set = WCommandContextSet()
 		self.__internal_set.commands().add_prioritized(WBrokerCommandManager.DotCommand(), 10)
 		self.__internal_set.commands().add_prioritized(WBrokerCommandManager.DoubleDotCommand(), 10)
@@ -353,35 +358,11 @@ interact with "guest-apps". You are able to switch to next context:
 			main_command_set, 'guest-app', self.__guest_app_context_help
 		)
 
-		self.__load_host_apps_kits()
-
 	def host_app_commands(self):
 		return self.__total_host_apps_commands
 
 	def guest_app_commands(self):
 		return self.__total_guest_apps_commands
-
-	def __load_host_apps_kits(self):
-		for kit_name in WAppsGlobals.config.split_option('wasp-launcher::broker::kits::host_apps', 'load_kits'):
-			host_app = WHostAppRegistry.registry_storage().tasks(kit_name)
-			if host_app is None:
-				raise RuntimeError('Unable to find suitable host-app kit for "%s"' % kit_name)
-
-			app_name = host_app.name()
-
-			config_alias_section = 'wasp-launcher::broker::kits::host_apps::aliases'
-			alias = None
-			if WAppsGlobals.config.has_option(config_alias_section, app_name) is True:
-				alias = WAppsGlobals.config[config_alias_section][app_name]
-
-			self.__host_apps.append((host_app, alias))
-
-			commands = host_app.commands()
-			self.__host_apps_command_set.add_commands(
-				app_name, self.__specific_host_app_context_help, *commands, alias=alias,
-				force_context_command=True
-			)
-			self.__total_host_apps_commands += len(commands)
 
 	def __main_context_help(self):
 		return self.__main_context_help__ + self.__general_usage_tip__
@@ -422,19 +403,35 @@ interact with "guest-apps". You are able to switch to next context:
 	def __specific_host_app_context_help(self, app_name, commands):
 		return self.__specific_app_context_help('host-app', app_name, commands)
 
-	@verify_type(guest_app=WGuestAppCommandKit)
-	def add_guest_app(self, guest_app):
-		app_name = guest_app.name()
-		alias = None
-		if WAppsGlobals.config.has_option('wasp-launcher::broker::kits::guest_apps::aliases', app_name) is True:
-			alias = WAppsGlobals.config['wasp-launcher::broker::kits::guest_apps::aliases'][app_name]
+	def load_apps(self):
+		self.__loader.load(self.load_callback)
 
-		self.__guest_apps.append((guest_app, alias))
-		commands = guest_app.commands()
-		self.__guest_apps_command_set.add_commands(
-			app_name, self.__specific_guest_app_context_help, *commands, alias=alias
-		)
-		self.__total_guest_apps_commands += len(commands)
+	def load_callback(self, section_name, item_tag, item_cls):
+		alias = None
+		if WAppsGlobals.config.has_option(section_name, 'alias') is True:
+			alias = WAppsGlobals.config[section_name]['alias']
+
+		commands = item_cls.commands()
+
+		kit_type = WAppsGlobals.config[section_name]['type'].lower()
+		if kit_type == 'host_app':
+			self.__host_apps.append((item_cls, alias))
+
+			self.__host_apps_command_set.add_commands(
+				item_tag, self.__specific_host_app_context_help, *commands, alias=alias,
+				force_context_command=True
+			)
+			self.__total_host_apps_commands += len(commands)
+		elif kit_type == 'guest_app':
+			self.__guest_apps.append((item_cls, alias))
+			self.__guest_apps_command_set.add_commands(
+				item_tag, self.__specific_guest_app_context_help, *commands, alias=alias
+			)
+			self.__total_guest_apps_commands += len(commands)
+		else:
+			raise RuntimeError(
+				'Invalid kit type is specified: "%s" for section "%s"' % (item_tag, section_name)
+			)
 
 	@verify_type('paranoid', command_tokens=str, request_context=(WContextProto, None))
 	def exec_broker_command(self, *command_tokens, request_context=None):
@@ -451,9 +448,9 @@ interact with "guest-apps". You are able to switch to next context:
 			)
 
 
-class WCoreCommandKit(WHostAppCommandKit):
+class WCoreCommandKit(WCommandKit):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.broker.kits.core'
+	__kit_name__ = 'com.binblob.wasp-launcher.host-app.broker.kits.core'
 
 	class Threads(WBrokerCommand):
 
@@ -476,6 +473,10 @@ class WCoreCommandKit(WHostAppCommandKit):
 			return 'return application threads list'
 
 	@classmethod
+	def name(cls):
+		return cls.__kit_name__
+
+	@classmethod
 	def brief_description(cls):
 		return 'general or launcher-wide commands'
 
@@ -484,9 +485,13 @@ class WCoreCommandKit(WHostAppCommandKit):
 		return [WCoreCommandKit.Threads()]
 
 
-class WModelDBCommandKit(WHostAppCommandKit):
+class WModelDBCommandKit(WCommandKit):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.broker.kits.model-db'
+	__kit_name__ = 'com.binblob.wasp-launcher.host-app.broker.kits.model-db'
+
+	@classmethod
+	def name(cls):
+		return cls.__kit_name__
 
 	@classmethod
 	def brief_description(cls):
@@ -497,9 +502,13 @@ class WModelDBCommandKit(WHostAppCommandKit):
 		return []
 
 
-class WModelObjCommandKit(WHostAppCommandKit):
+class WModelObjCommandKit(WCommandKit):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.broker.kits.model-obj'
+	__kit_name__ = 'com.binblob.wasp-launcher.host-app.broker.kits.model-obj'
+
+	@classmethod
+	def name(cls):
+		return cls.__kit_name__
 
 	@classmethod
 	def brief_description(cls):
@@ -510,9 +519,13 @@ class WModelObjCommandKit(WHostAppCommandKit):
 		return []
 
 
-class WGuestCommandKit(WHostAppCommandKit):
+class WGuestCommandKit(WCommandKit):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.broker.kits.guest'
+	__kit_name__ = 'com.binblob.wasp-launcher.host-app.broker.kits.guest'
+
+	@classmethod
+	def name(cls):
+		return cls.__kit_name__
 
 	@classmethod
 	def brief_description(cls):
@@ -523,9 +536,9 @@ class WGuestCommandKit(WHostAppCommandKit):
 		return []
 
 
-class WScheduleCommandKit(WHostAppCommandKit):
+class WScheduleCommandKit(WCommandKit):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.broker.kits.schedule'
+	__kit_name__ = 'com.binblob.wasp-launcher.host-app.broker.kits.schedule'
 
 	class TaskSources(WBrokerCommand):
 
@@ -556,6 +569,10 @@ class WScheduleCommandKit(WHostAppCommandKit):
 		@classmethod
 		def brief_description(cls):
 			return 'show tasks sources information'
+
+	@classmethod
+	def name(cls):
+		return cls.__kit_name__
 
 	@classmethod
 	def brief_description(cls):

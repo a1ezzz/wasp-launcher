@@ -28,23 +28,23 @@ from wasp_launcher.version import __status__
 import os
 import signal
 
-from wasp_launcher.apps import WHostAppRegistry, WAppsGlobals
-# noinspection PyUnresolvedReferences
-import wasp_launcher.host_apps
+from wasp_launcher.apps import WAppsGlobals
+
 from wasp_launcher.broker_cli import WBrokerCLI
+from wasp_launcher.bootstrap import WLauncherBootstrap
 
 
 if __name__ == '__main__':
 	print('CLI is starting')
 
-	config_task = 'com.binblob.wasp-launcher.host-app.config'
-	WHostAppRegistry.start_task(config_task)
+	bootstrap = WLauncherBootstrap()
+	bootstrap.load_configuration()
 
 	os.environ['TERM'] = 'linux'  # TODO: remove magic value!
 
 	if WAppsGlobals.config.getboolean('wasp-launcher::broker::connection::cli', 'named_socket') is True:
 		named_socket = WAppsGlobals.config['wasp-launcher::broker::connection']['named_socket_path'].strip()
-		connection = connection = 'ipc://%s' %  named_socket
+		connection = connection = 'ipc://%s' % named_socket
 	else:
 		tcp_address = WAppsGlobals.config['wasp-launcher::broker::connection::cli']['tcp_address'].strip()
 		if len(tcp_address) > 0:
@@ -59,47 +59,9 @@ if __name__ == '__main__':
 
 	def shutdown_signal(signum, frame):
 		cli.stop()
-		WHostAppRegistry.stop_task(config_task, stop_requirements=True)
+		bootstrap.stop_bootstrapping()
 
 	signal.signal(signal.SIGTERM, shutdown_signal)
 	signal.signal(signal.SIGINT, shutdown_signal)
 
 	cli.start()
-
-# any-context:
-# -- exit
-# -- quit
-# -- help
-# -- ..
-# -- .
-# host-app context:
-# host-app [full qualified application name|application alias] <commands>
-# like:
-# <for com.binblob.wasp-launcher.host-app.command::core - core>
-# -- host-app core threads
-# like:
-# <for com.binblob.wasp-launcher.host-app.command::model-db - model-db>
-# -- host-app model-db deploy
-# -- host-app model-db deploy scheme
-# -- host-app model-db deploy data
-# -- host-app model-db deploy uninstall
-# -- host-app model-db deploy uninstall
-# <for com.binblob.wasp-launcher.host-app.command::model-obj - model-obj>
-# -- host-app model-obj [model-cls] list <query args>
-# -- host-app model-obj [model-cls] list-verbose <query args>
-# -- host-app model-obj [model-cls] create <create args>
-# -- host-app model-obj [model-cls] delete <query args>
-# -- host-app model-obj [model-cls] update <query args>
-# -- host model-obj [model-cls] exec <query args> [method name] <method args>
-# <for com.binblob.wasp-launcher.host-app.command::guest - guest>
-# -- host-app guest list
-# -- host-app guest model list
-# -- host-app guest presenter list
-# -- host-app guest schedule list
-# -- host-app guest [guest-app] model list
-# -- host-app guest [guest-app] presenter list
-# -- host-app guest [guest-app] schedule list
-# <for com.binblob.wasp-launcher.host-app.command::schedule - schedule>
-# -- host-app schedule
-# guest-app context:
-# guest-app [full qualified application name|application alias] <commands>

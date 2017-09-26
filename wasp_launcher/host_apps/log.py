@@ -39,6 +39,10 @@ class WLogHostApp(WSyncHostApp):
 	""" Task tag
 	"""
 
+	__log_handler__ = None
+	""" Logging handler that is used for processing messages
+	"""
+
 	def start(self):
 		""" Start this app (all the work is done in :meth:`.WLogHostApp.setup_logger` method)
 
@@ -52,6 +56,10 @@ class WLogHostApp(WSyncHostApp):
 
 		:return: None
 		"""
+		if WAppsGlobals.log is not None and WLogHostApp.__log_handler__ is not None:
+			WAppsGlobals.log.removeHandler(WLogHostApp.__log_handler__)
+
+		WLogHostApp.__log_handler__ = None
 		WAppsGlobals.log = None
 
 	@classmethod
@@ -66,7 +74,7 @@ class WLogHostApp(WSyncHostApp):
 				'[%(name)s] [%(threadName)s] [%(levelname)s] [%(asctime)s] %(message)s',
 				'%Y-%m-%d %H:%M:%S'
 			)
-			log_handler = logging.StreamHandler(sys.stdout)
-			log_handler.setFormatter(formatter)
-			WAppsGlobals.log.addHandler(log_handler)
+			WLogHostApp.__log_handler__ = logging.StreamHandler(sys.stdout)
+			WLogHostApp.__log_handler__.setFormatter(formatter)
+			WAppsGlobals.log.addHandler(WLogHostApp.__log_handler__)
 			WAppsGlobals.log.setLevel(logging.INFO)

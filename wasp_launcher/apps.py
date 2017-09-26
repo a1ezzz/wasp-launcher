@@ -51,8 +51,10 @@ class WThreadTaskLoggingHandler:
 			msg = 'Thread execution was stopped by the exception. Exception: %s' % str(raised_exception)
 			WAppsGlobals.log.error(msg)
 			WAppsGlobals.log.error('Traceback:\n' + traceback.format_exc())
-		else:
+		elif isinstance(self, WThreadTask):
 			WThreadTask.thread_exception(self, raised_exception)
+		else:
+			raise RuntimeError('Class is not inherited from WThreadTask')
 
 
 class WHostAppRegistry(WTaskDependencyRegistry):
@@ -71,6 +73,8 @@ class WRegisteredHostApp(WTask, metaclass=WDependentTask):
 	__registry__ = WHostAppRegistry
 	""" Link to registry
 	"""
+
+	__auto_registry__ = False
 
 
 class WSyncHostApp(WRegisteredHostApp, WSyncTask, metaclass=WDependentTask):
@@ -92,22 +96,22 @@ class WBrokerCommand(WEnhancedCommand):
 		raise NotImplementedError('This method is abstract')
 
 	def detailed_description(self):
-		help = 'This is help information for "%s" command (%s). ' % (self.command(), self.brief_description())
+		info = 'This is help information for "%s" command (%s). ' % (self.command(), self.brief_description())
 
 		arguments_help = self.arguments_help()
 		if len(arguments_help) == 0:
-			help += 'Command does not have arguments\n'
+			info += 'Command does not have arguments\n'
 		else:
-			help += 'Command arguments:\n'
+			info += 'Command arguments:\n'
 			for argument_name, argument_description in arguments_help:
-				help += '\t%s - %s\n' % (argument_name, argument_description)
-		return help
+				info += '\t%s - %s\n' % (argument_name, argument_description)
+		return info
 
 
 class WCommandKit(metaclass=ABCMeta):
 
 	@abstractclassmethod
-	def brief_description(self):
+	def name(cls):
 		"""
 
 		:return: str
@@ -115,19 +119,20 @@ class WCommandKit(metaclass=ABCMeta):
 		raise NotImplementedError('This method is abstract')
 
 	@abstractclassmethod
-	def commands(self):
+	def brief_description(cls):
+		"""
+
+		:return: str
+		"""
+		raise NotImplementedError('This method is abstract')
+
+	@abstractclassmethod
+	def commands(cls):
 		"""
 
 		:return: WCommand
 		"""
 		raise NotImplementedError('This method is abstract')
-
-
-class WHostAppCommandKit(WRegisteredHostApp, WCommandKit):
-
-	@classmethod
-	def name(cls):
-		return cls.__registry_tag__
 
 
 class WGuestAppRegistry(WTaskDependencyRegistry):
@@ -211,12 +216,12 @@ class WGuestWebApp(WGuestApp):
 
 	@classmethod
 	def template_path(cls):
-		'''
+		"""
 
 		can be none or non-existens path
 
 		:return:
-		'''
+		"""
 		return None
 
 	@classmethod
@@ -225,12 +230,12 @@ class WGuestWebApp(WGuestApp):
 
 	@classmethod
 	def static_files_path(cls):
-		'''
+		"""
 
 		can be none or non-existens path
 
 		:return:
-		'''
+		"""
 		return None
 
 	def start(self):
@@ -250,15 +255,6 @@ class WGuestModelApp(WGuestApp):
 
 	def start(self):
 		pass
-
-	def stop(self):
-		pass
-
-
-class WGuestAppCommandKit(WGuestApp, WCommandKit):
-
-	def start(self):
-		WAppsGlobals.broker_commands.add_guest_app(self)
 
 	def stop(self):
 		pass
