@@ -538,7 +538,31 @@ class WGuestCommandKit(WCommandKit):
 
 class WScheduleCommandKit(WCommandKit):
 
-	__kit_name__ = 'com.binblob.wasp-launcher.host-app.broker.kits.schedule'
+	__kit_name__ = 'com.binblob.wasp-launcher.host-app.broker.kits.scheduler'
+
+	class SchedulerInstances(WBrokerCommand):
+
+		def __init__(self):
+			WBrokerCommand.__init__(self, 'instances')
+
+		@verify_type(command_arguments=dict)
+		def _exec(self, command_arguments):
+			if WAppsGlobals.scheduler is None:
+				return WCommandResult(output='Scheduler collection was not loaded', error=1)
+
+			named_instances = WAppsGlobals.scheduler.named_instances()
+
+			output = 'Total instances count: %i\n' % (len(named_instances) + 1)
+			output += '################################################################\n'
+			output += '<default instance>\n'
+
+			for instance_name in named_instances:
+					output += instance_name
+			return WCommandResult(output=output)
+
+		@classmethod
+		def brief_description(cls):
+			return 'show started scheduler instances'
 
 	class TaskSources(WBrokerCommand):
 
@@ -550,21 +574,33 @@ class WScheduleCommandKit(WCommandKit):
 			if WAppsGlobals.scheduler is None:
 				return WCommandResult(output='Scheduler was not loaded', error=1)
 
-			task_sources = WAppsGlobals.scheduler.task_sources()
-			output = 'Total sources count: %i\n' % len(task_sources)
-			if len(task_sources) > 0:
-				output += '################################################################\n'
+			count = 0
+			output = ''
+
+			def process_instance(instance_name, *sources):
+				result = ''
 				dt_fn = lambda x: '%s%s' % (local_datetime(dt=x).isoformat(), time.strftime('%Z'))
-				for source in task_sources:
+				for source in sources:
 					next_start = source.next_start()
 					next_start = dt_fn(next_start) if next_start is not None else '(not available)'
-					output += ' # '.join((
+					result += ' # '.join((
+						instance_name if instance_name is not None else '<default instance>',
 						source.name(),
 						source.description(),
 						str(source.tasks_planned()),
 						str(next_start)
 					))
-			return WCommandResult(output=output)
+					result += '\n'
+				return result
+
+			for instance, name in WAppsGlobals.scheduler:
+				task_sources = instance.task_sources()
+				count += len(task_sources)
+				output += process_instance(name, *task_sources)
+
+			header = 'Total sources count: %i\n' % count
+			header += '################################################################\n'
+			return WCommandResult(output=(header + output))
 
 		@classmethod
 		def brief_description(cls):
@@ -580,4 +616,4 @@ class WScheduleCommandKit(WCommandKit):
 
 	@classmethod
 	def commands(cls):
-		return [WScheduleCommandKit.TaskSources()]
+		return [WScheduleCommandKit.SchedulerInstances(), WScheduleCommandKit.TaskSources()]

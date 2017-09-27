@@ -88,8 +88,6 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 		'^(local|utc)?\\s*(\\d+|\*)\\s*(\\d+|\*)\\s*(\\d+|\*)\\s*(\\d+|\*)\\s*(\\d+|\*)\\s*(\\w+.*)$'
 	)
 
-	__config_section__ = 'wasp-launcher::scheduler::cron'
-
 	def __init__(self, scheduler):
 		WLauncherTaskSource.__init__(self)
 		WCronTaskSource.__init__(self, scheduler)
@@ -103,10 +101,10 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 	def tasks_planned(self):
 		return WCronTaskSource.tasks_planned(self)
 
-	def load_tasks(self):
-		tasks_options = WAppsGlobals.config.options(self.__config_section__)
+	def load_tasks(self, config_section):
+		tasks_options = WAppsGlobals.config.options(config_section)
 		for option_name in tasks_options:
-			task_cmd = WAppsGlobals.config[self.__config_section__][option_name]
+			task_cmd = WAppsGlobals.config[config_section][option_name]
 			task_re = self.__task_import_re__.search(task_cmd.lower())
 			if task_re is None:
 				WAppsGlobals.log.error(
@@ -153,15 +151,96 @@ class WLauncherScheduler(WThreadTaskLoggingHandler, WTaskSchedulerService):
 				watchdog_cls=WLauncherWatchdog
 			)
 		)
-		self.__cron_source = WLauncherConfigTasks(self)
-		self.add_task_source(self.__cron_source)
-
-	def cron_source(self):
-		return self.__cron_source
 
 	@verify_type(task_source=WLauncherTaskSource)
 	def add_task_source(self, task_source):
 		WTaskSchedulerService.add_task_source(self, task_source)
+
+
+class WSchedulerCollection:
+
+	__instance_config_section_re__ = re.compile(
+		'wasp-launcher::scheduler::instance(::([a-zA-Z]+[a-zA-Z0-9.\-_]*))?'
+	)
+
+	__cron_config_section_prefix__ = 'wasp-launcher::scheduler::cron'
+
+	def __init__(self):
+		self.__default_instance = None
+		self.__named_instances = {}
+
+	def load_instances(self):
+		for section_name in WAppsGlobals.config.sections():
+			result = self.__instance_config_section_re__.search(section_name)
+			if result is None:
+				continue
+			instance_name = result.group(2)
+
+			maximum_running_tasks = WAppsGlobals.config.getint(section_name, 'maximum_running_tasks')
+			maximum_postponed_tasks = WAppsGlobals.config[section_name]['maximum_postponed_tasks']
+
+			if maximum_postponed_tasks != '':
+				maximum_postponed_tasks = int(maximum_postponed_tasks)
+			else:
+				maximum_postponed_tasks = None
+
+			instance = WLauncherScheduler(
+				maximum_running_tasks=maximum_running_tasks,
+				maximum_postponed_tasks=maximum_postponed_tasks
+			)
+
+			if instance_name is None:
+				self.__default_instance = instance
+				WAppsGlobals.log.info('New default scheduler instance loaded')
+			else:
+				self.__named_instances[instance_name] = instance
+				WAppsGlobals.log.info('New scheduler instance "%s" loaded' % instance_name)
+
+	def start_instances(self):
+
+		def start(scheduler, name=None):
+
+			if name is None:
+				WAppsGlobals.log.info('Starting default scheduler instance')
+			else:
+				WAppsGlobals.log.info('Starting "%s" scheduler instance' % name)
+
+			scheduler.start()
+			cron_section_name = self.__cron_config_section_prefix__
+			if name is not None:
+				cron_section_name += ('::%s' % name)
+
+			if cron_section_name in WAppsGlobals.config.sections():
+				log_msg = 'Loading scheduler tasks from configuration into %s'
+				log_msg = log_msg % (('"%s" instance' % name) if name is not None else 'default instance')
+				WAppsGlobals.log.info(log_msg)
+
+				cron_source = WLauncherConfigTasks(scheduler)
+				cron_source.load_tasks(cron_section_name)
+				scheduler.add_task_source(cron_source)
+
+			scheduler.update()
+
+		for instance, name in self:
+			start(instance, name)
+
+	def stop_instances(self):
+		for instance, name in self:
+			instance.stop()
+
+	def instance(self, instance_name=None):
+		if instance_name is None:
+			return self.__default_instance
+		if instance_name in self.__named_instances.keys():
+			return self.__named_instances[instance_name]
+
+	def named_instances(self):
+		return tuple(self.__named_instances.keys())
+
+	def __iter__(self):
+		yield (self.__default_instance, None)
+		for name, instance in self.__named_instances.items():
+			yield (instance, name)
 
 
 class WSchedulerInitHostApp(WSyncHostApp):
@@ -175,20 +254,8 @@ class WSchedulerInitHostApp(WSyncHostApp):
 	def start(self):
 		WAppsGlobals.log.info('Scheduler is initializing')
 		if WAppsGlobals.scheduler is None:
-			maximum_running_tasks = \
-				WAppsGlobals.config.getint('wasp-launcher::scheduler', 'maximum_running_tasks')
-			maximum_postponed_tasks = \
-				WAppsGlobals.config['wasp-launcher::scheduler']['maximum_postponed_tasks']
-
-			if maximum_postponed_tasks != '':
-				maximum_postponed_tasks = int(maximum_postponed_tasks)
-			else:
-				maximum_postponed_tasks = None
-
-			WAppsGlobals.scheduler = WLauncherScheduler(
-				maximum_running_tasks=maximum_running_tasks,
-				maximum_postponed_tasks=maximum_postponed_tasks
-			)
+			WAppsGlobals.scheduler = WSchedulerCollection()
+			WAppsGlobals.scheduler.load_instances()
 
 	def stop(self):
 		WAppsGlobals.log.info('Scheduler is finalizing')
@@ -207,11 +274,9 @@ class WSchedulerHostApp(WSyncHostApp):
 	def start(self):
 		WAppsGlobals.log.info('Scheduler is starting')
 		if WAppsGlobals.scheduler is not None:
-			WAppsGlobals.scheduler.start()
-			WAppsGlobals.scheduler.cron_source().load_tasks()
-			WAppsGlobals.scheduler.update()
+			WAppsGlobals.scheduler.start_instances()
 
 	def stop(self):
 		WAppsGlobals.log.info('Scheduler is stopping')
 		if WAppsGlobals.scheduler is not None:
-			WAppsGlobals.scheduler.stop()
+			WAppsGlobals.scheduler.stop_instances()
