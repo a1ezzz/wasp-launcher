@@ -51,10 +51,6 @@ class WLauncherTaskSource(WTaskSourceProto):
 	def description(self):
 		return None
 
-	@abstractmethod
-	def tasks_planned(self):
-		raise NotImplementedError('This method is abstract')
-
 
 class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 
@@ -97,9 +93,6 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 
 	def description(self):
 		return 'Fixed tasks that were specified in configuration during start'
-
-	def tasks_planned(self):
-		return WCronTaskSource.tasks_planned(self)
 
 	def load_tasks(self, config_section):
 		tasks_options = WAppsGlobals.config.options(config_section)
