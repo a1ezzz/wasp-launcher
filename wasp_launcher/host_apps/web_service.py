@@ -32,7 +32,7 @@ from wasp_general.network.primitives import WIPV4SocketInfo
 from wasp_general.network.web.service import WWebService, WWebPresenterFactory
 from wasp_general.network.web.tornado import WTornadoRequestHandler
 
-from wasp_launcher.apps import WSyncHostApp, WThreadedHostApp, WAppsGlobals, WGuestWebPresenter
+from wasp_launcher.apps import WSyncApp, WThreadedApp, WAppsGlobals, WGuestWebPresenter
 from wasp_launcher.host_apps.web_debugger import WHostAppWebDebugger
 
 
@@ -45,16 +45,16 @@ class WGuestWebPresenterFactory(WWebPresenterFactory):
 		)
 
 
-class WWebInitHostApp(WSyncHostApp):
+class WWebInitHostApp(WSyncApp):
 	""" Task that prepare web-service
 	"""
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.web::init'
+	__registry_tag__ = 'com.binblob.wasp-launcher.app.web::init'
 	""" Task tag
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.config'
+		'com.binblob.wasp-launcher.app.config'
 	]
 	""" Task dependency
 	"""
@@ -65,7 +65,7 @@ class WWebInitHostApp(WSyncHostApp):
 		debugger = WAppsGlobals.config["wasp-launcher::web:debug"]["mode"].lower() in ['on', 'on error']
 
 		debugger_app_section = \
-			'wasp-launcher::applications::host::com.binblob.wasp-launcher.host-app.web-debugger'
+			'wasp-launcher::applications::com.binblob.wasp-launcher.app.web-debugger'
 		debugger_app_enabled = WAppsGlobals.config.getboolean(debugger_app_section, 'enabled')
 		debugger_app_auto_start = WAppsGlobals.config.getboolean(debugger_app_section, 'auto_start')
 
@@ -99,17 +99,15 @@ class WWebInitHostApp(WSyncHostApp):
 		WAppsGlobals.wasp_web_service = None
 
 
-class WWebHostApp(WThreadedHostApp):
+class WWebHostApp(WThreadedApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.web::start'
+	__registry_tag__ = 'com.binblob.wasp-launcher.app.web::start'
 	""" Task tag
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.model-load',
-		'com.binblob.wasp-launcher.host-app.template-load',
-		'com.binblob.wasp-launcher.host-app.broker::start',
-		'com.binblob.wasp-launcher.host-app.scheduler::start'
+		'com.binblob.wasp-launcher.app.model-load',
+		'com.binblob.wasp-launcher.app.template-load'
 	]
 
 	__thread_name__ = "WWebHostApp"

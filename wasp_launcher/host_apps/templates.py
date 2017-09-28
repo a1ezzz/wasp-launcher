@@ -41,7 +41,7 @@ from wasp_general.verify import verify_type, verify_subclass, verify_value
 
 from wasp_general.network.web.template import WWebTemplateFile, WWebTemplate, WWebTemplateText, WWebTemplateLookup
 
-from wasp_launcher.apps import WSyncHostApp, WGuestWebApp, WAppsGlobals
+from wasp_launcher.apps import WSyncApp, WGuestWebApp, WAppsGlobals
 
 
 class WTemplateSearcherProto(metaclass=ABCMeta):
@@ -265,14 +265,14 @@ class WHostAgentTemplateSearcher(TemplateCollection, WBasicTemplateSearcher):
 		return WWebTemplateLookup(uri, self)
 
 
-class WTemplateLoadHostApp(WSyncHostApp):
+class WTemplateLoadHostApp(WSyncApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.template-load'
+	__registry_tag__ = 'com.binblob.wasp-launcher.app.template-load'
 	""" Task tag
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.guest-apps'
+		'com.binblob.wasp-launcher.app.guest-apps'
 	]
 
 	def start(self):

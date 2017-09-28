@@ -90,8 +90,8 @@ class WClassLoader:
 			item_cls = getattr(item_module, cls_name)
 			if issubclass(item_cls, self.target_class()) is False:
 				raise RuntimeError(
-					'Invalid class (%s) was specified in configuration in section "%s"' %
-					(cls_name, section_name)
+					'Invalid class (%s) was specified in configuration in section "%s". '
+					'Expected - %s' % (cls_name, section_name, self.target_class().__name__)
 				)
 
 			self.check_tag(item_cls, item_tag)

@@ -44,7 +44,7 @@ from wasp_general.network.messenger.envelope import WMessengerBytesEnvelope, WMe
 from wasp_general.command.command import WCommandResult
 from wasp_general.command.context import WContextProto, WContext, WCommandContextResult
 
-from wasp_launcher.apps import WSyncHostApp, WAppsGlobals, WThreadTaskLoggingHandler
+from wasp_launcher.apps import WSyncApp, WAppsGlobals, WThreadTaskLoggingHandler
 from wasp_launcher.host_apps.broker_commands import WBrokerCommandManager
 
 
@@ -320,12 +320,12 @@ class WBrokerHostAppTasks:
 	__broker_ipc_task__ = None
 
 
-class WBrokerInitHostApp(WSyncHostApp):
+class WBrokerInitHostApp(WSyncApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.broker::init'
+	__registry_tag__ = 'com.binblob.wasp-launcher.app.broker::init'
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.config'
+		'com.binblob.wasp-launcher.app.config'
 	]
 
 	def start(self):
@@ -351,12 +351,12 @@ class WBrokerInitHostApp(WSyncHostApp):
 		WAppsGlobals.broker_commands = None
 
 
-class WBrokerHostApp(WSyncHostApp):
+class WBrokerHostApp(WSyncApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.broker::start'
+	__registry_tag__ = 'com.binblob.wasp-launcher.app.broker::start'
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.guest-apps'
+		'com.binblob.wasp-launcher.app.guest-apps'
 	]
 
 	def start(self):

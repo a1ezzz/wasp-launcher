@@ -28,19 +28,19 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
+from wasp_launcher.apps import WSyncApp, WAppsGlobals
 
 
 class WHostAppModelStorage:
 	pass
 
 
-class WGuestModelLoadApp(WSyncHostApp):
+class WGuestModelLoadApp(WSyncApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.model-load'
+	__registry_tag__ = 'com.binblob.wasp-launcher.app.model-load'
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.guest-apps'
+		'com.binblob.wasp-launcher.app.guest-apps'
 	]
 
 	def start(self):

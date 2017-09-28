@@ -27,7 +27,7 @@ from wasp_launcher.version import __status__
 
 import signal
 
-from wasp_launcher.apps import WHostAppRegistry
+from wasp_launcher.apps import WAppRegistry
 
 from wasp_launcher.bootstrap import WLauncherBootstrap
 
@@ -44,7 +44,7 @@ if __name__ == '__main__':
 	bootstrap.start_apps()
 
 	def shutdown_signal(signum, frame):
-		WHostAppRegistry.all_stop()
+		WAppRegistry.all_stop()
 
 	signal.signal(signal.SIGTERM, shutdown_signal)
 	signal.signal(signal.SIGINT, shutdown_signal)

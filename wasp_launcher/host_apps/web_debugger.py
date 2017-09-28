@@ -37,7 +37,7 @@ from wasp_general.network.web.proto import WWebRequestProto, WWebResponseProto
 from wasp_general.network.web.service import WWebTargetRoute
 from wasp_general.network.web.headers import WHTTPHeaders
 
-from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
+from wasp_launcher.apps import WSyncApp, WAppsGlobals
 from wasp_launcher.mongodb import WMongoConnection
 
 
@@ -239,16 +239,16 @@ class WHostAppWebDebugger(WWebDebugInfo):
 		return result
 
 
-class WGuestAppWebDebugger(WSyncHostApp):
+class WGuestAppWebDebugger(WSyncApp):
 	""" Task that creates connection to a mongodb server
 	"""
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.web-debugger'
+	__registry_tag__ = 'com.binblob.wasp-launcher.app.web-debugger'
 	""" Task tag
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.config'
+		'com.binblob.wasp-launcher.app.config'
 	]
 
 	__mongo_connection__ = None

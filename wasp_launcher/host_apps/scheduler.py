@@ -39,7 +39,7 @@ from wasp_general.task.scheduler.scheduler import WTaskSchedulerService, WRunnin
 from wasp_general.task.scheduler.task_source import WCronTaskSource, WCronLocalTZSchedule, WCronTaskSchedule
 from wasp_general.task.scheduler.task_source import WCronUTCSchedule
 
-from wasp_launcher.apps import WSyncHostApp, WAppsGlobals, WThreadTaskLoggingHandler
+from wasp_launcher.apps import WSyncApp, WAppsGlobals, WThreadTaskLoggingHandler
 
 
 class WLauncherTaskSource(WTaskSourceProto):
@@ -78,7 +78,7 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 		def thread_stopped(self):
 			pass
 
-	__task_source_name__ = 'com.binblob.wasp-launcher.host-app.scheduler.config'
+	__task_source_name__ = 'com.binblob.wasp-launcher.app.scheduler.config'
 
 	__task_import_re__ = re.compile(
 		'^(local|utc)?\\s*(\\d+|\*)\\s*(\\d+|\*)\\s*(\\d+|\*)\\s*(\\d+|\*)\\s*(\\d+|\*)\\s*(\\w+.*)$'
@@ -236,12 +236,12 @@ class WSchedulerCollection:
 			yield (instance, name)
 
 
-class WSchedulerInitHostApp(WSyncHostApp):
+class WSchedulerInitHostApp(WSyncApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.scheduler::init'
+	__registry_tag__ = 'com.binblob.wasp-launcher.app.scheduler::init'
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.config'
+		'com.binblob.wasp-launcher.app.config'
 	]
 
 	def start(self):
@@ -256,12 +256,12 @@ class WSchedulerInitHostApp(WSyncHostApp):
 			WAppsGlobals.scheduler = None
 
 
-class WSchedulerHostApp(WSyncHostApp):
+class WSchedulerHostApp(WSyncApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.scheduler::start'
+	__registry_tag__ = 'com.binblob.wasp-launcher.app.scheduler::start'
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.guest-apps'
+		'com.binblob.wasp-launcher.app.guest-apps'
 	]
 
 	def start(self):

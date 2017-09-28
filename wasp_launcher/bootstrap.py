@@ -29,7 +29,7 @@ from wasp_launcher.version import __status__
 
 from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage
 
-from wasp_launcher.apps import WAppsGlobals, WHostAppRegistry, WRegisteredHostApp
+from wasp_launcher.apps import WAppsGlobals, WAppRegistry, WRegisteredApp
 from wasp_launcher.host_apps.log import WLogHostApp
 from wasp_launcher.host_apps.config import WConfigHostApp
 from wasp_launcher.loader import WClassLoader
@@ -51,19 +51,19 @@ class WBootstrapConfig(WConfigHostApp):
 
 class WLauncherBootstrap:
 
-	__host_app_section_prefix__ = 'wasp-launcher::applications::host'
+	__host_app_section_prefix__ = 'wasp-launcher::applications'
 
 	def __init__(self):
 		self.__start_apps = []
 		self.__loader = WClassLoader(
-			self.__host_app_section_prefix__, WRegisteredHostApp, tag_fn=lambda x: x.__registry_tag__
+			self.__host_app_section_prefix__, WRegisteredApp, tag_fn=lambda x: x.__registry_tag__
 		)
 
 	def load_configuration(self):
 		WBootstrapRegistry.start_task(WBootstrapConfig.__registry_tag__)
 
 		def load_callback(section_name, item_tag, item_cls):
-			WHostAppRegistry.add(item_cls)
+			WAppRegistry.add(item_cls)
 			if WAppsGlobals.config.getboolean(section_name, 'auto_start') is True:
 				self.__start_apps.append(item_tag)
 
@@ -74,4 +74,4 @@ class WLauncherBootstrap:
 
 	def start_apps(self):
 		for task_tag in self.__start_apps:
-			WHostAppRegistry.start_task(task_tag)
+			WAppRegistry.start_task(task_tag)

@@ -27,22 +27,23 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from wasp_launcher.apps import WSyncHostApp, WGuestApp, WAppsGlobals
+from wasp_launcher.apps import WSyncApp, WGuestApp, WAppsGlobals, WGuestAppRegistry
 from wasp_launcher.loader import WClassLoader
 
 
-class WGuestAppStarter(WSyncHostApp):
+class WGuestAppStarter(WSyncApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.guest-apps'
+	__registry_tag__ = 'com.binblob.wasp-launcher.app.guest-apps'
 	__dependency__ = [
-		'com.binblob.wasp-launcher.host-app.web::init',
-		'com.binblob.wasp-launcher.host-app.broker::init',
-		'com.binblob.wasp-launcher.host-app.scheduler::init'
+		'com.binblob.wasp-launcher.app.web::init',
+		'com.binblob.wasp-launcher.app.broker::init',
+		'com.binblob.wasp-launcher.app.scheduler::init'
 	]
 
-	__guest_app_section_prefix__ = 'wasp-launcher::applications::guest'
+	__guest_app_section_prefix__ = 'wasp-launcher::applications_guest'
 
 	def start(self):
+		WAppsGlobals.apps_registry = WGuestAppRegistry
 		WAppsGlobals.apps_registry.clear()
 		WAppsGlobals.started_apps.clear()
 

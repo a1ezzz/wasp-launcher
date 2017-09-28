@@ -28,14 +28,14 @@ import logging
 import logging.config
 import sys
 
-from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
+from wasp_launcher.apps import WSyncApp, WAppsGlobals
 
 
-class WLogHostApp(WSyncHostApp):
+class WLogHostApp(WSyncApp):
 	""" Logger application
 	"""
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.host-app.log'
+	__registry_tag__ = 'com.binblob.wasp-launcher.app.log'
 	""" Task tag
 	"""
 
