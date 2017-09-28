@@ -233,8 +233,7 @@ class WWebApp(WSyncApp):
 
 	__dependency__ = [
 		'com.binblob.wasp-launcher.apps.web::init',
-		'com.binblob.wasp-launcher.apps.template-lookup',
-
+		'com.binblob.wasp-launcher.apps.template-lookup'
 	]
 
 	@classmethod

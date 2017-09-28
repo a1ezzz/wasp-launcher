@@ -106,8 +106,7 @@ class WWebServiceApp(WThreadedApp):
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.apps.model-load',
-		'com.binblob.wasp-launcher.apps.template-lookup'
+		'com.binblob.wasp-launcher.apps.model-load'
 	]
 
 	__dynamic_dependency__ = WWebApp

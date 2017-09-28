@@ -2,63 +2,70 @@
 
 package "Host Apps" {
 component log [
-WLogHostApp
-"com.binblob.wasp-launcher.host-app.log"
+WLogApp
+"com.binblob.wasp-launcher.apps.log"
 ]
 
 component config [
-WConfigHostApp
-"com.binblob.wasp-launcher.host-app.config"
+WConfigApp
+"com.binblob.wasp-launcher.apps.config"
 ]
 
 component debugger [
-WGuestAppWebDebugger
-"com.binblob.wasp-launcher.host-app.web-debugger"
+WWebAppDebuggerDatastore
+"com.binblob.wasp-launcher.apps.web-debugger::datastore"
 ]
 
 component web_init [
-WWebInitHostApp
-"com.binblob.wasp-launcher.host-app.web::init"
+WWebServiceInitApp
+"com.binblob.wasp-launcher.apps.web::init"
 ]
 
 component broker_init [
-WBrokerInitHostApp
-"com.binblob.wasp-launcher.host-app.broker::init"
+WBrokerInitApp
+"com.binblob.wasp-launcher.apps.broker::init"
 ]
 
 component scheduler_init [
-WSchedulerInitHostApp
-"com.binblob.wasp-launcher.host-app.scheduler::init"
-]
-
-component starter [
-WGuestAppStarter
-"com.binblob.wasp-launcher.host-app.guest-apps"
+WSchedulerInitApp
+"com.binblob.wasp-launcher.apps.scheduler::init"
 ]
 
 component model [
-WGuestModelLoadApp
-"com.binblob.wasp-launcher.host-app.model-load"
+WModelLoadApp
+"com.binblob.wasp-launcher.apps.model-load"
 ]
 
 component template [
-WTemplateLoadHostApp
-"com.binblob.wasp-launcher.host-app.template-load"
+WTemplateLookupApp
+"com.binblob.wasp-launcher.apps.template-lookup"
+]
+
+component broker_apps [
+WCommandKit tasks that are configured to start
 ]
 
 component broker_start [
-WBrokerHostApp
-"com.binblob.wasp-launcher.host-app.broker::start"
+WBrokerApp
+"com.binblob.wasp-launcher.apps.broker::start"
+]
+
+component scheduler_apps [
+WSchedulerTaskSourceInstaller tasks that are configured to start
 ]
 
 component scheduler_start [
-WSchedulerHostApp
-"com.binblob.wasp-launcher.host-app.scheduler::start"
+WSchedulerApp
+"com.binblob.wasp-launcher.apps.scheduler::start"
+]
+
+component web_apps [
+WWebApp tasks that are configured to start
 ]
 
 component web_start [
-WWebHostApp
-"com.binblob.wasp-launcher.host-app.web::start"
+WWebServiceApp
+"com.binblob.wasp-launcher.apps.web::start"
 ]
 
 config .-down-> log
@@ -67,20 +74,21 @@ web_init .-down-> config
 broker_init .-down-> config
 scheduler_init .-down-> config
 
-starter .-down-> web_init
-starter .-down-> broker_init
-starter .-down-> scheduler_init
+broker_apps .-down-> broker_init
+broker_start .-down-> broker_init
+broker_start .-down-> broker_apps
 
-model .-down-> starter
-template .-down-> starter
-broker_start .-down-> starter
-scheduler_start .-down-> starter
+model .-down-> config
+template .-down-> config
 
+scheduler_apps .-down-> scheduler_init
+scheduler_start .-down-> scheduler_init
+scheduler_start .-down-> scheduler_apps
+
+web_apps .-down-> web_init
+web_apps .-down-> template
 web_start .-down-> model
-web_start .-down-> template
-web_start .-down-> broker_start
-web_start .-down-> scheduler_start
-
+web_start .-down-> web_apps
 }
 
 @enduml
