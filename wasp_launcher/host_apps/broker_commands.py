@@ -448,6 +448,82 @@ interact with "guest-apps". You are able to switch to next context:
 			)
 
 
+class WCLITableRender:
+
+	__default_delimiter__ = '*'
+
+	@verify_type(table_headers=str)
+	def __init__(self, *table_headers):
+		self.__headers = table_headers
+		self.__rows = []
+
+		self.__cells_length = self.cells_length(*table_headers)
+
+	def cells_length(self, *cells):
+		return tuple([len(x) for x in cells])
+
+	def add_row(self, *cells):
+		self.__rows.append(cells)
+		row_length = self.cells_length(*cells)
+
+		min_cells, max_cells = row_length, self.__cells_length
+		if len(cells) > len(max_cells):
+			min_cells, max_cells = max_cells, min_cells
+
+		result = [max(min_cells[i], max_cells[i]) for i in range(len(min_cells))]
+		result.extend([max_cells[i] for i in range(len(min_cells), len(max_cells))])
+		self.__cells_length = tuple(result)
+
+	def render(self, delimiter=None):
+		if delimiter is None:
+			delimiter = self.__default_delimiter__
+
+		cell_count = len(self.__cells_length)
+		if cell_count == 0:
+			raise RuntimeError('Empty table')
+
+		separator_length = ((cell_count - 1) * 3) + 4
+		for cell_length in self.__cells_length:
+			separator_length += cell_length
+
+		separator = (delimiter * separator_length) + '\n'
+		left_border = '%s ' % delimiter
+		int_border = ' %s ' % delimiter
+		right_border = ' %s\n' % delimiter
+
+		def render_row(*cells):
+			row_result = ''
+			for i in range(cell_count):
+				cell_length = self.__cells_length[i]
+				if i < len(cells):
+					single_cell = cells[i]
+					row_result += single_cell
+					delta = (cell_length - len(single_cell))
+				else:
+					delta = cell_length
+				row_result += ' ' * delta
+
+				if i < (cell_count - 1):
+					row_result += int_border
+
+			return row_result
+
+		result = separator
+		result += left_border
+		result += render_row(*self.__headers)
+		result += right_border
+		result += separator
+
+		for row in self.__rows:
+			result += left_border
+			result += render_row(*row)
+			result += right_border
+
+		result += separator
+
+		return result
+
+
 class WCoreCommandKit(WCommandKit):
 
 	__kit_name__ = 'com.binblob.wasp-launcher.host-app.broker.kits.core'
@@ -460,13 +536,13 @@ class WCoreCommandKit(WCommandKit):
 		@verify_type(command_arguments=dict)
 		def _exec(self, command_arguments):
 			threads = threading.enumerate()
-			output = 'Total threads: %i' % len(threads)
-			if len(threads) > 0:
-				output += '\n\tThread name\n\t==========='
-				for thread in threads:
-					output += '\n\t' + thread.name
 
-			return WCommandResult(output=output)
+			table_render = WCLITableRender('Thread name')
+			for thread in threads:
+				table_render.add_row(thread.name)
+
+			header = 'Total threads: %i\n' % len(threads)
+			return WCommandResult(output=header + table_render.render())
 
 		@classmethod
 		def brief_description(cls):
@@ -550,15 +626,15 @@ class WScheduleCommandKit(WCommandKit):
 			if WAppsGlobals.scheduler is None:
 				return WCommandResult(output='Scheduler collection was not loaded', error=1)
 
+			table_render = WCLITableRender('Scheduler instance name')
+			table_render.add_row('<default instance>')
+
 			named_instances = WAppsGlobals.scheduler.named_instances()
-
-			output = 'Total instances count: %i\n' % (len(named_instances) + 1)
-			output += '################################################################\n'
-			output += '<default instance>\n'
-
 			for instance_name in named_instances:
-					output += instance_name
-			return WCommandResult(output=output)
+				table_render.add_row(instance_name)
+
+			header = 'Total instances count: %i\n' % (len(named_instances) + 1)
+			return WCommandResult(output=header + table_render.render())
 
 		@classmethod
 		def brief_description(cls):
@@ -575,36 +651,71 @@ class WScheduleCommandKit(WCommandKit):
 				return WCommandResult(output='Scheduler was not loaded', error=1)
 
 			count = 0
-			output = ''
 
-			def process_instance(instance_name, *sources):
-				result = ''
-				dt_fn = lambda x: '%s%s' % (local_datetime(dt=x).isoformat(), time.strftime('%Z'))
-				for source in sources:
+			table_render = WCLITableRender(
+				'Scheduler instance', 'Source name', 'Source description', 'Scheduled tasks',
+				'Next scheduled task'
+			)
+
+			dt_fn = lambda x: '%s%s' % (local_datetime(dt=x).isoformat(), time.strftime('%Z'))
+			for instance, instance_name in WAppsGlobals.scheduler:
+				if instance_name is None:
+					instance_name = '<default instance>'
+				task_sources = instance.task_sources()
+				for source in task_sources:
+					description = source.description()
+					if description is None:
+						description = '(not available)'
+
 					next_start = source.next_start()
 					next_start = dt_fn(next_start) if next_start is not None else '(not available)'
-					result += ' # '.join((
-						instance_name if instance_name is not None else '<default instance>',
-						source.name(),
-						source.description(),
-						str(source.tasks_planned()),
-						str(next_start)
-					))
-					result += '\n'
-				return result
 
-			for instance, name in WAppsGlobals.scheduler:
-				task_sources = instance.task_sources()
+					table_render.add_row(
+						instance_name, source.name(), description, str(source.tasks_planned()),
+						next_start
+					)
+
 				count += len(task_sources)
-				output += process_instance(name, *task_sources)
 
 			header = 'Total sources count: %i\n' % count
-			header += '################################################################\n'
-			return WCommandResult(output=(header + output))
+			return WCommandResult(output=(header + table_render.render()))
 
 		@classmethod
 		def brief_description(cls):
 			return 'show tasks sources information'
+
+	class RunningTasks(WBrokerCommand):
+
+		def __init__(self):
+			WBrokerCommand.__init__(self, 'running_tasks')
+
+		@verify_type(command_arguments=dict)
+		def _exec(self, command_arguments):
+			if WAppsGlobals.scheduler is None:
+				return WCommandResult(output='Scheduler was not loaded', error=1)
+
+			count = 0
+
+			table_render = WCLITableRender('Scheduler instance',  'Task started at')
+
+			for instance, instance_name in WAppsGlobals.scheduler:
+				if instance_name is None:
+					instance_name = '<default instance>'
+
+				tasks = instance.running_tasks()
+				count += len(tasks)
+
+				dt_fn = lambda x: '%s%s' % (local_datetime(dt=x).isoformat(), time.strftime('%Z'))
+
+				for task in tasks:
+					table_render.add_row(instance_name, dt_fn(task.started_at()))
+
+			header = 'Total tasks that run at the moment: %i\n' % count
+			return WCommandResult(output=(header + table_render.render()))
+
+		@classmethod
+		def brief_description(cls):
+			return 'show tasks that run at the moment'
 
 	@classmethod
 	def name(cls):
@@ -616,4 +727,8 @@ class WScheduleCommandKit(WCommandKit):
 
 	@classmethod
 	def commands(cls):
-		return [WScheduleCommandKit.SchedulerInstances(), WScheduleCommandKit.TaskSources()]
+		return [
+			WScheduleCommandKit.SchedulerInstances(),
+			WScheduleCommandKit.TaskSources(),
+			WScheduleCommandKit.RunningTasks()
+		]
