@@ -149,23 +149,11 @@ class WBrokerCommand(WEnhancedCommand):
 		return info
 
 
-class WCommandKit(metaclass=ABCMeta):
+class WCommandKit(WSyncApp):
 
-	@abstractclassmethod
-	def name(cls):
-		"""
-
-		:return: str
-		"""
-		raise NotImplementedError('This method is abstract')
-
-	@abstractclassmethod
-	def brief_description(cls):
-		"""
-
-		:return: str
-		"""
-		raise NotImplementedError('This method is abstract')
+	__dependency__ = [
+		'com.binblob.wasp-launcher.apps.broker::init'
+	]
 
 	@abstractclassmethod
 	def commands(cls):
@@ -174,6 +162,24 @@ class WCommandKit(metaclass=ABCMeta):
 		:return: WCommand
 		"""
 		raise NotImplementedError('This method is abstract')
+
+	@classmethod
+	def config_section(cls):
+		return 'wasp-launcher::applications::%s' % cls.name()
+
+	def is_core(self):
+		return WAppsGlobals.config.getboolean(self.config_section(), 'core')
+
+	def alias(self):
+		section_name = self.config_section()
+		if WAppsGlobals.config.has_option(section_name, 'alias') is True:
+			return WAppsGlobals.config[section_name]['alias']
+
+	def start(self):
+		WAppsGlobals.broker_commands.add_kit(self)
+
+	def stop(self):
+		pass
 
 
 class WWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):

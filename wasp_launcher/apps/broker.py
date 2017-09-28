@@ -45,7 +45,7 @@ from wasp_general.command.command import WCommandResult
 from wasp_general.command.context import WContextProto, WContext, WCommandContextResult
 
 from wasp_launcher.core import WSyncApp, WAppsGlobals, WThreadTaskLoggingHandler
-from wasp_launcher.apps.broker_commands import WBrokerCommandManager
+from wasp_launcher.apps.broker_commands import WBrokerCommandManager, WCommandKit
 
 
 class WManagementCommandPackerLayer(WMessengerOnionPackerLayerProto):
@@ -342,7 +342,6 @@ class WBrokerInitApp(WSyncApp):
 
 		if WAppsGlobals.broker_commands is None:
 			WAppsGlobals.broker_commands = WBrokerCommandManager()
-			WAppsGlobals.broker_commands.load_apps()
 
 	def stop(self):
 		WAppsGlobals.log.info('Broker is finalizing')
@@ -357,11 +356,13 @@ class WBrokerApp(WSyncApp):
 
 	__dependency__ = ['com.binblob.wasp-launcher.apps.broker::init']
 
-	def start(self):
-		core_commands = WAppsGlobals.broker_commands.core_commands()
-		app_commands = WAppsGlobals.broker_commands.general_app_commands()
+	__dynamic_dependency__ = WCommandKit
 
-		total_commands = core_commands + app_commands
+	def start(self):
+		core_commands = WAppsGlobals.broker_commands.commands_count(WBrokerCommandManager.MainSections.core)
+		app_commands = WAppsGlobals.broker_commands.commands_count(WBrokerCommandManager.MainSections.apps)
+
+		total_commands = WAppsGlobals.broker_commands.commands_count()
 		if total_commands == 0:
 			WAppsGlobals.log.warn('No commands was set for the broker')
 		else:

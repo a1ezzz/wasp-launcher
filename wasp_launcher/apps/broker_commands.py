@@ -30,6 +30,7 @@ from wasp_launcher.version import __status__
 import traceback
 import threading
 import time
+from enum import Enum
 
 from wasp_general.verify import verify_type, verify_value
 
@@ -40,7 +41,6 @@ from wasp_general.command.context import WCommandContext, WCommandContextSet
 from wasp_general.datetime import local_datetime
 
 from wasp_launcher.core import WAppsGlobals, WCommandKit, WBrokerCommand
-from wasp_launcher.loader import WClassLoader
 
 
 class WBrokerCommandManager:
@@ -80,22 +80,31 @@ double dot command ('..').
 You can call a specific command in any context by the following pattern:
 	- [core|apps] [module or alias] [command] <command_arg1> <command_arg2...>
 """
-	__general_usage_tip__ = """For detailed information about command line usage - type 'help help'
-"""
 
-	__main_context_help__ = """This is a main or root context. Suitable sub-context are:
-	- core
-	- apps
-"""
-	__core_level_context_help__ = """This is a 'core' context. Context for modules and commands that \
+	__general_usage_tip__ = 'For detailed information about command line usage - type "help help"\n'
+
+	__main_context_help_header__ = 'This is a main or root context. Suitable sub-context are:\n'
+
+	__specific_app_context_help__ = 'This is help for "%s" of "%s" context. Suitable commands are:\n'
+
+	class MainSections(Enum):
+		core = True
+		apps = False
+
+	__help_info__ = {
+		MainSections.core: {
+			'section_name': 'core',
+			'section_help_header': """This is a 'core' context. Context for modules and commands that \
 interact with "cores". You are able to switch to next context:
 """
-	__general_apps_level_context_help__ = """This is a 'apps' context. Context for modules and commands that \
-interact with "appss". You are able to switch to next context:
+		},
+		MainSections.apps: {
+			'section_name': 'apps',
+			'section_help_header': """This is a 'apps' context. Context for modules and commands that \
+interact with "apps". You are able to switch to next context:
 """
-
-	__specific_app_context_help__ = """This is help for "%s" of "%s" context. Suitable commands are:
-"""
+		}
+	}
 
 	class DoubleDotCommand(WCommand):
 
@@ -138,10 +147,11 @@ interact with "appss". You are able to switch to next context:
 	class ContextHelpCommand(WCommandProto):
 
 		@verify_type(command_set=WCommandSelector, help_command=(str, None))
-		@verify_value(help_fn=lambda x: callable(x), help_command=lambda x: x is None or len(x) > 0)
-		def __init__(self, help_fn, command_set, help_command=None):
+		@verify_value(help_ingfo=lambda x: callable(x) or (isinstance(x, str) and len(x) > 0))
+		@verify_value(help_command=lambda x: x is None or len(x) > 0)
+		def __init__(self, help_info, command_set, help_command=None):
 			WCommandProto.__init__(self)
-			self.__help_fn = help_fn
+			self.__help_fn = help_info if callable(help_info) else lambda: help_info
 			self.__command_set = command_set
 			self.__help_command = help_command if help_command is not None else 'help'
 
@@ -273,160 +283,126 @@ interact with "appss". You are able to switch to next context:
 	class BrokerCommandSet(WCommandPrioritizedSelector):
 
 		@verify_type('paranoid', default_priority=int)
-		@verify_type(main_command_set=WCommandPrioritizedSelector, main_context=str)
-		@verify_value(main_context=lambda x: len(x) > 0, context_help_info=lambda x: callable(x))
-		def __init__(self, main_command_set, main_context, context_help_fn, default_priority=30):
+		@verify_type(main_command_set=WCommandPrioritizedSelector)
+		def __init__(self, main_command_set, section, default_priority=30):
 			WCommandPrioritizedSelector.__init__(self, default_priority=default_priority)
-			self.__main_command_set = main_command_set
-			self.__main_context = main_context
 
-			self.add_prioritized(WBrokerCommandManager.BrokerContextCommand(self.__main_context), 10)
+			if isinstance(section, WBrokerCommandManager.MainSections) is False:
+				raise TypeError('Invalid section type')
+
+			self.__main_command_set = main_command_set
+			section_help = WBrokerCommandManager.__help_info__[section]
+			self.__section_name = section_help['section_name']
+			self.__section_help_header = section_help['section_help_header']
+			self.__kits = []
+			self.__total_commands = 0
+
+			def context_help_fn():
+				help_info = self.__section_help_header
+				for kit in self.__kits:
+					alias = kit.alias()
+					name = ('%s | %s' % (alias, kit.name())) if alias is not None else kit.name()
+					help_info += '\t- %s - %s\n' % (name, kit.description())
+				help_info += '\n'
+				help_info += WBrokerCommandManager.__general_usage_tip__
+				return help_info
+
+			self.add_prioritized(WBrokerCommandManager.BrokerContextCommand(self.__section_name), 10)
 			self.add_prioritized(WBrokerCommandManager.ContextHelpCommand(context_help_fn, self), 50)
 			self.add_prioritized(WBrokerCommandManager.UnknownHelpCommand(), 70)
 
-			reduce_command = WReduceCommand(self, self.__main_context)
-			main_context_adapter = WBrokerCommandManager.BrokerContextAdapter(WContext(self.__main_context))
+			reduce_command = WReduceCommand(self, self.__section_name)
+			main_context_adapter = WBrokerCommandManager.BrokerContextAdapter(WContext(self.__section_name))
 			main_context_command = WCommandContext(reduce_command, main_context_adapter)
 
 			self.__main_command_set.add_prioritized(main_context_command, 20)
 			self.__main_command_set.add_prioritized(reduce_command, 30)
 
-		@verify_type(context_name=str, commands=WBrokerCommand, force_context_command=bool, alias=(str, None))
-		@verify_value(context_name=lambda x: len(x) > 0, app_context_help_fn=lambda x: callable(x))
-		@verify_value(alias=lambda x: x is None or len(x) > 0)
-		def add_commands(
-			self, context_name, app_context_help_fn, *commands, force_context_command=False, alias=None
-		):
-			if force_context_command is True or len(commands) > 0:
-				app_names = (context_name,) if alias is None else (context_name, alias)
-				app_commands = WCommandPrioritizedSelector()
-				app_commands.add_prioritized(
-					WBrokerCommandManager.BrokerContextCommand(self.__main_context, context_name),
-					10
-				)
-				app_commands.add_prioritized(WBrokerCommandManager.UnknownHelpCommand(), 80)
+		def total_commands(self):
+			return self.__total_commands
 
-				help_fn = lambda: app_context_help_fn(context_name, commands)
-				app_commands.add_prioritized(
-					WBrokerCommandManager.ContextHelpCommand(help_fn, app_commands), 50
-				)
+		@verify_type(command_kit=WCommandKit)
+		def add_commands(self, command_kit):
+			commands = command_kit.commands()
+			if len(commands) == 0:
+				return
 
-				for command in commands:
-					app_commands.add(command)
-					app_commands.add_prioritized(
-						WBrokerCommandManager.SpecificCommandHelp(command), 40
-					)
+			self.__kits.append(command_kit)
+			self.__total_commands += len(commands)
 
-				app_context_adapter = WBrokerCommandManager.BrokerContextAdapter(
-					WContext(context_name, linked_context=WContext(self.__main_context))
-				)
-				app_context_command = WCommandContext(
-					WReduceCommand(app_commands, *app_names), app_context_adapter
-				)
+			kit_name = command_kit.name()
+			alias = command_kit.alias()
+			kit_names = (kit_name,) if alias is None else (kit_name, alias)
 
-				self.__main_command_set.add_prioritized(app_context_command, 20)
-				self.add_prioritized(WReduceCommand(app_commands, *app_names), 30)
+			help_info = WBrokerCommandManager.__specific_app_context_help__
+			help_info = help_info % (command_kit.name(), self.__section_name)
+
+			app_commands = WCommandPrioritizedSelector()
+
+			for command in commands:
+				help_info += '\t- %s - %s\n' % (command.command(), command.brief_description())
+				app_commands.add(command)
+				app_commands.add_prioritized(WBrokerCommandManager.SpecificCommandHelp(command), 40)
+
+			help_info += '\n'
+			help_info += WBrokerCommandManager.__general_usage_tip__
+			app_commands.add_prioritized(
+				WBrokerCommandManager.ContextHelpCommand(lambda: help_info, app_commands), 50
+			)
+
+			app_commands.add_prioritized(
+				WBrokerCommandManager.BrokerContextCommand(self.__section_name, kit_name), 10
+			)
+			app_commands.add_prioritized(WBrokerCommandManager.UnknownHelpCommand(), 80)
+
+			app_context_adapter = WBrokerCommandManager.BrokerContextAdapter(
+				WContext(kit_name, linked_context=WContext(self.__section_name))
+			)
+			app_context_command = WCommandContext(
+				WReduceCommand(app_commands, *kit_names), app_context_adapter
+			)
+
+			self.__main_command_set.add_prioritized(app_context_command, 20)
+			self.add_prioritized(WReduceCommand(app_commands, *kit_names), 30)
 
 	__kit_section_prefix__ = 'wasp-launcher::broker::kits'
 
 	def __init__(self):
-		self.__loader = WClassLoader(self.__kit_section_prefix__, WCommandKit, tag_fn=lambda x: x.name())
-
 		self.__internal_set = WCommandContextSet()
+		self.__main_sections = {}
+
+		internal_command_set = self.__internal_set.commands()
+		help_info = WBrokerCommandManager.__main_context_help_header__
+		for section in WBrokerCommandManager.MainSections:
+			self.__main_sections[section] = WBrokerCommandManager.BrokerCommandSet(
+				internal_command_set, section
+			)
+			section_name = WBrokerCommandManager.__help_info__[section]['section_name']
+			help_info += ('\t - %s\n' % section_name)
+		help_info += WBrokerCommandManager.__general_usage_tip__
+
 		self.__internal_set.commands().add_prioritized(WBrokerCommandManager.DotCommand(), 10)
 		self.__internal_set.commands().add_prioritized(WBrokerCommandManager.DoubleDotCommand(), 10)
 
 		self.__internal_set.commands().add_prioritized(WBrokerCommandManager.GeneralUsageHelpCommand(), 15)
 
-		self.__internal_set.commands().add_prioritized(
-			WBrokerCommandManager.ContextHelpCommand(
-				self.__main_context_help, self.__internal_set.commands()
-			), 50
-		)
-
+		context_help_cmd = WBrokerCommandManager.ContextHelpCommand(lambda: help_info, internal_command_set)
+		self.__internal_set.commands().add_prioritized(context_help_cmd, 50)
 		self.__internal_set.commands().add_prioritized(WBrokerCommandManager.UnknownHelpCommand(), 60)
 
-		main_command_set = self.__internal_set.commands()
-		self.__core_apps = []
-		self.__total_core_commands = 0
-		self.__core_set = WBrokerCommandManager.BrokerCommandSet(
-			main_command_set, 'core', self.__core_context_help
-		)
-		self.__general_apps = []
-		self.__total_general_apps_commands = 0
-		self.__general_apps_set = WBrokerCommandManager.BrokerCommandSet(
-			main_command_set, 'apps', self.__general_app_context_help
-		)
+	def commands_count(self, section=None):
+		if section is not None:
+			return self.__main_sections[section].total_commands()
+		result = 0
+		for section_iter in WBrokerCommandManager.MainSections:
+			if section_iter in self.__main_sections:
+				result += self.__main_sections[section_iter].total_commands()
+		return result
 
-	def core_commands(self):
-		return self.__total_core_commands
-
-	def general_app_commands(self):
-		return self.__total_general_apps_commands
-
-	def __main_context_help(self):
-		return self.__main_context_help__ + self.__general_usage_tip__
-
-	def __core_context_help(self):
-		help_info = self.__core_level_context_help__
-		for app, alias in self.__core_apps:
-			if alias is not None:
-				help_info += '\t- %s | %s - %s\n' % (alias, app.name(), app.brief_description())
-			else:
-				help_info += '\t- %s\n - %s' % (app.name(), app.brief_description())
-		help_info += '\n'
-		help_info += self.__general_usage_tip__
-		return help_info
-
-	def __general_app_context_help(self):
-		help_info = self.__general_apps_level_context_help__
-		for app, alias in self.__general_apps:
-			if alias is not None:
-				help_info += '\t- %s | %s - %s\n' % (alias, app.name(), app.brief_description())
-			else:
-				help_info += '\t- %s - %s\n' % (app.name(), app.brief_description())
-		help_info += '\n'
-		help_info += self.__general_usage_tip__
-		return help_info
-
-	def __specific_context_help_templ(self, context_name, app_name, commands):
-		help_info = self.__specific_app_context_help__ % (app_name, context_name)
-		for command in commands:
-			help_info += '\t- %s - %s\n' % (command.command(), command.brief_description())
-		help_info += '\n'
-		help_info += self.__general_usage_tip__
-		return help_info
-
-	def __specific_app_context_help(self, app_name, commands):
-		return self.__specific_context_help_templ('apps', app_name, commands)
-
-	def __specific_core_context_help(self, app_name, commands):
-		return self.__specific_context_help_templ('core', app_name, commands)
-
-	def load_apps(self):
-		self.__loader.load(self.load_callback)
-
-	def load_callback(self, section_name, item_tag, item_cls):
-		alias = None
-		if WAppsGlobals.config.has_option(section_name, 'alias') is True:
-			alias = WAppsGlobals.config[section_name]['alias']
-
-		commands = item_cls.commands()
-
-		if WAppsGlobals.config.getboolean(section_name, 'core') is True:
-			self.__core_apps.append((item_cls, alias))
-
-			self.__core_set.add_commands(
-				item_tag, self.__specific_core_context_help, *commands, alias=alias,
-				force_context_command=True
-			)
-			self.__total_core_commands += len(commands)
-		else:
-			self.__general_apps.append((item_cls, alias))
-			self.__general_apps_set.add_commands(
-				item_tag, self.__specific_app_context_help, *commands, alias=alias
-			)
-			self.__total_general_apps_commands += len(commands)
+	@verify_type(command_kit=WCommandKit)
+	def add_kit(self, command_kit):
+		section = self.__main_sections[WBrokerCommandManager.MainSections(command_kit.is_core())]
+		section.add_commands(command_kit)
 
 	@verify_type('paranoid', command_tokens=str, request_context=(WContextProto, None))
 	def exec_broker_command(self, *command_tokens, request_context=None):
@@ -478,8 +454,8 @@ class WCLITableRender:
 			raise RuntimeError('Empty table')
 
 		separator_length = ((cell_count - 1) * 3) + 4
-		for cell_length in self.__cells_length:
-			separator_length += cell_length
+		for cell_length_iter in self.__cells_length:
+			separator_length += cell_length_iter
 
 		separator = (delimiter * separator_length) + '\n'
 		left_border = '%s ' % delimiter
@@ -521,7 +497,7 @@ class WCLITableRender:
 
 class WHealthCommandKit(WCommandKit):
 
-	__kit_name__ = 'com.binblob.wasp-launcher.broker.kits.health'
+	__registry_tag__ = 'com.binblob.wasp-launcher.broker.kits.health'
 
 	class Threads(WBrokerCommand):
 
@@ -544,11 +520,7 @@ class WHealthCommandKit(WCommandKit):
 			return 'return application threads list'
 
 	@classmethod
-	def name(cls):
-		return cls.__kit_name__
-
-	@classmethod
-	def brief_description(cls):
+	def description(cls):
 		return 'general or launcher-wide commands'
 
 	@classmethod
@@ -558,14 +530,10 @@ class WHealthCommandKit(WCommandKit):
 
 class WModelDBCommandKit(WCommandKit):
 
-	__kit_name__ = 'com.binblob.wasp-launcher.broker.kits.model-db'
+	__registry_tag__ = 'com.binblob.wasp-launcher.broker.kits.model-db'
 
 	@classmethod
-	def name(cls):
-		return cls.__kit_name__
-
-	@classmethod
-	def brief_description(cls):
+	def description(cls):
 		return 'database schema commands'
 
 	@classmethod
@@ -575,14 +543,10 @@ class WModelDBCommandKit(WCommandKit):
 
 class WModelObjCommandKit(WCommandKit):
 
-	__kit_name__ = 'com.binblob.wasp-launcher.broker.kits.model-obj'
+	__registry_tag__ = 'com.binblob.wasp-launcher.broker.kits.model-obj'
 
 	@classmethod
-	def name(cls):
-		return cls.__kit_name__
-
-	@classmethod
-	def brief_description(cls):
+	def description(cls):
 		return 'model-specific commands'
 
 	@classmethod
@@ -592,14 +556,10 @@ class WModelObjCommandKit(WCommandKit):
 
 class WAppsCommandKit(WCommandKit):
 
-	__kit_name__ = 'com.binblob.wasp-launcher.broker.kits.apps'
+	__registry_tag__ = 'com.binblob.wasp-launcher.broker.kits.apps'
 
 	@classmethod
-	def name(cls):
-		return cls.__kit_name__
-
-	@classmethod
-	def brief_description(cls):
+	def description(cls):
 		return 'general application related commands'
 
 	@classmethod
@@ -609,7 +569,7 @@ class WAppsCommandKit(WCommandKit):
 
 class WScheduleCommandKit(WCommandKit):
 
-	__kit_name__ = 'com.binblob.wasp-launcher.broker.kits.scheduler'
+	__registry_tag__ = 'com.binblob.wasp-launcher.broker.kits.scheduler'
 
 	class SchedulerInstances(WBrokerCommand):
 
@@ -713,11 +673,7 @@ class WScheduleCommandKit(WCommandKit):
 			return 'show tasks that run at the moment'
 
 	@classmethod
-	def name(cls):
-		return cls.__kit_name__
-
-	@classmethod
-	def brief_description(cls):
+	def description(cls):
 		return 'scheduler commands'
 
 	@classmethod
