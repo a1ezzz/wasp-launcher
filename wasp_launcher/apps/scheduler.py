@@ -39,7 +39,7 @@ from wasp_general.task.scheduler.scheduler import WTaskSchedulerService, WRunnin
 from wasp_general.task.scheduler.task_source import WCronTaskSource, WCronLocalTZSchedule, WCronTaskSchedule
 from wasp_general.task.scheduler.task_source import WCronUTCSchedule
 
-from wasp_launcher.core import WSyncApp, WAppsGlobals, WThreadTaskLoggingHandler
+from wasp_launcher.core import WSyncApp, WAppsGlobals, WThreadTaskLoggingHandler, WSchedulerTaskSourceInstaller
 
 
 class WLauncherTaskSource(WTaskSourceProto):
@@ -260,9 +260,9 @@ class WSchedulerApp(WSyncApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.apps.scheduler::start'
 
-	__dependency__ = [
-		'com.binblob.wasp-launcher.apps.scheduler::init'
-	]
+	__dependency__ = ['com.binblob.wasp-launcher.apps.scheduler::init']
+
+	__dynamic_dependency__ = WSchedulerTaskSourceInstaller
 
 	def start(self):
 		WAppsGlobals.log.info('Scheduler is starting')

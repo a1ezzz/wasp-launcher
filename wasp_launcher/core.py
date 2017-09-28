@@ -182,6 +182,35 @@ class WCommandKit(WSyncApp):
 		pass
 
 
+class WSchedulerTaskSourceInstaller(WSyncApp):
+
+	__dependency__ = ['com.binblob.wasp-launcher.apps.scheduler::init']
+
+	@classmethod
+	def config_section(cls):
+		return 'wasp-launcher::applications::%s' % cls.name()
+
+	def start(self):
+		section_name = self.config_section()
+		instance_name = WAppsGlobals.config[section_name]['instance']
+		instance = WAppsGlobals.scheduler.instance(instance_name)
+		if instance is None:
+			WAppsGlobals.log.error(
+				'Scheduler instance "%s" not found. Tasks will not be able to start' % instance_name
+			)
+			return
+
+		for source in self.sources():
+			instance.add_task_source(source)
+
+	def stop(self):
+		pass
+
+	@abstractmethod
+	def sources(self):
+		raise NotImplementedError('This method is abstract')
+
+
 class WWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
 
 	@verify_type('paranoid', request=WWebRequestProto, target_route=WWebTargetRoute, service=WWebService)
