@@ -33,7 +33,7 @@ from wasp_general.network.web.service import WWebService, WWebPresenterFactory
 from wasp_general.network.web.tornado import WTornadoRequestHandler
 
 from wasp_launcher.core import WSyncApp, WThreadedApp, WAppsGlobals, WWebPresenter, WWebApp
-from wasp_launcher.apps.web_debugger import WHostAppWebDebugger
+from wasp_launcher.apps.web_debugger import WWebAppDebugger
 
 
 class WGuestWebPresenterFactory(WWebPresenterFactory):
@@ -45,7 +45,7 @@ class WGuestWebPresenterFactory(WWebPresenterFactory):
 		)
 
 
-class WWebInitHostApp(WSyncApp):
+class WWebServiceInitApp(WSyncApp):
 	""" Task that prepare web-service
 	"""
 
@@ -79,7 +79,7 @@ class WWebInitHostApp(WSyncApp):
 
 		WAppsGlobals.wasp_web_service = WWebService(
 			factory=WGuestWebPresenterFactory,
-			debugger=(WHostAppWebDebugger() if debugger is True else None)
+			debugger=(WWebAppDebugger() if debugger is True else None)
 		)
 
 		WAppsGlobals.tornado_io_loop = WLoglessIOLoop()
@@ -99,7 +99,7 @@ class WWebInitHostApp(WSyncApp):
 		WAppsGlobals.wasp_web_service = None
 
 
-class WWebHostApp(WThreadedApp):
+class WWebServiceApp(WThreadedApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.app.web::start'
 	""" Task tag
@@ -112,7 +112,7 @@ class WWebHostApp(WThreadedApp):
 
 	__dynamic_dependency__ = WWebApp
 
-	__thread_name__ = "WWebHostApp"
+	__thread_name__ = "WWebServiceApp"
 
 	def thread_started(self):
 		self.setup_presenters()

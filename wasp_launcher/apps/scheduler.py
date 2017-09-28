@@ -236,7 +236,7 @@ class WSchedulerCollection:
 			yield (instance, name)
 
 
-class WSchedulerInitHostApp(WSyncApp):
+class WSchedulerInitApp(WSyncApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.app.scheduler::init'
 
@@ -256,7 +256,7 @@ class WSchedulerInitHostApp(WSyncApp):
 			WAppsGlobals.scheduler = None
 
 
-class WSchedulerHostApp(WSyncApp):
+class WSchedulerApp(WSyncApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.app.scheduler::start'
 

@@ -230,7 +230,7 @@ class WPyTemplateSearcher(WGuestAppTemplateSearcher):
 		return WPyTemplateSearcher.PyHandler
 
 
-class WHostAgentTemplateSearcher(TemplateCollection, WBasicTemplateSearcher):
+class WAgentTemplateSearcher(TemplateCollection, WBasicTemplateSearcher):
 
 	def __init__(self):
 		TemplateCollection.__init__(self)
@@ -272,7 +272,7 @@ class WHostAgentTemplateSearcher(TemplateCollection, WBasicTemplateSearcher):
 		return WWebTemplateLookup(uri, self)
 
 
-class WTemplateLoadHostApp(WSyncApp):
+class WTemplateLookupApp(WSyncApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.app.template-lookup'
 	""" Task tag
@@ -282,7 +282,7 @@ class WTemplateLoadHostApp(WSyncApp):
 
 	def start(self):
 		WAppsGlobals.log.info('Web-templates is starting')
-		WAppsGlobals.templates = WHostAgentTemplateSearcher()
+		WAppsGlobals.templates = WAgentTemplateSearcher()
 
 	def stop(self):
 		WAppsGlobals.log.info('Web-templates is stopping')

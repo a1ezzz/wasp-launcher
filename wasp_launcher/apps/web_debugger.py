@@ -41,7 +41,7 @@ from wasp_launcher.core import WSyncApp, WAppsGlobals
 from wasp_launcher.mongodb import WMongoConnection
 
 
-class WHostAppWebDebugger(WWebDebugInfo):
+class WWebAppDebugger(WWebDebugInfo):
 
 	class DebugSession:
 
@@ -60,7 +60,7 @@ class WHostAppWebDebugger(WWebDebugInfo):
 
 	def session_id(self):
 		if self.mode != 'off':
-			session = WHostAppWebDebugger.DebugSession()
+			session = WWebAppDebugger.DebugSession()
 			self.__sessions[session.uuid] = {
 				'session': session
 			}

@@ -110,7 +110,7 @@ class WDebugErrorPresenter(WErrorPresenter):
 
 class WWaspDebugApps(WWebApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.guest-apps.wasp-debug'
+	__registry_tag__ = 'com.binblob.wasp-launcher.apps.web.wasp-debug'
 
 	@classmethod
 	def public_presenters(cls):

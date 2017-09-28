@@ -30,8 +30,8 @@ from wasp_launcher.version import __status__
 from wasp_general.task.dependency import WTaskDependencyRegistry
 
 from wasp_launcher.core import WAppsGlobals, WAppRegistryStorage, WAppRegistry, WRegisteredApp
-from wasp_launcher.apps.log import WLogHostApp
-from wasp_launcher.apps.config import WConfigHostApp
+from wasp_launcher.apps.log import WLogApp
+from wasp_launcher.apps.config import WConfigApp
 from wasp_launcher.loader import WClassLoader
 
 
@@ -39,24 +39,24 @@ class WBootstrapRegistry(WTaskDependencyRegistry):
 	__registry_storage__ = WAppRegistryStorage()
 
 
-class WBootstrapLog(WLogHostApp):
+class WBootstrapLog(WLogApp):
 	__registry__ = WBootstrapRegistry
 	__auto_registry__ = True
 
 
-class WBootstrapConfig(WConfigHostApp):
+class WBootstrapConfig(WConfigApp):
 	__registry__ = WBootstrapRegistry
 	__auto_registry__ = True
 
 
 class WLauncherBootstrap:
 
-	__host_app_section_prefix__ = 'wasp-launcher::applications'
+	__app_section_prefix__ = 'wasp-launcher::applications'
 
 	def __init__(self):
 		self.__start_apps = []
 		self.__loader = WClassLoader(
-			self.__host_app_section_prefix__, WRegisteredApp, tag_fn=lambda x: x.__registry_tag__
+			self.__app_section_prefix__, WRegisteredApp, tag_fn=lambda x: x.__registry_tag__
 		)
 
 	def load_configuration(self):

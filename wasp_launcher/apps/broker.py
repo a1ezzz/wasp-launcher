@@ -315,12 +315,12 @@ class WLauncherBrokerIPCTask(WLauncherBrokerBasicTask):
 		return 'ipc://%s' % named_socket
 
 
-class WBrokerHostAppTasks:
+class WBrokerAppTasks:
 	__broker_tcp_task__ = None
 	__broker_ipc_task__ = None
 
 
-class WBrokerInitHostApp(WSyncApp):
+class WBrokerInitApp(WSyncApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.app.broker::init'
 
@@ -334,11 +334,11 @@ class WBrokerInitHostApp(WSyncApp):
 		tcp_enabled = WAppsGlobals.config.getboolean('wasp-launcher::broker::connection', 'bind')
 		ipc_enabled = WAppsGlobals.config.getboolean('wasp-launcher::broker::connection', 'named_socket')
 
-		if WBrokerHostAppTasks.__broker_tcp_task__ is None and tcp_enabled is True:
-			WBrokerHostAppTasks.__broker_tcp_task__ = WLauncherBrokerTCPTask()
+		if WBrokerAppTasks.__broker_tcp_task__ is None and tcp_enabled is True:
+			WBrokerAppTasks.__broker_tcp_task__ = WLauncherBrokerTCPTask()
 
-		if WBrokerHostAppTasks.__broker_ipc_task__ is None and ipc_enabled is True:
-			WBrokerHostAppTasks.__broker_ipc_task__ = WLauncherBrokerIPCTask()
+		if WBrokerAppTasks.__broker_ipc_task__ is None and ipc_enabled is True:
+			WBrokerAppTasks.__broker_ipc_task__ = WLauncherBrokerIPCTask()
 
 		if WAppsGlobals.broker_commands is None:
 			WAppsGlobals.broker_commands = WBrokerCommandManager()
@@ -346,12 +346,12 @@ class WBrokerInitHostApp(WSyncApp):
 
 	def stop(self):
 		WAppsGlobals.log.info('Broker is finalizing')
-		WBrokerHostAppTasks.__broker_tcp_task__ = None
-		WBrokerHostAppTasks.__broker_ipc_task__ = None
+		WBrokerAppTasks.__broker_tcp_task__ = None
+		WBrokerAppTasks.__broker_ipc_task__ = None
 		WAppsGlobals.broker_commands = None
 
 
-class WBrokerHostApp(WSyncApp):
+class WBrokerApp(WSyncApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.app.broker::start'
 
@@ -372,17 +372,17 @@ class WBrokerHostApp(WSyncApp):
 
 		WAppsGlobals.log.info('Broker is starting')
 
-		if WBrokerHostAppTasks.__broker_tcp_task__ is not None:
-			WBrokerHostAppTasks.__broker_tcp_task__.start()
+		if WBrokerAppTasks.__broker_tcp_task__ is not None:
+			WBrokerAppTasks.__broker_tcp_task__.start()
 
-		if WBrokerHostAppTasks.__broker_ipc_task__ is not None:
-			WBrokerHostAppTasks.__broker_ipc_task__.start()
+		if WBrokerAppTasks.__broker_ipc_task__ is not None:
+			WBrokerAppTasks.__broker_ipc_task__.start()
 
 	def stop(self):
 		WAppsGlobals.log.info('Broker is stopping')
 
-		if WBrokerHostAppTasks.__broker_tcp_task__ is not None:
-			WBrokerHostAppTasks.__broker_tcp_task__.stop()
+		if WBrokerAppTasks.__broker_tcp_task__ is not None:
+			WBrokerAppTasks.__broker_tcp_task__.stop()
 
-		if WBrokerHostAppTasks.__broker_ipc_task__ is not None:
-			WBrokerHostAppTasks.__broker_ipc_task__.stop()
+		if WBrokerAppTasks.__broker_ipc_task__ is not None:
+			WBrokerAppTasks.__broker_ipc_task__.stop()

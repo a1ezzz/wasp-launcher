@@ -232,7 +232,7 @@ class WErrorPresenter(WSimpleErrorPresenter):
 
 class WWaspBasicApps(WWebApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.guest-apps.wasp-basic'
+	__registry_tag__ = 'com.binblob.wasp-launcher.apps.web.wasp-basic'
 
 	@classmethod
 	def public_presenters(cls):

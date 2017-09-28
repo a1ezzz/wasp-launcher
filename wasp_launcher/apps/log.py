@@ -31,7 +31,7 @@ import sys
 from wasp_launcher.core import WSyncApp, WAppsGlobals
 
 
-class WLogHostApp(WSyncApp):
+class WLogApp(WSyncApp):
 	""" Logger application
 	"""
 
@@ -44,7 +44,7 @@ class WLogHostApp(WSyncApp):
 	"""
 
 	def start(self):
-		""" Start this app (all the work is done in :meth:`.WLogHostApp.setup_logger` method)
+		""" Start this app (all the work is done in :meth:`.WLogApp.setup_logger` method)
 
 		:return: None
 		"""
@@ -56,10 +56,10 @@ class WLogHostApp(WSyncApp):
 
 		:return: None
 		"""
-		if WAppsGlobals.log is not None and WLogHostApp.__log_handler__ is not None:
-			WAppsGlobals.log.removeHandler(WLogHostApp.__log_handler__)
+		if WAppsGlobals.log is not None and WLogApp.__log_handler__ is not None:
+			WAppsGlobals.log.removeHandler(WLogApp.__log_handler__)
 
-		WLogHostApp.__log_handler__ = None
+		WLogApp.__log_handler__ = None
 		WAppsGlobals.log = None
 
 	@classmethod
@@ -74,7 +74,7 @@ class WLogHostApp(WSyncApp):
 				'[%(name)s] [%(threadName)s] [%(levelname)s] [%(asctime)s] %(message)s',
 				'%Y-%m-%d %H:%M:%S'
 			)
-			WLogHostApp.__log_handler__ = logging.StreamHandler(sys.stdout)
-			WLogHostApp.__log_handler__.setFormatter(formatter)
-			WAppsGlobals.log.addHandler(WLogHostApp.__log_handler__)
+			WLogApp.__log_handler__ = logging.StreamHandler(sys.stdout)
+			WLogApp.__log_handler__.setFormatter(formatter)
+			WAppsGlobals.log.addHandler(WLogApp.__log_handler__)
 			WAppsGlobals.log.setLevel(logging.INFO)
