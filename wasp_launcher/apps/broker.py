@@ -355,9 +355,7 @@ class WBrokerHostApp(WSyncApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.app.broker::start'
 
-	__dependency__ = [
-		'com.binblob.wasp-launcher.app.guest-apps'
-	]
+	__dependency__ = ['com.binblob.wasp-launcher.app.broker::init']
 
 	def start(self):
 		host_app_commands = WAppsGlobals.broker_commands.host_app_commands()

@@ -107,7 +107,7 @@ class WWebHostApp(WThreadedApp):
 
 	__dependency__ = [
 		'com.binblob.wasp-launcher.app.model-load',
-		'com.binblob.wasp-launcher.app.template-load'
+		'com.binblob.wasp-launcher.app.template-lookup'
 	]
 
 	__thread_name__ = "WWebHostApp"

@@ -261,7 +261,7 @@ class WSchedulerHostApp(WSyncApp):
 	__registry_tag__ = 'com.binblob.wasp-launcher.app.scheduler::start'
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.app.guest-apps'
+		'com.binblob.wasp-launcher.app.scheduler::init'
 	]
 
 	def start(self):

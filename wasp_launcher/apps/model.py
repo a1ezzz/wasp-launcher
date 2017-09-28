@@ -39,9 +39,7 @@ class WGuestModelLoadApp(WSyncApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.app.model-load'
 
-	__dependency__ = [
-		'com.binblob.wasp-launcher.app.guest-apps'
-	]
+	__dependency__ = ['com.binblob.wasp-launcher.app.config']
 
 	def start(self):
 		WAppsGlobals.models = WHostAppModelStorage()

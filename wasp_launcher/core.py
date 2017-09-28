@@ -162,6 +162,12 @@ class WWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
 
 class WWebApp(WSyncApp):
 
+	__dependency__ = [
+		'com.binblob.wasp-launcher.app.web::init',
+		'com.binblob.wasp-launcher.app.template-lookup',
+
+	]
+
 	@classmethod
 	def public_presenters(cls):
 		return tuple()
@@ -199,6 +205,8 @@ class WWebApp(WSyncApp):
 		return None
 
 	def start(self):
+		WAppsGlobals.templates.add_app(self)
+
 		for presenter in self.public_presenters():
 			WAppsGlobals.wasp_web_service.add_presenter(presenter)
 			WAppsGlobals.log.info(

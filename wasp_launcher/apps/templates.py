@@ -108,13 +108,10 @@ class WGuestAppTemplateSearcher(WBasicTemplateSearcher, metaclass=ABCMeta):
 		def app_description(self):
 			return self.__app_description
 
-	def __init__(self):
-		WBasicTemplateSearcher.__init__(self)
-
-		for app in WAppsGlobals.started_apps:
-			if issubclass(app, WWebApp) is True:
-				obj = self.handler_class()(app)
-				self.replace(app.name(), obj)
+	@verify_type(app=WWebApp)
+	def add_app(self, app):
+		obj = self.handler_class()(app.__class__)
+		self.replace(app.name(), obj)
 
 	@abstractmethod
 	def handler_class(self):
@@ -238,9 +235,13 @@ class WHostAgentTemplateSearcher(TemplateCollection, WBasicTemplateSearcher):
 	def __init__(self):
 		TemplateCollection.__init__(self)
 		WBasicTemplateSearcher.__init__(self)
-		self.replace('mako', WMakoTemplateSearcher())
-		self.replace('static-file', WStaticFileSearcher())
-		self.replace('py', WPyTemplateSearcher())
+		self.__mako_searcher = WMakoTemplateSearcher()
+		self.__static_file_searcher = WStaticFileSearcher()
+		self.__py_searcher = WPyTemplateSearcher()
+
+		self.replace('mako', self.__mako_searcher)
+		self.replace('static-file', self.__static_file_searcher)
+		self.replace('py', self.__py_searcher)
 
 		self._module_directory = None
 		if WAppsGlobals.config.getboolean('wasp-launcher::web:templates', 'modules_directory') is True:
@@ -250,6 +251,12 @@ class WHostAgentTemplateSearcher(TemplateCollection, WBasicTemplateSearcher):
 		config_encoding = WAppsGlobals.config['wasp-launcher::web:templates']['input_encoding']
 		if len(config_encoding) > 0:
 			self._template_encoding = config_encoding
+
+	@verify_type(app=WWebApp)
+	def add_app(self, app):
+		self.__mako_searcher.add_app(app)
+		self.__static_file_searcher.add_app(app)
+		self.__py_searcher.add_app(app)
 
 	@verify_type(uri=str)
 	@verify_value(uri=lambda x: len(x) > 0)
@@ -267,13 +274,11 @@ class WHostAgentTemplateSearcher(TemplateCollection, WBasicTemplateSearcher):
 
 class WTemplateLoadHostApp(WSyncApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.app.template-load'
+	__registry_tag__ = 'com.binblob.wasp-launcher.app.template-lookup'
 	""" Task tag
 	"""
 
-	__dependency__ = [
-		'com.binblob.wasp-launcher.app.guest-apps'
-	]
+	__dependency__ = ['com.binblob.wasp-launcher.app.config']
 
 	def start(self):
 		WAppsGlobals.log.info('Web-templates is starting')
