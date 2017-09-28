@@ -63,10 +63,25 @@ class WAppRegistryStorage(WTaskDependencyRegistryStorage):
 	def start_task(self, task_tag, skip_unresolved=False):
 		task = self.tasks_by_tag(task_tag)
 		if task is not None and issubclass(task, WRegisteredApp) is True:
+
 			if task.__dynamic_dependency__ is not None:
+
+				config = WAppsGlobals.config
+				if config is None:
+					raise RuntimeError(
+						'Unable to determine dynamic dependencies without configuration')
+
 				for dependent_task in self.tasks(task_cls=task.__dynamic_dependency__):
 					registry_tag = dependent_task.__registry_tag__
 					if self.started_tasks(registry_tag) is None:
+						section = 'wasp-launcher::applications::%s' % registry_tag
+
+						if config.getboolean(section, 'enabled') is False:
+							continue
+
+						if config.getboolean(section, 'auto_start') is False:
+							continue
+
 						WTaskDependencyRegistryStorage.start_task(
 							self, registry_tag, skip_unresolved=skip_unresolved
 						)

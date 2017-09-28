@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/guest_apps/wasp.py
+# wasp_launcher/apps/web/wasp.py
 #
-# Copyright (C) 2016 the wasp-launcher authors and contributors
+# Copyright (C) 2016-2017 the wasp-launcher authors and contributors
 # <see AUTHORS file>
 #
 # This file is part of wasp-launcher.
