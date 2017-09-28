@@ -227,7 +227,7 @@ class WErrorPresenter(WSimpleErrorPresenter):
 
 	@classmethod
 	def __presenter_name__(cls):
-		return 'com.binblob.wasp-launcher.guest-apps.wasp-basic.error-presenter'
+		return 'com.binblob.wasp-launcher.apps.wasp-basic.error-presenter'
 
 
 class WWaspBasicApps(WWebApp):

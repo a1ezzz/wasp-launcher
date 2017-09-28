@@ -37,7 +37,7 @@ from wasp_general.network.web.service import WWebRoute
 from wasp_general.network.web.template import WWebTemplateResponse, WWebTemplateText
 
 from wasp_launcher.core import WWebApp, WWebPresenter
-from wasp_launcher.apps.web_debugger import WGuestAppWebDebugger
+from wasp_launcher.apps.web_debugger import WWebAppDebuggerDatastore
 from wasp_launcher.apps.web.wasp import WErrorPresenter
 
 
@@ -51,11 +51,11 @@ class WDebugPresenter(WWebPresenter):
 		self._context['uuid'] = str(session_uuid)
 
 		query = {'uuid': uuid.UUID(bytes=session_uuid)}
-		self._context['session'] = WGuestAppWebDebugger.__mongo_sessions__.find_one(query)
-		self._context['request'] = WGuestAppWebDebugger.__mongo_requests__.find_one(query)
-		self._context['response'] = WGuestAppWebDebugger.__mongo_responses__.find_one(query)
-		self._context['target_route'] = WGuestAppWebDebugger.__mongo_target_routes__.find_one(query)
-		self._context['wasp_exceptions'] = list(WGuestAppWebDebugger.__mongo_exceptions__.find(query))
+		self._context['session'] = WWebAppDebuggerDatastore.__mongo_sessions__.find_one(query)
+		self._context['request'] = WWebAppDebuggerDatastore.__mongo_requests__.find_one(query)
+		self._context['response'] = WWebAppDebuggerDatastore.__mongo_responses__.find_one(query)
+		self._context['target_route'] = WWebAppDebuggerDatastore.__mongo_target_routes__.find_one(query)
+		self._context['wasp_exceptions'] = list(WWebAppDebuggerDatastore.__mongo_exceptions__.find(query))
 
 		return self.__template_response__('mako::com.binblob.wasp-launcher.apps.wasp-debug::session.mako')
 
@@ -105,7 +105,7 @@ class WDebugErrorPresenter(WErrorPresenter):
 
 	@classmethod
 	def __presenter_name__(cls):
-		return 'com.binblob.wasp-launcher.guest-apps.wasp-debug.error-presenter'
+		return 'com.binblob.wasp-launcher.apps.wasp-debug.error-presenter'
 
 
 class WWaspDebugApps(WWebApp):
