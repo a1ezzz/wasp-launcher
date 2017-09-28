@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/host_apps/model.py
+# wasp_launcher/apps/model.py
 #
-# Copyright (C) 2016 the wasp-launcher authors and contributors
+# Copyright (C) 2016-2017 the wasp-launcher authors and contributors
 # <see AUTHORS file>
 #
 # This file is part of wasp-launcher.
@@ -28,7 +28,7 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from wasp_launcher.apps import WSyncApp, WAppsGlobals
+from wasp_launcher.core import WSyncApp, WAppsGlobals
 
 
 class WHostAppModelStorage:

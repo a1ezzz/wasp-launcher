@@ -36,8 +36,8 @@ from wasp_general.verify import verify_type, verify_value
 from wasp_general.network.web.service import WWebRoute
 from wasp_general.network.web.template import WWebTemplateResponse, WWebTemplateText
 
-from wasp_launcher.apps import WGuestWebApp, WGuestWebPresenter
-from wasp_launcher.host_apps.web_debugger import WGuestAppWebDebugger
+from wasp_launcher.core import WGuestWebApp, WGuestWebPresenter
+from wasp_launcher.apps.web_debugger import WGuestAppWebDebugger
 from wasp_launcher.guest_apps.wasp import WErrorPresenter
 
 

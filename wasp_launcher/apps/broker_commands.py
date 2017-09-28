@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/broker_commands.py
+# wasp_launcher/apps/broker_commands.py
 #
 # Copyright (C) 2017 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -39,7 +39,7 @@ from wasp_general.command.context import WContextProto, WContext, WCommandContex
 from wasp_general.command.context import WCommandContext, WCommandContextSet
 from wasp_general.datetime import local_datetime
 
-from wasp_launcher.apps import WAppsGlobals, WCommandKit, WBrokerCommand
+from wasp_launcher.core import WAppsGlobals, WCommandKit, WBrokerCommand
 from wasp_launcher.loader import WClassLoader
 
 

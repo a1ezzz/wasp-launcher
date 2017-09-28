@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/host_apps/broker.py
+# wasp_launcher/apps/broker.py
 #
-# Copyright (C) 2016 the wasp-launcher authors and contributors
+# Copyright (C) 2016-2017 the wasp-launcher authors and contributors
 # <see AUTHORS file>
 #
 # This file is part of wasp-launcher.
@@ -44,8 +44,8 @@ from wasp_general.network.messenger.envelope import WMessengerBytesEnvelope, WMe
 from wasp_general.command.command import WCommandResult
 from wasp_general.command.context import WContextProto, WContext, WCommandContextResult
 
-from wasp_launcher.apps import WSyncApp, WAppsGlobals, WThreadTaskLoggingHandler
-from wasp_launcher.host_apps.broker_commands import WBrokerCommandManager
+from wasp_launcher.core import WSyncApp, WAppsGlobals, WThreadTaskLoggingHandler
+from wasp_launcher.apps.broker_commands import WBrokerCommandManager
 
 
 class WManagementCommandPackerLayer(WMessengerOnionPackerLayerProto):

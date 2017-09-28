@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/host_apps/templates.py
+# wasp_launcher/apps/templates.py
 #
-# Copyright (C) 2016 the wasp-launcher authors and contributors
+# Copyright (C) 2016-2017 the wasp-launcher authors and contributors
 # <see AUTHORS file>
 #
 # This file is part of wasp-launcher.
@@ -41,7 +41,7 @@ from wasp_general.verify import verify_type, verify_subclass, verify_value
 
 from wasp_general.network.web.template import WWebTemplateFile, WWebTemplate, WWebTemplateText, WWebTemplateLookup
 
-from wasp_launcher.apps import WSyncApp, WGuestWebApp, WAppsGlobals
+from wasp_launcher.core import WSyncApp, WGuestWebApp, WAppsGlobals
 
 
 class WTemplateSearcherProto(metaclass=ABCMeta):

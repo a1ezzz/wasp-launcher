@@ -28,7 +28,7 @@ from wasp_launcher.version import __status__
 import os
 import signal
 
-from wasp_launcher.apps import WAppsGlobals
+from wasp_launcher.core import WAppsGlobals
 
 from wasp_launcher.broker_cli import WBrokerCLI
 from wasp_launcher.bootstrap import WLauncherBootstrap

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/host_apps/web_service.py
+# wasp_launcher/apps/web_service.py
 #
-# Copyright (C) 2016 the wasp-launcher authors and contributors
+# Copyright (C) 2016-2017 the wasp-launcher authors and contributors
 # <see AUTHORS file>
 #
 # This file is part of wasp-launcher.
@@ -32,8 +32,8 @@ from wasp_general.network.primitives import WIPV4SocketInfo
 from wasp_general.network.web.service import WWebService, WWebPresenterFactory
 from wasp_general.network.web.tornado import WTornadoRequestHandler
 
-from wasp_launcher.apps import WSyncApp, WThreadedApp, WAppsGlobals, WGuestWebPresenter
-from wasp_launcher.host_apps.web_debugger import WHostAppWebDebugger
+from wasp_launcher.core import WSyncApp, WThreadedApp, WAppsGlobals, WGuestWebPresenter
+from wasp_launcher.apps.web_debugger import WHostAppWebDebugger
 
 
 class WGuestWebPresenterFactory(WWebPresenterFactory):

@@ -5,8 +5,8 @@ import os
 
 from wasp_general.config import WConfig
 
-from wasp_launcher.host_apps.config import WConfigHostApp
-from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
+from wasp_launcher.apps.config import WConfigHostApp
+from wasp_launcher.core import WSyncApp, WAppsGlobals
 
 
 @pytest.fixture

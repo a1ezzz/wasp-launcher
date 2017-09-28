@@ -34,7 +34,7 @@ from wasp_general.network.primitives import WIPV4SocketInfo
 from wasp_general.network.beacon.beacon import WNetworkBeacon, WNetworkBeaconCallback
 from wasp_general.network.beacon.transport import WBroadcastBeaconTransport
 from wasp_general.network.beacon.messenger import WHostgroupBeaconMessenger
-from wasp_launcher.apps import WAppsGlobals
+from wasp_launcher.core import WAppsGlobals
 
 
 class WLauncherBeaconMessenger(WHostgroupBeaconMessenger):

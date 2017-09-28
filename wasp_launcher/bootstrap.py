@@ -29,9 +29,9 @@ from wasp_launcher.version import __status__
 
 from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage
 
-from wasp_launcher.apps import WAppsGlobals, WAppRegistry, WRegisteredApp
-from wasp_launcher.host_apps.log import WLogHostApp
-from wasp_launcher.host_apps.config import WConfigHostApp
+from wasp_launcher.core import WAppsGlobals, WAppRegistry, WRegisteredApp
+from wasp_launcher.apps.log import WLogHostApp
+from wasp_launcher.apps.config import WConfigHostApp
 from wasp_launcher.loader import WClassLoader
 
 

@@ -3,8 +3,8 @@
 import pytest
 import logging
 
-from wasp_launcher.host_apps.log import WLogHostApp
-from wasp_launcher.apps import WSyncHostApp, WAppsGlobals
+from wasp_launcher.apps.log import WLogApp
+from wasp_launcher.core import WSyncApp, WAppsGlobals
 
 
 @pytest.fixture

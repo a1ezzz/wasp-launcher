@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/host_apps/scheduler.py
+# wasp_launcher/apps/scheduler.py
 #
-# Copyright (C) 2016 the wasp-launcher authors and contributors
+# Copyright (C) 2016-2017 the wasp-launcher authors and contributors
 # <see AUTHORS file>
 #
 # This file is part of wasp-launcher.
@@ -39,7 +39,7 @@ from wasp_general.task.scheduler.scheduler import WTaskSchedulerService, WRunnin
 from wasp_general.task.scheduler.task_source import WCronTaskSource, WCronLocalTZSchedule, WCronTaskSchedule
 from wasp_general.task.scheduler.task_source import WCronUTCSchedule
 
-from wasp_launcher.apps import WSyncApp, WAppsGlobals, WThreadTaskLoggingHandler
+from wasp_launcher.core import WSyncApp, WAppsGlobals, WThreadTaskLoggingHandler
 
 
 class WLauncherTaskSource(WTaskSourceProto):

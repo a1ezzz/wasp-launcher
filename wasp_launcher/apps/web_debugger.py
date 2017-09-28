@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/host_apps/web_debugger.py
+# wasp_launcher/apps/web_debugger.py
 #
-# Copyright (C) 2016 the wasp-launcher authors and contributors
+# Copyright (C) 2016-2017 the wasp-launcher authors and contributors
 # <see AUTHORS file>
 #
 # This file is part of wasp-launcher.
@@ -37,7 +37,7 @@ from wasp_general.network.web.proto import WWebRequestProto, WWebResponseProto
 from wasp_general.network.web.service import WWebTargetRoute
 from wasp_general.network.web.headers import WHTTPHeaders
 
-from wasp_launcher.apps import WSyncApp, WAppsGlobals
+from wasp_launcher.core import WSyncApp, WAppsGlobals
 from wasp_launcher.mongodb import WMongoConnection
 
 

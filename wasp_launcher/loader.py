@@ -32,7 +32,7 @@ from importlib import import_module
 
 from wasp_general.verify import verify_type, verify_value
 
-from wasp_launcher.apps import WAppsGlobals
+from wasp_launcher.core import WAppsGlobals
 
 
 class WClassLoader:

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/host_apps/config.py
+# wasp_launcher/apps/config.py
 #
-# Copyright (C) 2016 the wasp-launcher authors and contributors
+# Copyright (C) 2016-2017 the wasp-launcher authors and contributors
 # <see AUTHORS file>
 #
 # This file is part of wasp-launcher.
@@ -28,7 +28,7 @@ import os
 
 from wasp_general.config import WConfig
 
-from wasp_launcher.apps import WSyncApp, WAppsGlobals
+from wasp_launcher.core import WSyncApp, WAppsGlobals
 
 
 class WConfigHostApp(WSyncApp):

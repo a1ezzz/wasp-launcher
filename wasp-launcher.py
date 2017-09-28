@@ -27,7 +27,7 @@ from wasp_launcher.version import __status__
 
 import signal
 
-from wasp_launcher.apps import WAppRegistry
+from wasp_launcher.core import WAppRegistry
 
 from wasp_launcher.bootstrap import WLauncherBootstrap
 
