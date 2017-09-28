@@ -322,10 +322,10 @@ class WBrokerAppTasks:
 
 class WBrokerInitApp(WSyncApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.app.broker::init'
+	__registry_tag__ = 'com.binblob.wasp-launcher.apps.broker::init'
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.app.config'
+		'com.binblob.wasp-launcher.apps.config'
 	]
 
 	def start(self):
@@ -353,21 +353,21 @@ class WBrokerInitApp(WSyncApp):
 
 class WBrokerApp(WSyncApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.app.broker::start'
+	__registry_tag__ = 'com.binblob.wasp-launcher.apps.broker::start'
 
-	__dependency__ = ['com.binblob.wasp-launcher.app.broker::init']
+	__dependency__ = ['com.binblob.wasp-launcher.apps.broker::init']
 
 	def start(self):
-		host_app_commands = WAppsGlobals.broker_commands.host_app_commands()
-		guest_app_commands = WAppsGlobals.broker_commands.guest_app_commands()
+		core_commands = WAppsGlobals.broker_commands.core_commands()
+		app_commands = WAppsGlobals.broker_commands.general_app_commands()
 
-		total_commands = host_app_commands + guest_app_commands
+		total_commands = core_commands + app_commands
 		if total_commands == 0:
 			WAppsGlobals.log.warn('No commands was set for the broker')
 		else:
 			WAppsGlobals.log.info(
-				'Loaded broker commands: %i (host: %i, guest: %i)' %
-				(total_commands, host_app_commands, guest_app_commands)
+				'Loaded broker commands: %i (core: %i, apps: %i)' %
+				(total_commands, core_commands, app_commands)
 			)
 
 		WAppsGlobals.log.info('Broker is starting')

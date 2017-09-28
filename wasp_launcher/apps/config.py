@@ -40,11 +40,11 @@ class WConfigApp(WSyncApp):
 	- configuration files that are resides in WConfigApp.__environment_dir_var__ (files are ordered by name)
 	"""
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.app.config'
+	__registry_tag__ = 'com.binblob.wasp-launcher.apps.config'
 	""" Task tag
 	"""
 
-	__dependency__ = ['com.binblob.wasp-launcher.app.log']
+	__dependency__ = ['com.binblob.wasp-launcher.apps.log']
 	""" Task dependency
 	"""
 

@@ -35,7 +35,7 @@ class WLogApp(WSyncApp):
 	""" Logger application
 	"""
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.app.log'
+	__registry_tag__ = 'com.binblob.wasp-launcher.apps.log'
 	""" Task tag
 	"""
 

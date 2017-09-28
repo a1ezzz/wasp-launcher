@@ -96,7 +96,7 @@ class WBasicTemplateSearcher(WTemplateSearcherProto):
 		return self.get(view_path.split(WTemplateSearcherProto.__separator__))
 
 
-class WGuestAppTemplateSearcher(WBasicTemplateSearcher, metaclass=ABCMeta):
+class WAppTemplateSearcherBase(WBasicTemplateSearcher, metaclass=ABCMeta):
 
 	class Handler(WBasicTemplateSearcher, metaclass=ABCMeta):
 
@@ -118,7 +118,7 @@ class WGuestAppTemplateSearcher(WBasicTemplateSearcher, metaclass=ABCMeta):
 		raise NotImplementedError('This method is abstract')
 
 
-class WSearcherFileHandler(WGuestAppTemplateSearcher.Handler):
+class WSearcherFileHandler(WAppTemplateSearcherBase.Handler):
 
 	def app_directory(self):
 		return None
@@ -148,7 +148,7 @@ class WSearcherFileHandler(WGuestAppTemplateSearcher.Handler):
 			raise TemplateLookupException('No such template: ' + str(view_path))
 
 
-class WMakoTemplateSearcher(WGuestAppTemplateSearcher):
+class WMakoTemplateSearcher(WAppTemplateSearcherBase):
 
 	class Handler(WSearcherFileHandler):
 
@@ -159,7 +159,7 @@ class WMakoTemplateSearcher(WGuestAppTemplateSearcher):
 		return WMakoTemplateSearcher.Handler
 
 
-class WStaticFileSearcher(WGuestAppTemplateSearcher):
+class WStaticFileSearcher(WAppTemplateSearcherBase):
 
 	class Handler(WSearcherFileHandler):
 
@@ -170,9 +170,9 @@ class WStaticFileSearcher(WGuestAppTemplateSearcher):
 		return WStaticFileSearcher.Handler
 
 
-class WPyTemplateSearcher(WGuestAppTemplateSearcher):
+class WPyTemplateSearcher(WAppTemplateSearcherBase):
 
-	class PyHandler(WGuestAppTemplateSearcher.Handler):
+	class PyHandler(WAppTemplateSearcherBase.Handler):
 
 		class PyModuleHandler(WBasicTemplateSearcher):
 			def __init__(self, module):
@@ -274,11 +274,11 @@ class WAgentTemplateSearcher(TemplateCollection, WBasicTemplateSearcher):
 
 class WTemplateLookupApp(WSyncApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.app.template-lookup'
+	__registry_tag__ = 'com.binblob.wasp-launcher.apps.template-lookup'
 	""" Task tag
 	"""
 
-	__dependency__ = ['com.binblob.wasp-launcher.app.config']
+	__dependency__ = ['com.binblob.wasp-launcher.apps.config']
 
 	def start(self):
 		WAppsGlobals.log.info('Web-templates is starting')

@@ -47,13 +47,13 @@ class WBrokerCommandManager:
 	"""
 	WBrokerCommandManager.__internal_set - static help information
 		|
-		| - - - - > host_apps_set (BrokerCommandSet(WCommandPrioritizedSelector)) - static help information
+		| - - - - > core_set (BrokerCommandSet(WCommandPrioritizedSelector)) - static help information
 		|                 | - - - > ... (WCommandPrioritizedSelector) - dynamic help information
 		|                 |          | - - - > (WCommand) - dynamic help information
 		|                 |          | - - - > (WCommand) - dynamic help information
 		|                 | - - - > ... (WCommandPrioritizedSelector) - dynamic help information
 		|
-		| - - - - > guest_apps_set (BrokerCommandSet (WCommandPrioritizedSelector)) - static help information
+		| - - - - > general_apps_set (BrokerCommandSet (WCommandPrioritizedSelector)) - static help information
 		|                 | - - - > ... (WCommandPrioritizedSelector) - dynamic help information
 		|                 |          | - - - > (WCommand) - dynamic help information
 		|                 |          | - - - > (WCommand) - dynamic help information
@@ -64,34 +64,34 @@ class WBrokerCommandManager:
 	"""
 
 	__general_usage_help__ = """It is a help system. It can be used in any context. It can be called directly for particular help section like:
-	- help <[host-app|guest-app] <[module name or alias] <command>>>
-	- [host-app|guest-app] help
-	- [host-app|guest-app] [module name or alias] help
-	- [host-app|guest-app] [module name or alias] help [command]
+	- help <[core|apps] <[module name or alias] <command>>>
+	- [core|apps] help
+	- [core|apps] [module name or alias] help
+	- [core|apps] [module name or alias] help [command]
 
 Or it can be called inside a context by calling 'help', in that case - result will be different for different context
 
 You can change current context by calling a command:
-	- [host-app|guest-app] <[module name or alias]>
+	- [core|apps] <[module name or alias]>
 
 Inside a context you can switch to main context with a single dot command  ('.') or to one-level higher context with \
 double dot command ('..').
 
 You can call a specific command in any context by the following pattern:
-	- [host-app|guest-app] [module or alias] [command] <command_arg1> <command_arg2...>
+	- [core|apps] [module or alias] [command] <command_arg1> <command_arg2...>
 """
 	__general_usage_tip__ = """For detailed information about command line usage - type 'help help'
 """
 
 	__main_context_help__ = """This is a main or root context. Suitable sub-context are:
-	- host-app
-	- guest-app
+	- core
+	- apps
 """
-	__host_apps_level_context_help__ = """This is a 'host-app' context. Context for modules and commands that \
-interact with "host-apps". You are able to switch to next context:
+	__core_level_context_help__ = """This is a 'core' context. Context for modules and commands that \
+interact with "cores". You are able to switch to next context:
 """
-	__guest_apps_level_context_help__ = """This is a 'guest-app' context. Context for modules and commands that \
-interact with "guest-apps". You are able to switch to next context:
+	__general_apps_level_context_help__ = """This is a 'apps' context. Context for modules and commands that \
+interact with "appss". You are able to switch to next context:
 """
 
 	__specific_app_context_help__ = """This is help for "%s" of "%s" context. Suitable commands are:
@@ -347,29 +347,29 @@ interact with "guest-apps". You are able to switch to next context:
 		self.__internal_set.commands().add_prioritized(WBrokerCommandManager.UnknownHelpCommand(), 60)
 
 		main_command_set = self.__internal_set.commands()
-		self.__host_apps = []
-		self.__total_host_apps_commands = 0
-		self.__host_apps_command_set = WBrokerCommandManager.BrokerCommandSet(
-			main_command_set, 'host-app', self.__host_app_context_help
+		self.__core_apps = []
+		self.__total_core_commands = 0
+		self.__core_set = WBrokerCommandManager.BrokerCommandSet(
+			main_command_set, 'core', self.__core_context_help
 		)
-		self.__guest_apps = []
-		self.__total_guest_apps_commands = 0
-		self.__guest_apps_command_set = WBrokerCommandManager.BrokerCommandSet(
-			main_command_set, 'guest-app', self.__guest_app_context_help
+		self.__general_apps = []
+		self.__total_general_apps_commands = 0
+		self.__general_apps_set = WBrokerCommandManager.BrokerCommandSet(
+			main_command_set, 'apps', self.__general_app_context_help
 		)
 
-	def host_app_commands(self):
-		return self.__total_host_apps_commands
+	def core_commands(self):
+		return self.__total_core_commands
 
-	def guest_app_commands(self):
-		return self.__total_guest_apps_commands
+	def general_app_commands(self):
+		return self.__total_general_apps_commands
 
 	def __main_context_help(self):
 		return self.__main_context_help__ + self.__general_usage_tip__
 
-	def __host_app_context_help(self):
-		help_info = self.__host_apps_level_context_help__
-		for app, alias in self.__host_apps:
+	def __core_context_help(self):
+		help_info = self.__core_level_context_help__
+		for app, alias in self.__core_apps:
 			if alias is not None:
 				help_info += '\t- %s | %s - %s\n' % (alias, app.name(), app.brief_description())
 			else:
@@ -378,9 +378,9 @@ interact with "guest-apps". You are able to switch to next context:
 		help_info += self.__general_usage_tip__
 		return help_info
 
-	def __guest_app_context_help(self):
-		help_info = self.__guest_apps_level_context_help__
-		for app, alias in self.__guest_apps:
+	def __general_app_context_help(self):
+		help_info = self.__general_apps_level_context_help__
+		for app, alias in self.__general_apps:
 			if alias is not None:
 				help_info += '\t- %s | %s - %s\n' % (alias, app.name(), app.brief_description())
 			else:
@@ -389,7 +389,7 @@ interact with "guest-apps". You are able to switch to next context:
 		help_info += self.__general_usage_tip__
 		return help_info
 
-	def __specific_app_context_help(self, context_name, app_name, commands):
+	def __specific_context_help_templ(self, context_name, app_name, commands):
 		help_info = self.__specific_app_context_help__ % (app_name, context_name)
 		for command in commands:
 			help_info += '\t- %s - %s\n' % (command.command(), command.brief_description())
@@ -397,11 +397,11 @@ interact with "guest-apps". You are able to switch to next context:
 		help_info += self.__general_usage_tip__
 		return help_info
 
-	def __specific_guest_app_context_help(self, app_name, commands):
-		return self.__specific_app_context_help('guest-app', app_name, commands)
+	def __specific_app_context_help(self, app_name, commands):
+		return self.__specific_context_help_templ('apps', app_name, commands)
 
-	def __specific_host_app_context_help(self, app_name, commands):
-		return self.__specific_app_context_help('host-app', app_name, commands)
+	def __specific_core_context_help(self, app_name, commands):
+		return self.__specific_context_help_templ('core', app_name, commands)
 
 	def load_apps(self):
 		self.__loader.load(self.load_callback)
@@ -413,25 +413,20 @@ interact with "guest-apps". You are able to switch to next context:
 
 		commands = item_cls.commands()
 
-		kit_type = WAppsGlobals.config[section_name]['type'].lower()
-		if kit_type == 'host_app':
-			self.__host_apps.append((item_cls, alias))
+		if WAppsGlobals.config.getboolean(section_name, 'core') is True:
+			self.__core_apps.append((item_cls, alias))
 
-			self.__host_apps_command_set.add_commands(
-				item_tag, self.__specific_host_app_context_help, *commands, alias=alias,
+			self.__core_set.add_commands(
+				item_tag, self.__specific_core_context_help, *commands, alias=alias,
 				force_context_command=True
 			)
-			self.__total_host_apps_commands += len(commands)
-		elif kit_type == 'guest_app':
-			self.__guest_apps.append((item_cls, alias))
-			self.__guest_apps_command_set.add_commands(
-				item_tag, self.__specific_guest_app_context_help, *commands, alias=alias
-			)
-			self.__total_guest_apps_commands += len(commands)
+			self.__total_core_commands += len(commands)
 		else:
-			raise RuntimeError(
-				'Invalid kit type is specified: "%s" for section "%s"' % (item_tag, section_name)
+			self.__general_apps.append((item_cls, alias))
+			self.__general_apps_set.add_commands(
+				item_tag, self.__specific_app_context_help, *commands, alias=alias
 			)
+			self.__total_general_apps_commands += len(commands)
 
 	@verify_type('paranoid', command_tokens=str, request_context=(WContextProto, None))
 	def exec_broker_command(self, *command_tokens, request_context=None):
@@ -524,9 +519,9 @@ class WCLITableRender:
 		return result
 
 
-class WCoreCommandKit(WCommandKit):
+class WHealthCommandKit(WCommandKit):
 
-	__kit_name__ = 'com.binblob.wasp-launcher.host-app.broker.kits.core'
+	__kit_name__ = 'com.binblob.wasp-launcher.broker.kits.health'
 
 	class Threads(WBrokerCommand):
 
@@ -558,12 +553,12 @@ class WCoreCommandKit(WCommandKit):
 
 	@classmethod
 	def commands(cls):
-		return [WCoreCommandKit.Threads()]
+		return [WHealthCommandKit.Threads()]
 
 
 class WModelDBCommandKit(WCommandKit):
 
-	__kit_name__ = 'com.binblob.wasp-launcher.host-app.broker.kits.model-db'
+	__kit_name__ = 'com.binblob.wasp-launcher.broker.kits.model-db'
 
 	@classmethod
 	def name(cls):
@@ -580,7 +575,7 @@ class WModelDBCommandKit(WCommandKit):
 
 class WModelObjCommandKit(WCommandKit):
 
-	__kit_name__ = 'com.binblob.wasp-launcher.host-app.broker.kits.model-obj'
+	__kit_name__ = 'com.binblob.wasp-launcher.broker.kits.model-obj'
 
 	@classmethod
 	def name(cls):
@@ -595,9 +590,9 @@ class WModelObjCommandKit(WCommandKit):
 		return []
 
 
-class WGuestCommandKit(WCommandKit):
+class WAppsCommandKit(WCommandKit):
 
-	__kit_name__ = 'com.binblob.wasp-launcher.host-app.broker.kits.guest'
+	__kit_name__ = 'com.binblob.wasp-launcher.broker.kits.apps'
 
 	@classmethod
 	def name(cls):
@@ -605,7 +600,7 @@ class WGuestCommandKit(WCommandKit):
 
 	@classmethod
 	def brief_description(cls):
-		return 'general guest application related commands'
+		return 'general application related commands'
 
 	@classmethod
 	def commands(cls):
@@ -614,7 +609,7 @@ class WGuestCommandKit(WCommandKit):
 
 class WScheduleCommandKit(WCommandKit):
 
-	__kit_name__ = 'com.binblob.wasp-launcher.host-app.broker.kits.scheduler'
+	__kit_name__ = 'com.binblob.wasp-launcher.broker.kits.scheduler'
 
 	class SchedulerInstances(WBrokerCommand):
 

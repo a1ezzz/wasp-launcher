@@ -36,7 +36,7 @@ from wasp_launcher.core import WSyncApp, WThreadedApp, WAppsGlobals, WWebPresent
 from wasp_launcher.apps.web_debugger import WWebAppDebugger
 
 
-class WGuestWebPresenterFactory(WWebPresenterFactory):
+class WLauncherWebPresenterFactory(WWebPresenterFactory):
 
 	def __init__(self):
 		WWebPresenterFactory.__init__(self)
@@ -49,12 +49,12 @@ class WWebServiceInitApp(WSyncApp):
 	""" Task that prepare web-service
 	"""
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.app.web::init'
+	__registry_tag__ = 'com.binblob.wasp-launcher.apps.web::init'
 	""" Task tag
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.app.config'
+		'com.binblob.wasp-launcher.apps.config'
 	]
 	""" Task dependency
 	"""
@@ -65,7 +65,7 @@ class WWebServiceInitApp(WSyncApp):
 		debugger = WAppsGlobals.config["wasp-launcher::web:debug"]["mode"].lower() in ['on', 'on error']
 
 		debugger_app_section = \
-			'wasp-launcher::applications::com.binblob.wasp-launcher.app.web-debugger'
+			'wasp-launcher::applications::com.binblob.wasp-launcher.apps.web-debugger::datastore'
 		debugger_app_enabled = WAppsGlobals.config.getboolean(debugger_app_section, 'enabled')
 		debugger_app_auto_start = WAppsGlobals.config.getboolean(debugger_app_section, 'auto_start')
 
@@ -78,7 +78,7 @@ class WWebServiceInitApp(WSyncApp):
 				debugger = False
 
 		WAppsGlobals.wasp_web_service = WWebService(
-			factory=WGuestWebPresenterFactory,
+			factory=WLauncherWebPresenterFactory,
 			debugger=(WWebAppDebugger() if debugger is True else None)
 		)
 
@@ -101,13 +101,13 @@ class WWebServiceInitApp(WSyncApp):
 
 class WWebServiceApp(WThreadedApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.app.web::start'
+	__registry_tag__ = 'com.binblob.wasp-launcher.apps.web::start'
 	""" Task tag
 	"""
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.app.model-load',
-		'com.binblob.wasp-launcher.app.template-lookup'
+		'com.binblob.wasp-launcher.apps.model-load',
+		'com.binblob.wasp-launcher.apps.template-lookup'
 	]
 
 	__dynamic_dependency__ = WWebApp

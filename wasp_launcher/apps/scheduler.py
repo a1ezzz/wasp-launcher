@@ -238,10 +238,10 @@ class WSchedulerCollection:
 
 class WSchedulerInitApp(WSyncApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.app.scheduler::init'
+	__registry_tag__ = 'com.binblob.wasp-launcher.apps.scheduler::init'
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.app.config'
+		'com.binblob.wasp-launcher.apps.config'
 	]
 
 	def start(self):
@@ -258,10 +258,10 @@ class WSchedulerInitApp(WSyncApp):
 
 class WSchedulerApp(WSyncApp):
 
-	__registry_tag__ = 'com.binblob.wasp-launcher.app.scheduler::start'
+	__registry_tag__ = 'com.binblob.wasp-launcher.apps.scheduler::start'
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.app.scheduler::init'
+		'com.binblob.wasp-launcher.apps.scheduler::init'
 	]
 
 	def start(self):

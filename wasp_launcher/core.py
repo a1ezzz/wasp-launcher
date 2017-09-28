@@ -197,8 +197,8 @@ class WWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
 class WWebApp(WSyncApp):
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.app.web::init',
-		'com.binblob.wasp-launcher.app.template-lookup',
+		'com.binblob.wasp-launcher.apps.web::init',
+		'com.binblob.wasp-launcher.apps.template-lookup',
 
 	]
 
@@ -269,12 +269,12 @@ class WAppsGlobals:
 	apps_registry = WAppRegistry
 
 	log = None
-	""" Application logger (logging.Logger instance. See :class:`wasp_launcher.host_apps.log.WLauncherLogSetupApp`)
+	""" Application logger (logging.Logger instance. See :class:`wasp_launcher.apps.log.WLogApp`)
 	"""
 
 	config = None
 	""" Current server configuration (wasp_general.config.WConfig instance.
-	See :class:`wasp_launcher.host_apps.config.WLauncherConfigApp`)
+	See :class:`wasp_launcher.apps.config.WConfigApp`)
 	"""
 
 	started_apps = []
