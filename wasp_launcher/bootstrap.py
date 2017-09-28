@@ -27,16 +27,16 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage
+from wasp_general.task.dependency import WTaskDependencyRegistry
 
-from wasp_launcher.core import WAppsGlobals, WAppRegistry, WRegisteredApp
+from wasp_launcher.core import WAppsGlobals, WAppRegistryStorage, WAppRegistry, WRegisteredApp
 from wasp_launcher.apps.log import WLogHostApp
 from wasp_launcher.apps.config import WConfigHostApp
 from wasp_launcher.loader import WClassLoader
 
 
 class WBootstrapRegistry(WTaskDependencyRegistry):
-	__registry_storage__ = WTaskDependencyRegistryStorage()
+	__registry_storage__ = WAppRegistryStorage()
 
 
 class WBootstrapLog(WLogHostApp):

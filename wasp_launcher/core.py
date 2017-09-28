@@ -57,11 +57,28 @@ class WThreadTaskLoggingHandler:
 			raise RuntimeError('Class is not inherited from WThreadTask')
 
 
+class WAppRegistryStorage(WTaskDependencyRegistryStorage):
+
+	@verify_type(task_tag=str, skip_unresolved=bool)
+	def start_task(self, task_tag, skip_unresolved=False):
+		task = self.tasks_by_tag(task_tag)
+		if task is not None and issubclass(task, WRegisteredApp) is True:
+			if task.__dynamic_dependency__ is not None:
+				for dependent_task in self.tasks(task_cls=task.__dynamic_dependency__):
+					registry_tag = dependent_task.__registry_tag__
+					if self.started_tasks(registry_tag) is None:
+						WTaskDependencyRegistryStorage.start_task(
+							self, registry_tag, skip_unresolved=skip_unresolved
+						)
+
+		WTaskDependencyRegistryStorage.start_task(self, task_tag, skip_unresolved=skip_unresolved)
+
+
 class WAppRegistry(WTaskDependencyRegistry):
 	""" Main registry to keep applications
 	"""
 
-	__registry_storage__ = WTaskDependencyRegistryStorage()
+	__registry_storage__ = WAppRegistryStorage()
 
 
 # noinspection PyAbstractClass
@@ -72,6 +89,8 @@ class WRegisteredApp(WTask, metaclass=WDependentTask):
 	__registry__ = WAppRegistry
 
 	__auto_registry__ = False
+
+	__dynamic_dependency__ = None
 
 	@classmethod
 	def name(cls):

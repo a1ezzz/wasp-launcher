@@ -32,7 +32,7 @@ from wasp_general.network.primitives import WIPV4SocketInfo
 from wasp_general.network.web.service import WWebService, WWebPresenterFactory
 from wasp_general.network.web.tornado import WTornadoRequestHandler
 
-from wasp_launcher.core import WSyncApp, WThreadedApp, WAppsGlobals, WWebPresenter
+from wasp_launcher.core import WSyncApp, WThreadedApp, WAppsGlobals, WWebPresenter, WWebApp
 from wasp_launcher.apps.web_debugger import WHostAppWebDebugger
 
 
@@ -109,6 +109,8 @@ class WWebHostApp(WThreadedApp):
 		'com.binblob.wasp-launcher.app.model-load',
 		'com.binblob.wasp-launcher.app.template-lookup'
 	]
+
+	__dynamic_dependency__ = WWebApp
 
 	__thread_name__ = "WWebHostApp"
 
