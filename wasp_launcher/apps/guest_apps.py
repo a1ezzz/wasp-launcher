@@ -27,7 +27,7 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from wasp_launcher.core import WSyncApp, WGuestApp, WAppsGlobals, WGuestAppRegistry
+from wasp_launcher.core import WSyncApp, WRegisteredApp, WAppsGlobals
 from wasp_launcher.loader import WClassLoader
 
 
@@ -43,13 +43,9 @@ class WGuestAppStarter(WSyncApp):
 	__guest_app_section_prefix__ = 'wasp-launcher::applications_guest'
 
 	def start(self):
-		WAppsGlobals.apps_registry = WGuestAppRegistry
-		WAppsGlobals.apps_registry.clear()
-		WAppsGlobals.started_apps.clear()
-
 		apps_count = 0
 		start_apps = []
-		loader = WClassLoader(self.__guest_app_section_prefix__, WGuestApp, tag_fn=lambda x: x.name())
+		loader = WClassLoader(self.__guest_app_section_prefix__, WRegisteredApp, tag_fn=lambda x: x.name())
 
 		def callback(section_name, item_tag, item_cls):
 			WAppsGlobals.apps_registry.add(item_cls)
@@ -68,8 +64,4 @@ class WGuestAppStarter(WSyncApp):
 			WAppsGlobals.log.info('Application "%s" started' % app_name)
 
 	def stop(self):
-		for app_name in [x.name() for x in WAppsGlobals.started_apps]:
-			WAppsGlobals.log.info('Stopping "%s" application and its dependencies' % app_name)
-			WAppsGlobals.apps_registry.stop_task(app_name)
-		WAppsGlobals.started_apps.clear()
-		WAppsGlobals.apps_registry.clear()
+		pass

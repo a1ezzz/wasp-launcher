@@ -41,7 +41,7 @@ from wasp_general.verify import verify_type, verify_subclass, verify_value
 
 from wasp_general.network.web.template import WWebTemplateFile, WWebTemplate, WWebTemplateText, WWebTemplateLookup
 
-from wasp_launcher.core import WSyncApp, WGuestWebApp, WAppsGlobals
+from wasp_launcher.core import WSyncApp, WWebApp, WAppsGlobals
 
 
 class WTemplateSearcherProto(metaclass=ABCMeta):
@@ -100,7 +100,7 @@ class WGuestAppTemplateSearcher(WBasicTemplateSearcher, metaclass=ABCMeta):
 
 	class Handler(WBasicTemplateSearcher, metaclass=ABCMeta):
 
-		@verify_subclass(app_description=WGuestWebApp)
+		@verify_subclass(app_description=WWebApp)
 		def __init__(self, app_description):
 			WBasicTemplateSearcher.__init__(self)
 			self.__app_description = app_description
@@ -112,7 +112,7 @@ class WGuestAppTemplateSearcher(WBasicTemplateSearcher, metaclass=ABCMeta):
 		WBasicTemplateSearcher.__init__(self)
 
 		for app in WAppsGlobals.started_apps:
-			if issubclass(app, WGuestWebApp) is True:
+			if issubclass(app, WWebApp) is True:
 				obj = self.handler_class()(app)
 				self.replace(app.name(), obj)
 

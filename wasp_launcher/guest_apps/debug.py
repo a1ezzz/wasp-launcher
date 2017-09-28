@@ -36,12 +36,12 @@ from wasp_general.verify import verify_type, verify_value
 from wasp_general.network.web.service import WWebRoute
 from wasp_general.network.web.template import WWebTemplateResponse, WWebTemplateText
 
-from wasp_launcher.core import WGuestWebApp, WGuestWebPresenter
+from wasp_launcher.core import WWebApp, WWebPresenter
 from wasp_launcher.apps.web_debugger import WGuestAppWebDebugger
 from wasp_launcher.guest_apps.wasp import WErrorPresenter
 
 
-class WDebugPresenter(WGuestWebPresenter):
+class WDebugPresenter(WWebPresenter):
 
 	def index(self):
 		return self.__template_response__('mako::com.binblob.wasp-launcher.apps.wasp-debug::test.mako')
@@ -108,7 +108,7 @@ class WDebugErrorPresenter(WErrorPresenter):
 		return 'com.binblob.wasp-launcher.guest-apps.wasp-debug.error-presenter'
 
 
-class WWaspDebugApps(WGuestWebApp):
+class WWaspDebugApps(WWebApp):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.guest-apps.wasp-debug'
 

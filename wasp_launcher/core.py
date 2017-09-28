@@ -224,6 +224,8 @@ class WAppsGlobals:
 	""" Storage of global variables, that are widely used across all application
 	"""
 
+	apps_registry = WAppRegistry
+
 	log = None
 	""" Application logger (logging.Logger instance. See :class:`wasp_launcher.host_apps.log.WLauncherLogSetupApp`)
 	"""
@@ -247,92 +249,3 @@ class WAppsGlobals:
 	"""
 
 	scheduler = None
-
-
-# OUTDATED CLASSES ARE FOLLOWED
-
-
-class WGuestAppRegistry(WTaskDependencyRegistry):
-	__registry_storage__ = WTaskDependencyRegistryStorage()
-
-
-class WGuestApp(WSyncTask, metaclass=WDependentTask):
-
-	__auto_registry__ = False
-
-	@classmethod
-	def name(cls):
-		return cls.__registry_tag__
-
-	@classmethod
-	def description(cls):
-		return None
-
-
-class WGuestWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
-
-	@verify_type('paranoid', request=WWebRequestProto, target_route=WWebTargetRoute, service=WWebService)
-	def __init__(self, request, target_route, service):
-		WWebEnhancedPresenter.__init__(self, request, target_route, service)
-		self._context = {}
-
-	@verify_type('paranoid', template_id=str)
-	@verify_value('paranoid', template_id=lambda x: len(x) > 0)
-	def __template__(self, template_id):
-		return WAppsGlobals.templates.lookup(template_id)
-
-	@verify_type('paranoid', template_id=str)
-	@verify_value('paranoid', template_id=lambda x: len(x) > 0)
-	def __template_response__(self, template_id):
-		return WWebTemplateResponse(self.__template__(template_id), context=self._context)
-
-
-class WGuestWebApp(WGuestApp):
-
-	@classmethod
-	def public_presenters(cls):
-		return tuple()
-
-	@classmethod
-	def public_routes(cls):
-		""" Return routes which are published by an application
-
-		:return: tuple of WWebRoute
-		"""
-		return tuple()
-
-	@classmethod
-	def template_path(cls):
-		"""
-
-		can be none or non-existens path
-
-		:return:
-		"""
-		return None
-
-	@classmethod
-	def py_templates_package(cls):
-		return None
-
-	@classmethod
-	def static_files_path(cls):
-		"""
-
-		can be none or non-existens path
-
-		:return:
-		"""
-		return None
-
-	def start(self):
-		for presenter in self.public_presenters():
-			WAppsGlobals.wasp_web_service.add_presenter(presenter)
-			WAppsGlobals.log.info(
-				'Presenter "%s" was added to the web service registry' % presenter.__presenter_name__()
-			)
-		for route in self.public_routes():
-			WAppsGlobals.wasp_web_service.route_map().append(route)
-
-	def stop(self):
-		pass

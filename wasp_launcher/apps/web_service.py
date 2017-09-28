@@ -32,7 +32,7 @@ from wasp_general.network.primitives import WIPV4SocketInfo
 from wasp_general.network.web.service import WWebService, WWebPresenterFactory
 from wasp_general.network.web.tornado import WTornadoRequestHandler
 
-from wasp_launcher.core import WSyncApp, WThreadedApp, WAppsGlobals, WGuestWebPresenter
+from wasp_launcher.core import WSyncApp, WThreadedApp, WAppsGlobals, WWebPresenter
 from wasp_launcher.apps.web_debugger import WHostAppWebDebugger
 
 
@@ -41,7 +41,7 @@ class WGuestWebPresenterFactory(WWebPresenterFactory):
 	def __init__(self):
 		WWebPresenterFactory.__init__(self)
 		self._add_constructor(
-			WGuestWebPresenter, WWebPresenterFactory.enhanced_presenter_constructor
+			WWebPresenter, WWebPresenterFactory.enhanced_presenter_constructor
 		)
 
 
