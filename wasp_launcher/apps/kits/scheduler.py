@@ -1,0 +1,178 @@
+# -*- coding: utf-8 -*-
+# wasp_launcher/apps/kits/scheduler.py
+#
+# Copyright (C) 2017 the wasp-launcher authors and contributors
+# <see AUTHORS file>
+#
+# This file is part of wasp-launcher.
+#
+# Wasp-launcher is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Wasp-launcher is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with wasp-launcher.  If not, see <http://www.gnu.org/licenses/>.
+
+# TODO: document the code
+# TODO: write tests for the code
+
+# noinspection PyUnresolvedReferences
+from wasp_launcher.version import __author__, __version__, __credits__, __license__, __copyright__, __email__
+# noinspection PyUnresolvedReferences
+from wasp_launcher.version import __status__
+
+from wasp_general.verify import verify_type
+from wasp_general.cli.formatter import WConsoleTableFormatter, na_formatter, local_datetime_formatter
+from wasp_general.command.command import WCommandResult
+
+from wasp_launcher.core import WCommandKit, WBrokerCommand, WAppsGlobals
+
+
+class WSchedulerCommandKit(WCommandKit):
+
+	__registry_tag__ = 'com.binblob.wasp-launcher.broker.kits.scheduler'
+
+	class SchedulerInstances(WBrokerCommand):
+
+		def __init__(self):
+			WBrokerCommand.__init__(self, 'instances')
+
+		@verify_type(command_arguments=dict)
+		def _exec(self, command_arguments):
+			if WAppsGlobals.scheduler is None:
+				return WCommandResult(output='Scheduler collection was not loaded', error=1)
+
+			table_formatter = WConsoleTableFormatter(
+				'Scheduler instance name',
+				'Running tasks',
+				'Maximum running tasks',
+				'Postponed tasks',
+				'Maximum postponed tasks',
+			)
+
+			default_instance = WAppsGlobals.scheduler.instance()
+			running, postponed = default_instance.records_status()
+			table_formatter.add_row(
+				'<default instance>',
+				str(running),
+				str(default_instance.maximum_running_records()),
+				str(postponed),
+				na_formatter(default_instance.maximum_postponed_records())
+			)
+
+			named_instances = WAppsGlobals.scheduler.named_instances()
+			for instance_name in named_instances:
+				instance = WAppsGlobals.scheduler.instance(instance_name)
+				running, postponed = instance.records_status()
+				table_formatter.add_row(
+					instance_name,
+					str(running),
+					str(instance.maximum_running_records()),
+					str(postponed),
+					na_formatter(instance.maximum_postponed_records())
+				)
+
+			header = 'Total instances count: %i\n' % (len(named_instances) + 1)
+			return WCommandResult(output=header + table_formatter.format())
+
+		@classmethod
+		def brief_description(cls):
+			return 'show started scheduler instances'
+
+	class TaskSources(WBrokerCommand):
+
+		def __init__(self):
+			WBrokerCommand.__init__(self, 'sources')
+
+		@verify_type(command_arguments=dict)
+		def _exec(self, command_arguments):
+			if WAppsGlobals.scheduler is None:
+				return WCommandResult(output='Scheduler was not loaded', error=1)
+
+			count = 0
+
+			table_formatter = WConsoleTableFormatter(
+				'Scheduler instance', 'Source name', 'Source description', 'Scheduled tasks',
+				'Next scheduled task'
+			)
+
+			for instance, instance_name in WAppsGlobals.scheduler:
+				if instance_name is None:
+					instance_name = '<default instance>'
+				task_sources = instance.task_sources()
+				for source in task_sources:
+					description = na_formatter(source.description())
+					next_start = na_formatter(source.next_start(), local_datetime_formatter)
+
+					table_formatter.add_row(
+						instance_name, source.name(), description, str(source.tasks_planned()),
+						next_start
+					)
+
+				count += len(task_sources)
+
+			header = 'Total sources count: %i\n' % count
+			return WCommandResult(output=(header + table_formatter.format()))
+
+		@classmethod
+		def brief_description(cls):
+			return 'show tasks sources information'
+
+	class RunningTasks(WBrokerCommand):
+
+		def __init__(self):
+			WBrokerCommand.__init__(self, 'running_tasks')
+
+		@verify_type(command_arguments=dict)
+		def _exec(self, command_arguments):
+			if WAppsGlobals.scheduler is None:
+				return WCommandResult(output='Scheduler was not loaded', error=1)
+
+			count = 0
+
+			table_formatter = WConsoleTableFormatter(
+				'Scheduler instance',  'Task name', 'Task uid', 'Task started at', 'Thread', 'Task description'
+			)
+
+			for instance, instance_name in WAppsGlobals.scheduler:
+				if instance_name is None:
+					instance_name = '<default instance>'
+
+				running_records = instance.running_records()
+				count += len(running_records)
+
+				for running_record in running_records:
+					uid = str(running_record.task_uid())
+					started_at = local_datetime_formatter(running_record.started_at())
+					scheduled_task = running_record.task()
+					task_name = scheduled_task.name()
+					thread_name = scheduled_task.thread_name()
+					task_description = scheduled_task.description()
+					table_formatter.add_row(
+						instance_name, task_name, uid, started_at, thread_name, task_description
+					)
+
+			header = 'Total tasks that run at the moment: %i\n' % count
+			return WCommandResult(output=(header + table_formatter.format()))
+
+		@classmethod
+		def brief_description(cls):
+			return 'show tasks that run at the moment'
+
+	@classmethod
+	def description(cls):
+		return 'scheduler commands'
+
+	@classmethod
+	def commands(cls):
+		return [
+			WSchedulerCommandKit.SchedulerInstances(),
+			WSchedulerCommandKit.TaskSources(),
+			WSchedulerCommandKit.RunningTasks()
+		]

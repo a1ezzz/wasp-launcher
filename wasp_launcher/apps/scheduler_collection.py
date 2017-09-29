@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/apps/scheduler.py
+# wasp_launcher/apps/scheduler_collection.py
 #
 # Copyright (C) 2016-2017 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -34,62 +34,39 @@ from wasp_general.verify import verify_type, verify_value
 from wasp_general.command.command import WCommandProto
 
 from wasp_general.task.thread import WThreadJoiningTimeoutError
-from wasp_general.task.scheduler.proto import WTaskSourceProto, WScheduledTask, WTaskSchedule
-from wasp_general.task.scheduler.scheduler import WTaskSchedulerService, WRunningTaskRegistry, WSchedulerWatchdog
-from wasp_general.task.scheduler.task_source import WCronTaskSource, WCronLocalTZSchedule, WCronTaskSchedule
+from wasp_general.task.scheduler.proto import WScheduleRecord
+from wasp_general.task.scheduler.scheduler import WSchedulerService, WRunningRecordRegistry, WSchedulerWatchdog
+from wasp_general.task.scheduler.task_source import WCronTaskSource, WCronLocalTZSchedule, WCronScheduleRecord
 from wasp_general.task.scheduler.task_source import WCronUTCSchedule
 
-from wasp_launcher.core import WSyncApp, WAppsGlobals, WThreadTaskLoggingHandler, WSchedulerTaskSourceInstaller
-
-
-class WLauncherScheduledTask(WScheduledTask):
-
-	@abstractmethod
-	def name(self):
-		raise NotImplementedError('This method is abstract')
-
-	@abstractmethod
-	def description(self):
-		raise NotImplementedError('This method is abstract')
-
-
-class WLauncherTaskSource(WTaskSourceProto):
-
-	@abstractmethod
-	def name(self):
-		raise NotImplementedError('This method is abstract')
-
-	def description(self):
-		return None
+from wasp_launcher.core import WAppsGlobals, WThreadTaskLoggingHandler, WLauncherScheduleTask, WLauncherTaskSource
 
 
 class WLauncherWatchdog(WThreadTaskLoggingHandler, WSchedulerWatchdog):
 
 	@classmethod
-	@verify_type('paranoid', task_schedule=WTaskSchedule)
-	def create(cls, task_schedule, registry):
-			if isinstance(task_schedule.task(), WLauncherScheduledTask) is False:
+	@verify_type('paranoid', record=WScheduleRecord)
+	def create(cls, record, registry):
+			if isinstance(record.task(), WLauncherScheduleTask) is False:
 				raise TypeError(
-					'Scheduled unsupported task. Task must be WLauncherScheduledTask object'
+					'Scheduled unsupported task. Task must be WLauncherScheduleTask object'
 				)
-			return WSchedulerWatchdog.create(task_schedule, registry)
+			return WSchedulerWatchdog.create(record, registry)
 
 	def stop(self):
 		try:
 			WSchedulerWatchdog.stop(self)
 		except WThreadJoiningTimeoutError:
-			task_id = self.task_schedule().task_id()
-			WAppsGlobals.log.error('Unable to stop scheduled task gracefully. Task id: %s' % str(task_id))
+			task_uid = self.record().task_uid()
+			WAppsGlobals.log.error('Unable to stop scheduled task gracefully. Task id: %s' % str(task_uid))
 
 
 class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 
-	class BrokerClient(WThreadTaskLoggingHandler, WLauncherScheduledTask):
-
-		__thread_name_suffix__ = 'Config-Task-%s'
+	class BrokerClient(WThreadTaskLoggingHandler, WLauncherScheduleTask):
 
 		def __init__(self, config_option, broker_command):
-			WScheduledTask.__init__(self, self.__thread_name_suffix__ % config_option)
+			WLauncherScheduleTask.__init__(self)
 			self.__option = config_option
 			self.__command = broker_command
 
@@ -109,7 +86,7 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 			pass
 
 		def name(self):
-			return 'Executing task from configuration'
+			return 'Executing task "%s" from configuration' % self.__option
 
 		def description(self):
 			return 'Requested command: ' + self.__command
@@ -153,27 +130,33 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 
 			task_schedule = schedule_cls.from_string_tokens(*task_tokens[1:6])
 			broker_command = WLauncherConfigTasks.BrokerClient(option_name, task_tokens[6])
-			task = WCronTaskSchedule(task_schedule, broker_command)
+			task = WCronScheduleRecord(task_schedule, broker_command)
 			self.add_task(task)
 			WAppsGlobals.log.info('Scheduled config-task "%s" loaded' % option_name)
 
 
-class WLauncherScheduler(WThreadTaskLoggingHandler, WTaskSchedulerService):
+class WLauncherScheduler(WThreadTaskLoggingHandler, WSchedulerService):
 
-	@verify_type('paranoid', maximum_running_tasks=(int, None), maximum_postponed_tasks=(int, None))
-	@verify_value('paranoid', maximum_running_tasks=lambda x: x is None or x > 0)
-	@verify_value('paranoid', maximum_postponed_tasks=lambda x: x is None or x > 0)
-	def __init__(self, maximum_running_tasks=None, maximum_postponed_tasks=None):
-		WTaskSchedulerService.__init__(
-			self, maximum_running_tasks=maximum_running_tasks,
-			maximum_postponed_tasks=maximum_postponed_tasks, running_tasks_registry=WRunningTaskRegistry(
-				watchdog_cls=WLauncherWatchdog
-			)
+	@verify_type('paranoid', maximum_running_records=(int, None), maximum_postponed_records=(int, None))
+	@verify_type(instance_name=(str, None))
+	@verify_value('paranoid', maximum_running_records=lambda x: x is None or x > 0)
+	@verify_value('paranoid', maximum_postponed_records=lambda x: x is None or x > 0)
+	def __init__(self, maximum_running_records=None, maximum_postponed_records=None, instance_name=None):
+		thread_name_suffix = ('-%s' % instance_name) if instance_name is not None else None
+		WSchedulerService.__init__(
+			self,
+			maximum_running_records=maximum_running_records,
+			maximum_postponed_records=maximum_postponed_records,
+			running_record_registry=WRunningRecordRegistry(
+				watchdog_cls=WLauncherWatchdog,
+				thread_name_suffix=thread_name_suffix
+			),
+			thread_name_suffix=thread_name_suffix
 		)
 
 	@verify_type(task_source=WLauncherTaskSource)
 	def add_task_source(self, task_source):
-		WTaskSchedulerService.add_task_source(self, task_source)
+		WSchedulerService.add_task_source(self, task_source)
 
 
 class WSchedulerCollection:
@@ -195,17 +178,18 @@ class WSchedulerCollection:
 				continue
 			instance_name = result.group(2)
 
-			maximum_running_tasks = WAppsGlobals.config.getint(section_name, 'maximum_running_tasks')
-			maximum_postponed_tasks = WAppsGlobals.config[section_name]['maximum_postponed_tasks']
+			maximum_running_records = WAppsGlobals.config.getint(section_name, 'maximum_running_records')
+			maximum_postponed_records = WAppsGlobals.config[section_name]['maximum_postponed_records']
 
-			if maximum_postponed_tasks != '':
-				maximum_postponed_tasks = int(maximum_postponed_tasks)
+			if maximum_postponed_records != '':
+				maximum_postponed_records = int(maximum_postponed_records)
 			else:
-				maximum_postponed_tasks = None
+				maximum_postponed_records = None
 
 			instance = WLauncherScheduler(
-				maximum_running_tasks=maximum_running_tasks,
-				maximum_postponed_tasks=maximum_postponed_tasks
+				maximum_running_records=maximum_running_records,
+				maximum_postponed_records=maximum_postponed_records,
+				instance_name=instance_name
 			)
 
 			if instance_name is None:
@@ -269,42 +253,3 @@ class WSchedulerCollection:
 		yield (self.__default_instance, None)
 		for name, instance in self.__named_instances.items():
 			yield (instance, name)
-
-
-class WSchedulerInitApp(WSyncApp):
-
-	__registry_tag__ = 'com.binblob.wasp-launcher.apps.scheduler::init'
-
-	__dependency__ = [
-		'com.binblob.wasp-launcher.apps.config'
-	]
-
-	def start(self):
-		WAppsGlobals.log.info('Scheduler is initializing')
-		if WAppsGlobals.scheduler is None:
-			WAppsGlobals.scheduler = WSchedulerCollection()
-			WAppsGlobals.scheduler.load_instances()
-
-	def stop(self):
-		WAppsGlobals.log.info('Scheduler is finalizing')
-		if WAppsGlobals.scheduler is not None:
-			WAppsGlobals.scheduler = None
-
-
-class WSchedulerApp(WSyncApp):
-
-	__registry_tag__ = 'com.binblob.wasp-launcher.apps.scheduler::start'
-
-	__dependency__ = ['com.binblob.wasp-launcher.apps.scheduler::init']
-
-	__dynamic_dependency__ = WSchedulerTaskSourceInstaller
-
-	def start(self):
-		WAppsGlobals.log.info('Scheduler is starting')
-		if WAppsGlobals.scheduler is not None:
-			WAppsGlobals.scheduler.start_instances()
-
-	def stop(self):
-		WAppsGlobals.log.info('Scheduler is stopping')
-		if WAppsGlobals.scheduler is not None:
-			WAppsGlobals.scheduler.stop_instances()

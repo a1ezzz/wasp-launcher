@@ -37,6 +37,7 @@ from wasp_general.task.dependency import WDependentTask
 from wasp_general.task.base import WTask, WSyncTask
 from wasp_general.task.thread import WThreadTask
 from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage
+from wasp_general.task.scheduler.proto import WScheduleTask, WTaskSourceProto
 from wasp_general.command.enhanced import WEnhancedCommand
 
 from wasp_general.network.web.service import WWebService, WWebTargetRoute, WWebEnhancedPresenter
@@ -155,6 +156,7 @@ class WCommandKit(WSyncApp):
 		'com.binblob.wasp-launcher.apps.broker::init'
 	]
 
+	# noinspection PyMethodParameters
 	@abstractclassmethod
 	def commands(cls):
 		"""
@@ -182,6 +184,28 @@ class WCommandKit(WSyncApp):
 		pass
 
 
+class WLauncherScheduleTask(WScheduleTask):
+
+	@abstractmethod
+	def name(self):
+		raise NotImplementedError('This method is abstract')
+
+	@abstractmethod
+	def description(self):
+		raise NotImplementedError('This method is abstract')
+
+
+class WLauncherTaskSource(WTaskSourceProto):
+
+	@abstractmethod
+	def name(self):
+		raise NotImplementedError('This method is abstract')
+
+	# noinspection PyMethodMayBeStatic
+	def description(self):
+		return None
+
+
 class WSchedulerTaskSourceInstaller(WSyncApp):
 
 	__dependency__ = ['com.binblob.wasp-launcher.apps.scheduler::init']
@@ -193,7 +217,6 @@ class WSchedulerTaskSourceInstaller(WSyncApp):
 		return 'wasp-launcher::applications::%s' % cls.name()
 
 	def start(self):
-		section_name = self.config_section()
 		instance_name = self.scheduler_instance()
 		instance = WAppsGlobals.scheduler.instance(instance_name)
 		if instance is None:

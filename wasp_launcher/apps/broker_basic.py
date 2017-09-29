@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/apps/broker.py
+# wasp_launcher/apps/broker_basic.py
 #
 # Copyright (C) 2016-2017 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -44,8 +44,7 @@ from wasp_general.network.messenger.envelope import WMessengerBytesEnvelope, WMe
 from wasp_general.command.command import WCommandResult
 from wasp_general.command.context import WContextProto, WContext, WCommandContextResult
 
-from wasp_launcher.core import WSyncApp, WAppsGlobals, WThreadTaskLoggingHandler
-from wasp_launcher.apps.broker_commands import WBrokerCommandManager, WCommandKit
+from wasp_launcher.core import WAppsGlobals, WThreadTaskLoggingHandler
 
 
 class WManagementCommandPackerLayer(WMessengerOnionPackerLayerProto):
@@ -292,98 +291,3 @@ class WLauncherBrokerBasicTask(WThreadTaskLoggingHandler, WThreadTask):
 		receive_agent = WLauncherBrokerBasicTask.ReceiveAgent()
 
 		return WZMQService(setup_agent, loop=WLoglessIOLoop(), receive_agent=receive_agent)
-
-
-class WLauncherBrokerTCPTask(WLauncherBrokerBasicTask):
-
-	__thread_name__ = 'Broker-TCP'
-
-	def connection(self):
-		bind_address = WAppsGlobals.config['wasp-launcher::broker::connection']['bind_address']
-		if len(bind_address) == 0:
-			bind_address = '*'
-		port = WAppsGlobals.config.getint('wasp-launcher::broker::connection', 'port')
-		return 'tcp://%s:%i' % (bind_address, port)
-
-
-class WLauncherBrokerIPCTask(WLauncherBrokerBasicTask):
-
-	__thread_name__ = 'Broker-IPC'
-
-	def connection(self):
-		named_socket = WAppsGlobals.config['wasp-launcher::broker::connection']['named_socket_path']
-		return 'ipc://%s' % named_socket
-
-
-class WBrokerAppTasks:
-	__broker_tcp_task__ = None
-	__broker_ipc_task__ = None
-
-
-class WBrokerInitApp(WSyncApp):
-
-	__registry_tag__ = 'com.binblob.wasp-launcher.apps.broker::init'
-
-	__dependency__ = [
-		'com.binblob.wasp-launcher.apps.config'
-	]
-
-	def start(self):
-		WAppsGlobals.log.info('Broker is initializing')
-
-		tcp_enabled = WAppsGlobals.config.getboolean('wasp-launcher::broker::connection', 'bind')
-		ipc_enabled = WAppsGlobals.config.getboolean('wasp-launcher::broker::connection', 'named_socket')
-
-		if WBrokerAppTasks.__broker_tcp_task__ is None and tcp_enabled is True:
-			WBrokerAppTasks.__broker_tcp_task__ = WLauncherBrokerTCPTask()
-
-		if WBrokerAppTasks.__broker_ipc_task__ is None and ipc_enabled is True:
-			WBrokerAppTasks.__broker_ipc_task__ = WLauncherBrokerIPCTask()
-
-		if WAppsGlobals.broker_commands is None:
-			WAppsGlobals.broker_commands = WBrokerCommandManager()
-
-	def stop(self):
-		WAppsGlobals.log.info('Broker is finalizing')
-		WBrokerAppTasks.__broker_tcp_task__ = None
-		WBrokerAppTasks.__broker_ipc_task__ = None
-		WAppsGlobals.broker_commands = None
-
-
-class WBrokerApp(WSyncApp):
-
-	__registry_tag__ = 'com.binblob.wasp-launcher.apps.broker::start'
-
-	__dependency__ = ['com.binblob.wasp-launcher.apps.broker::init']
-
-	__dynamic_dependency__ = WCommandKit
-
-	def start(self):
-		core_commands = WAppsGlobals.broker_commands.commands_count(WBrokerCommandManager.MainSections.core)
-		app_commands = WAppsGlobals.broker_commands.commands_count(WBrokerCommandManager.MainSections.apps)
-
-		total_commands = WAppsGlobals.broker_commands.commands_count()
-		if total_commands == 0:
-			WAppsGlobals.log.warn('No commands was set for the broker')
-		else:
-			WAppsGlobals.log.info(
-				'Loaded broker commands: %i (core: %i, apps: %i)' %
-				(total_commands, core_commands, app_commands)
-			)
-
-		WAppsGlobals.log.info('Broker is starting')
-
-		if WBrokerAppTasks.__broker_tcp_task__ is not None:
-			WBrokerAppTasks.__broker_tcp_task__.start()
-
-		if WBrokerAppTasks.__broker_ipc_task__ is not None:
-			WBrokerAppTasks.__broker_ipc_task__.start()
-
-	def stop(self):
-		WAppsGlobals.log.info('Broker is stopping')
-
-		if WBrokerAppTasks.__broker_tcp_task__ is not None:
-			WBrokerAppTasks.__broker_tcp_task__.stop()
-
-		if WBrokerAppTasks.__broker_ipc_task__ is not None:
-			WBrokerAppTasks.__broker_ipc_task__.stop()
