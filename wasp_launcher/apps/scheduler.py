@@ -230,6 +230,15 @@ class WSchedulerCollection:
 	def named_instances(self):
 		return tuple(self.__named_instances.keys())
 
+	def task_source(self, source_name, instance_name=None):
+		instance = self.instance(instance_name=instance_name)
+		if instance is None:
+			return
+
+		for source in instance.task_sources():
+			if source.name() == source_name:
+				return source
+
 	def __iter__(self):
 		yield (self.__default_instance, None)
 		for name, instance in self.__named_instances.items():

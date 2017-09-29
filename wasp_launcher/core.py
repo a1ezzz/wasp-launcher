@@ -185,6 +185,8 @@ class WCommandKit(WSyncApp):
 class WSchedulerTaskSourceInstaller(WSyncApp):
 
 	__dependency__ = ['com.binblob.wasp-launcher.apps.scheduler::init']
+	__scheduler_instance__ = None
+	# default scheduler instance is used by default
 
 	@classmethod
 	def config_section(cls):
@@ -192,7 +194,7 @@ class WSchedulerTaskSourceInstaller(WSyncApp):
 
 	def start(self):
 		section_name = self.config_section()
-		instance_name = WAppsGlobals.config[section_name]['instance']
+		instance_name = self.scheduler_instance()
 		instance = WAppsGlobals.scheduler.instance(instance_name)
 		if instance is None:
 			WAppsGlobals.log.error(
@@ -201,7 +203,7 @@ class WSchedulerTaskSourceInstaller(WSyncApp):
 			return
 
 		for source in self.sources():
-			instance.add_task_source(source)
+			instance.add_task_source(source(instance))
 
 	def stop(self):
 		pass
@@ -209,6 +211,10 @@ class WSchedulerTaskSourceInstaller(WSyncApp):
 	@abstractmethod
 	def sources(self):
 		raise NotImplementedError('This method is abstract')
+
+	@classmethod
+	def scheduler_instance(cls):
+		return cls.__scheduler_instance__
 
 
 class WWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
