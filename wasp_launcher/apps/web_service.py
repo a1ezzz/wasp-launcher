@@ -127,8 +127,9 @@ class WWebServiceApp(WThreadedApp):
 		WAppsGlobals.tornado_io_loop.start()
 
 	def thread_stopped(self):
-		WAppsGlobals.tornado_io_loop.stop()
-		WAppsGlobals.log.info('Web-service was stopped')
+		if WAppsGlobals.tornado_io_loop is not None:
+			WAppsGlobals.tornado_io_loop.stop()
+			WAppsGlobals.log.info('Web-service was stopped')
 
 	@classmethod
 	def setup_presenters(cls):
