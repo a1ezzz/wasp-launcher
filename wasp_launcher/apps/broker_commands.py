@@ -34,6 +34,8 @@ from enum import Enum
 
 from wasp_general.verify import verify_type, verify_value
 
+from wasp_general.task.thread import WThreadTask
+
 from wasp_general.command.command import WCommandResult, WCommandProto, WCommand, WReduceCommand
 from wasp_general.command.command import WCommandSelector, WCommandPrioritizedSelector
 from wasp_general.command.context import WContextProto, WContext, WCommandContextResult, WCommandContextAdapter
@@ -651,7 +653,9 @@ class WScheduleCommandKit(WCommandKit):
 
 			count = 0
 
-			table_render = WCLITableRender('Scheduler instance',  'Task started at')
+			table_render = WCLITableRender(
+				'Scheduler instance',  'Task name', 'Task uid', 'Task started at', 'Thread', 'Task description'
+			)
 
 			for instance, instance_name in WAppsGlobals.scheduler:
 				if instance_name is None:
@@ -663,7 +667,17 @@ class WScheduleCommandKit(WCommandKit):
 				dt_fn = lambda x: '%s%s' % (local_datetime(dt=x).isoformat(), time.strftime('%Z'))
 
 				for task in tasks:
-					table_render.add_row(instance_name, dt_fn(task.started_at()))
+					uid = str(task.task_uid())
+					started_at = dt_fn(task.started_at())
+					scheduled_task = task.task_schedule().task()
+					task_name = scheduled_task.name()
+					thread_name = '<unavailable>'
+					thread_name = scheduled_task.thread_name()
+
+					task_description = scheduled_task.description()
+					table_render.add_row(
+						instance_name, task_name, uid, started_at, thread_name, task_description
+					)
 
 			header = 'Total tasks that run at the moment: %i\n' % count
 			return WCommandResult(output=(header + table_render.render()))

@@ -34,12 +34,23 @@ from wasp_general.verify import verify_type, verify_value
 from wasp_general.command.command import WCommandProto
 
 from wasp_general.task.thread import WThreadJoiningTimeoutError
-from wasp_general.task.scheduler.proto import WTaskSourceProto, WScheduledTask
+from wasp_general.task.scheduler.proto import WTaskSourceProto, WScheduledTask, WTaskSchedule
 from wasp_general.task.scheduler.scheduler import WTaskSchedulerService, WRunningTaskRegistry, WSchedulerWatchdog
 from wasp_general.task.scheduler.task_source import WCronTaskSource, WCronLocalTZSchedule, WCronTaskSchedule
 from wasp_general.task.scheduler.task_source import WCronUTCSchedule
 
 from wasp_launcher.core import WSyncApp, WAppsGlobals, WThreadTaskLoggingHandler, WSchedulerTaskSourceInstaller
+
+
+class WLauncherScheduledTask(WScheduledTask):
+
+	@abstractmethod
+	def name(self):
+		raise NotImplementedError('This method is abstract')
+
+	@abstractmethod
+	def description(self):
+		raise NotImplementedError('This method is abstract')
 
 
 class WLauncherTaskSource(WTaskSourceProto):
@@ -52,9 +63,28 @@ class WLauncherTaskSource(WTaskSourceProto):
 		return None
 
 
+class WLauncherWatchdog(WThreadTaskLoggingHandler, WSchedulerWatchdog):
+
+	@classmethod
+	@verify_type('paranoid', task_schedule=WTaskSchedule)
+	def create(cls, task_schedule, registry):
+			if isinstance(task_schedule.task(), WLauncherScheduledTask) is False:
+				raise TypeError(
+					'Scheduled unsupported task. Task must be WLauncherScheduledTask object'
+				)
+			return WSchedulerWatchdog.create(task_schedule, registry)
+
+	def stop(self):
+		try:
+			WSchedulerWatchdog.stop(self)
+		except WThreadJoiningTimeoutError:
+			task_id = self.task_schedule().task_id()
+			WAppsGlobals.log.error('Unable to stop scheduled task gracefully. Task id: %s' % str(task_id))
+
+
 class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 
-	class BrokerClient(WThreadTaskLoggingHandler, WScheduledTask):
+	class BrokerClient(WThreadTaskLoggingHandler, WLauncherScheduledTask):
 
 		__thread_name_suffix__ = 'Config-Task-%s'
 
@@ -77,6 +107,12 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 
 		def thread_stopped(self):
 			pass
+
+		def name(self):
+			return 'Executing task from configuration'
+
+		def description(self):
+			return 'Requested command: ' + self.__command
 
 	__task_source_name__ = 'com.binblob.wasp-launcher.app.scheduler.config'
 
@@ -120,16 +156,6 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 			task = WCronTaskSchedule(task_schedule, broker_command)
 			self.add_task(task)
 			WAppsGlobals.log.info('Scheduled config-task "%s" loaded' % option_name)
-
-
-class WLauncherWatchdog(WThreadTaskLoggingHandler, WSchedulerWatchdog):
-
-	def stop(self):
-		try:
-			WSchedulerWatchdog.stop(self)
-		except WThreadJoiningTimeoutError:
-			task_id = self.task_schedule().task_id()
-			WAppsGlobals.log.error('Unable to stop scheduled task gracefully. Task id: %s' % str(task_id))
 
 
 class WLauncherScheduler(WThreadTaskLoggingHandler, WTaskSchedulerService):
