@@ -37,7 +37,6 @@ from wasp_general.task.dependency import WDependentTask
 from wasp_general.task.base import WTask, WSyncTask
 from wasp_general.task.thread import WThreadTask
 from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage
-from wasp_general.task.scheduler.proto import WScheduleTask, WTaskSourceProto
 from wasp_general.command.enhanced import WEnhancedCommand
 
 from wasp_general.network.web.service import WWebService, WWebTargetRoute, WWebEnhancedPresenter
@@ -184,62 +183,6 @@ class WCommandKit(WSyncApp):
 		pass
 
 
-class WLauncherScheduleTask(WScheduleTask):
-
-	@abstractmethod
-	def name(self):
-		raise NotImplementedError('This method is abstract')
-
-	@abstractmethod
-	def description(self):
-		raise NotImplementedError('This method is abstract')
-
-
-class WLauncherTaskSource(WTaskSourceProto):
-
-	@abstractmethod
-	def name(self):
-		raise NotImplementedError('This method is abstract')
-
-	# noinspection PyMethodMayBeStatic
-	def description(self):
-		return None
-
-
-class WSchedulerTaskSourceInstaller(WSyncApp):
-
-	__dependency__ = ['com.binblob.wasp-launcher.apps.scheduler::init']
-	__scheduler_instance__ = None
-	# default scheduler instance is used by default
-
-	@classmethod
-	def config_section(cls):
-		return 'wasp-launcher::applications::%s' % cls.name()
-
-	def start(self):
-		instance_name = self.scheduler_instance()
-		instance = WAppsGlobals.scheduler.instance(instance_name)
-		if instance is None:
-			WAppsGlobals.log.error(
-				'Scheduler instance "%s" not found. Tasks will not be able to start' % instance_name
-			)
-			return
-
-		for source in self.sources():
-			instance.add_task_source(source(instance))
-
-	def stop(self):
-		pass
-
-	@abstractmethod
-	def sources(self):
-		raise NotImplementedError('This method is abstract')
-
-	@classmethod
-	def scheduler_instance(cls):
-		return cls.__scheduler_instance__
-
-
 class WWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
 
 	@verify_type('paranoid', request=WWebRequestProto, target_route=WWebTargetRoute, service=WWebService)
@@ -354,3 +297,4 @@ class WAppsGlobals:
 	"""
 
 	scheduler = None
+	scheduler_history = None

@@ -39,7 +39,8 @@ from wasp_general.task.scheduler.scheduler import WSchedulerService, WRunningRec
 from wasp_general.task.scheduler.task_source import WCronTaskSource, WCronLocalTZSchedule, WCronScheduleRecord
 from wasp_general.task.scheduler.task_source import WCronUTCSchedule
 
-from wasp_launcher.core import WAppsGlobals, WThreadTaskLoggingHandler, WLauncherScheduleTask, WLauncherTaskSource
+from wasp_launcher.core import WAppsGlobals, WThreadTaskLoggingHandler
+from wasp_launcher.core_scheduler import WLauncherScheduleTask, WLauncherTaskSource
 
 
 class WLauncherWatchdog(WThreadTaskLoggingHandler, WSchedulerWatchdog):
@@ -83,7 +84,7 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 				WAppsGlobals.log.info('Scheduled config-task "%s" completed successfully' % self.__option)
 
 		def thread_stopped(self):
-			pass
+			WLauncherScheduleTask.thread_stopped(self)
 
 		def name(self):
 			return 'Executing task "%s" from configuration' % self.__option

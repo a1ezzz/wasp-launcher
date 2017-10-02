@@ -27,8 +27,10 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
+from wasp_general.task.thread_tracker import WSimpleTrackerStorage
 
-from wasp_launcher.core import WSyncApp, WAppsGlobals, WSchedulerTaskSourceInstaller
+from wasp_launcher.core import WSyncApp, WAppsGlobals
+from wasp_launcher.core_scheduler import WSchedulerTaskSourceInstaller
 from wasp_launcher.apps.scheduler_collection import WSchedulerCollection
 
 
@@ -42,6 +44,8 @@ class WSchedulerInitApp(WSyncApp):
 
 	def start(self):
 		WAppsGlobals.log.info('Scheduler is initializing')
+		if WAppsGlobals.scheduler_history is None:
+			WAppsGlobals.scheduler_history = WSimpleTrackerStorage(records_limit=100)
 		if WAppsGlobals.scheduler is None:
 			WAppsGlobals.scheduler = WSchedulerCollection()
 			WAppsGlobals.scheduler.load_instances()
@@ -50,6 +54,8 @@ class WSchedulerInitApp(WSyncApp):
 		WAppsGlobals.log.info('Scheduler is finalizing')
 		if WAppsGlobals.scheduler is not None:
 			WAppsGlobals.scheduler = None
+		if WAppsGlobals.scheduler_history is not None:
+			WAppsGlobals.scheduler_history = None
 
 
 class WSchedulerApp(WSyncApp):

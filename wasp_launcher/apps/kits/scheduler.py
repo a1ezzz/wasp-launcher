@@ -30,6 +30,7 @@ from wasp_launcher.version import __status__
 from wasp_general.verify import verify_type
 from wasp_general.cli.formatter import WConsoleTableFormatter, na_formatter, local_datetime_formatter
 from wasp_general.command.command import WCommandResult
+from wasp_general.task.thread_tracker import WSimpleTrackerStorage
 
 from wasp_launcher.core import WCommandKit, WBrokerCommand, WAppsGlobals
 
@@ -165,6 +166,49 @@ class WSchedulerCommandKit(WCommandKit):
 		def brief_description(cls):
 			return 'show tasks that run at the moment'
 
+	class History(WBrokerCommand):
+
+		def __init__(self):
+			WBrokerCommand.__init__(self, 'history')
+
+		@verify_type(command_arguments=dict)
+		def _exec(self, command_arguments):
+			if WAppsGlobals.scheduler_history is None:
+				return WCommandResult(output='Scheduler history is not available', error=1)
+
+			count = 0
+
+			table_formatter = WConsoleTableFormatter(
+				'Task name', 'Task uid', 'Status', 'Task description'
+			)
+
+			for record in WAppsGlobals.scheduler_history:
+
+				if record.record_type == WSimpleTrackerStorage.RecordType.stop:
+					status = 'Stopped'
+				elif record.record_type == WSimpleTrackerStorage.RecordType.termination:
+					status = 'Terminated'
+				elif record.record_type == WSimpleTrackerStorage.RecordType.exception:
+					status = 'Exception raised'
+				else:
+					# unknow type
+					continue
+
+				table_formatter.add_row(
+					record.thread_task.name(),
+					str(record.thread_task.uid()),
+					status,
+					record.task_details
+				)
+				count += 1
+
+			header = 'Records stored: %i\n' % count
+			return WCommandResult(output=(header + table_formatter.format()))
+
+		@classmethod
+		def brief_description(cls):
+			return 'shows history'
+
 	@classmethod
 	def description(cls):
 		return 'scheduler commands'
@@ -174,5 +218,6 @@ class WSchedulerCommandKit(WCommandKit):
 		return [
 			WSchedulerCommandKit.SchedulerInstances(),
 			WSchedulerCommandKit.TaskSources(),
-			WSchedulerCommandKit.RunningTasks()
+			WSchedulerCommandKit.RunningTasks(),
+			WSchedulerCommandKit.History()
 		]
