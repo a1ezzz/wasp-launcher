@@ -106,6 +106,7 @@ class WWebServiceApp(WThreadedApp):
 	"""
 
 	__dependency__ = [
+		'com.binblob.wasp-launcher.apps.web::init',
 		'com.binblob.wasp-launcher.apps.model-load'
 	]
 

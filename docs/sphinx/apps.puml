@@ -89,6 +89,7 @@ web_apps .-down-> web_init
 web_apps .-down-> template
 web_start .-down-> model
 web_start .-down-> web_apps
+web_start .-down-> web_init
 }
 
 @enduml
