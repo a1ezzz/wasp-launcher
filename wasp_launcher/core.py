@@ -35,7 +35,7 @@ from wasp_general.verify import verify_type, verify_value
 
 from wasp_general.task.dependency import WDependentTask
 from wasp_general.task.base import WTask, WSyncTask
-from wasp_general.task.thread import WThreadTask
+from wasp_general.task.thread import WThreadTask, WThreadJoiningTimeoutError
 from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage
 from wasp_general.command.enhanced import WEnhancedCommand
 
@@ -127,7 +127,16 @@ class WSyncApp(WRegisteredApp, WSyncTask, metaclass=WDependentTask):
 class WThreadedApp(WRegisteredApp, WThreadTaskLoggingHandler, WThreadTask, metaclass=WDependentTask):
 	""" Application that executes in a separate thread
 	"""
-	pass
+
+	def stop(self):
+		try:
+			WThreadTask.stop(self)
+		except WThreadJoiningTimeoutError:
+			msg = 'Unable to join thread "%s". Thread became orphaned' % self.thread_name()
+			if WAppsGlobals.log is not None:
+				WAppsGlobals.log.error(msg)
+			else:
+				print('Error! ' + msg)
 
 
 class WBrokerCommand(WEnhancedCommand):
