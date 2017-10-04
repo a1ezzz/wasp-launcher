@@ -64,7 +64,7 @@ class WLauncherWatchdog(WThreadTaskLoggingHandler, WSchedulerWatchdog):
 
 class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 
-	class BrokerClient(WThreadTaskLoggingHandler, WLauncherScheduleTask):
+	class BrokerClient(WLauncherScheduleTask):
 
 		def __init__(self, config_option, broker_command):
 			WLauncherScheduleTask.__init__(self)
@@ -82,9 +82,6 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 				)
 			else:
 				WAppsGlobals.log.info('Scheduled config-task "%s" completed successfully' % self.__option)
-
-		def thread_stopped(self):
-			WLauncherScheduleTask.thread_stopped(self)
 
 		def name(self):
 			return 'Executing task "%s" from configuration' % self.__option

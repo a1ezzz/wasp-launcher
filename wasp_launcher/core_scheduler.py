@@ -34,10 +34,10 @@ from wasp_general.task.scheduler.proto import WScheduleTask, WTaskSourceProto
 from wasp_general.task.thread_tracker import WThreadTracker
 from wasp_general.verify import verify_type
 
-from wasp_launcher.core import WSyncApp, WAppsGlobals
+from wasp_launcher.core import WSyncApp, WAppsGlobals, WThreadTaskLoggingHandler
 
 
-class WLauncherScheduleTask(WScheduleTask, WThreadTracker):
+class WLauncherScheduleTask(WScheduleTask, WThreadTracker, WThreadTaskLoggingHandler):
 	"""
 	stopped - to history
 	exception raised - to history
@@ -46,6 +46,7 @@ class WLauncherScheduleTask(WScheduleTask, WThreadTracker):
 	def __init__(self, thread_join_timeout=None):
 		WScheduleTask.__init__(self, thread_join_timeout=thread_join_timeout)
 		WThreadTracker.__init__(self)
+		WThreadTaskLoggingHandler.__init__(self)
 
 	def tracker_storage(self):
 		return WAppsGlobals.scheduler_history
@@ -60,6 +61,13 @@ class WLauncherScheduleTask(WScheduleTask, WThreadTracker):
 
 	def task_details(self):
 		return self.description()
+
+	def thread_stopped(self):
+		WThreadTracker.thread_stopped(self)
+
+	def thread_exception(self, raised_exception):
+		WThreadTracker.thread_exception(self, raised_exception)
+		WThreadTaskLoggingHandler.thread_exception(self, raised_exception)
 
 
 class WLauncherTaskSource(WTaskSourceProto):
