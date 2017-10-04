@@ -27,6 +27,9 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
+import threading
+import faulthandler
+
 from wasp_general.task.dependency import WTaskDependencyRegistry
 
 from wasp_launcher.core import WAppsGlobals, WAppRegistryStorage, WAppRegistry, WRegisteredApp
@@ -75,3 +78,21 @@ class WLauncherBootstrap:
 	def start_apps(self):
 		for task_tag in self.__start_apps:
 			WAppRegistry.start_task(task_tag)
+
+	@classmethod
+	def check_threads(cls, join_timeout):
+		threads = threading.enumerate()
+		result = True
+		if len(threads) > 1:
+			print('Several alive threads spotted. Dumping stacks')
+			faulthandler.dump_traceback()
+			print('Trying to join threads for the second time. Join timeout - %s' % str(join_timeout))
+			for thread in threads:
+				if thread != threading.current_thread():
+					print('Join thread "%s"' % thread.name)
+					thread.join(join_timeout)
+					if thread.is_alive() is True:
+						print('Thread "%s" still alive' % thread.name)
+						result = False
+
+		return result

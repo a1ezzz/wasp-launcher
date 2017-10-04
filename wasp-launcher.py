@@ -26,10 +26,14 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 from wasp_launcher.version import __status__
 
 import signal
+import os
 
 from wasp_launcher.core import WAppRegistry
 
 from wasp_launcher.bootstrap import WLauncherBootstrap
+
+
+__second_join_timeout__ = 3
 
 
 if __name__ == '__main__':
@@ -49,3 +53,6 @@ if __name__ == '__main__':
 	signal.signal(signal.SIGTERM, shutdown_signal)
 	signal.signal(signal.SIGINT, shutdown_signal)
 	signal.pause()
+
+	if bootstrap.check_threads(__second_join_timeout__) is not True:
+		os._exit(-1)
