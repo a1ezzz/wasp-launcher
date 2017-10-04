@@ -262,7 +262,7 @@ class WWebAppDebuggerDatastore(WSyncApp):
 	def start(self):
 		if WWebAppDebuggerDatastore.__mongo_connection__ is None:
 			WWebAppDebuggerDatastore.__mongo_connection__ = WMongoConnection.create(
-				'wasp-launcher::web:debug', 'mongo_connection', 'mongo_database'
+				'wasp-launcher::web:debug', 'mongo_connection', 'mongo_database', rude_closing=True
 			)
 
 		WWebAppDebuggerDatastore.__mongo_sessions__ = WWebAppDebuggerDatastore.__mongo_connection__['sessions']
@@ -279,13 +279,12 @@ class WWebAppDebuggerDatastore(WSyncApp):
 	def stop(self):
 		if WWebAppDebuggerDatastore.__mongo_connection__ is not None:
 			WWebAppDebuggerDatastore.__mongo_connection__.close()
+			WWebAppDebuggerDatastore.__mongo_connection__ = None
 
 		WWebAppDebuggerDatastore.__mongo_sessions__ = None
 		WWebAppDebuggerDatastore.__mongo_requests__ = None
 		WWebAppDebuggerDatastore.__mongo_responses__ = None
 		WWebAppDebuggerDatastore.__mongo_target_routes__ = None
 		WWebAppDebuggerDatastore.__mongo_exceptions__ = None
-
-		WWebAppDebuggerDatastore.__mongo_connection__ = None
 
 		WAppsGlobals.log.info('Web-debugger stopped')
