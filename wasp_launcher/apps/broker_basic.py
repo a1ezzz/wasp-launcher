@@ -31,7 +31,6 @@ import zmq
 from abc import abstractmethod
 
 from wasp_general.verify import verify_type
-from wasp_general.task.thread import WThreadTask
 from wasp_general.network.service import WZMQHandler, WZMQService, WLoglessIOLoop, WZMQSyncAgent
 
 from wasp_general.network.messenger.onion import WMessengerOnion
@@ -44,7 +43,7 @@ from wasp_general.network.messenger.envelope import WMessengerBytesEnvelope, WMe
 from wasp_general.command.command import WCommandResult
 from wasp_general.command.context import WContextProto, WContext, WCommandContextResult
 
-from wasp_launcher.core import WAppsGlobals, WThreadTaskLoggingHandler
+from wasp_launcher.core import WAppsGlobals, WThreadedApp
 
 
 class WManagementCommandPackerLayer(WMessengerOnionPackerLayerProto):
@@ -159,7 +158,7 @@ class WManagementResultPackerLayer(WMessengerOnionPackerLayerProto):
 		return WMessengerEnvelope(result_obj, meta=envelope)
 
 
-class WBrokerClientTask(WZMQService, WThreadTask):
+class WBrokerClientTask(WZMQService, WThreadedApp):
 
 	@verify_type('paranoid', connection=str)
 	def __init__(self, connection):
@@ -173,7 +172,7 @@ class WBrokerClientTask(WZMQService, WThreadTask):
 		self.__send_agent = WZMQHandler.SendAgent()
 
 		WZMQService.__init__(self, setup_agent, receive_agent=self.__receive_agent)
-		WThreadTask.__init__(self)
+		WThreadedApp.__init__(self)
 
 	def receive_agent(self):
 		return self.__receive_agent
@@ -182,10 +181,10 @@ class WBrokerClientTask(WZMQService, WThreadTask):
 		return self.__send_agent
 
 	def start(self):
-		WThreadTask.start(self)
+		WThreadedApp.start(self)
 
 	def stop(self):
-		WThreadTask.stop(self)
+		WThreadedApp.stop(self)
 
 	def thread_started(self):
 		WZMQService.start(self)
@@ -194,7 +193,7 @@ class WBrokerClientTask(WZMQService, WThreadTask):
 		WZMQService.stop(self)
 
 
-class WLauncherBrokerBasicTask(WThreadTaskLoggingHandler, WThreadTask):
+class WLauncherBrokerBasicTask(WThreadedApp):
 
 	class ManagementProcessingLayer(WMessengerOnionLayerProto):
 
