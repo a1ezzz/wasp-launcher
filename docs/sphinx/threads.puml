@@ -1,0 +1,122 @@
+@startuml
+
+
+component main_thread [
+MainThread - Core thread
+]
+
+component web[
+WWebServiceApp - HTTP service
+]
+
+interface broker [
+Broker
+]
+
+component broker_tcp[
+Broker-TCP - Broker that is listening TCP
+]
+
+component broker_ipc[
+Broker-IPC - Broker that is listening named socket
+]
+
+interface broker_commands [
+Broker commands manager
+]
+
+interface scheduler_collection [
+Scheduler collection
+]
+
+interface scheduler_collection_default_instance [
+Scheduler default instance
+]
+
+interface scheduler_collection_named_instance_1 [
+Scheduler named instance #1
+]
+
+interface scheduler_collection_named_instance_n [
+Scheduler named instance #N
+]
+
+component scheduler_service_default_instance[
+TaskScheduler - Scheduler service for default instance
+]
+
+component scheduler_service_named_instance_1[
+"TaskScheduler-[instance name]"
+Scheduler service for named instance #1
+]
+
+component scheduler_service_named_instance_n[
+"TaskScheduler-[instance name]"
+Scheduler service for named instance #N
+]
+
+component scheduler_registry_default_instance[
+SchedulerRegistry - Registry for default instance
+]
+
+component scheduler_registry_named_instance_1[
+"SchedulerRegistry-[instance name]"
+Registry for named instance #1
+]
+
+component scheduler_registry_named_instance_n[
+"SchedulerRegistry-[instance name]"
+Registry for named instance #N
+]
+
+component scheduler_watchdog_task_1[
+"TaskScheduler-Watchdog-[task #1 uid]"
+Watchdog for task #1
+]
+
+component scheduler_watchdog_task_n[
+"TaskScheduler-Watchdog-[task #N uid]"
+Watchdog for task #N
+]
+
+component scheduler_task_1[
+"ScheduledTask-[task #1 uid]"
+Scheduled task #1
+]
+
+component scheduler_task_n[
+"ScheduledTask-[task #N uid]"
+Scheduled task #N
+]
+
+main_thread --> web
+main_thread --> broker
+main_thread --> scheduler_collection
+
+broker -down- broker_tcp
+broker -down- broker_ipc
+
+broker_tcp -down-> broker_commands
+broker_ipc -down-> broker_commands
+
+broker_commands ..> scheduler_collection
+
+scheduler_collection -down-> scheduler_collection_default_instance
+scheduler_collection -down-> scheduler_collection_named_instance_1
+scheduler_collection -down-> scheduler_collection_named_instance_n
+
+scheduler_collection_default_instance -down- scheduler_service_default_instance
+scheduler_collection_named_instance_1 -down- scheduler_service_named_instance_1
+scheduler_collection_named_instance_n -down- scheduler_service_named_instance_n
+
+scheduler_service_default_instance -down-> scheduler_registry_default_instance
+scheduler_service_named_instance_1 -down-> scheduler_registry_named_instance_1
+scheduler_service_named_instance_n -down-> scheduler_registry_named_instance_n
+
+scheduler_registry_named_instance_1 -down-> scheduler_watchdog_task_1
+scheduler_registry_named_instance_1 -down-> scheduler_watchdog_task_n
+
+scheduler_watchdog_task_1 -down-> scheduler_task_1
+scheduler_watchdog_task_n -down-> scheduler_task_n
+
+@enduml

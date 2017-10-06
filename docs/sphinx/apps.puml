@@ -1,6 +1,7 @@
 @startuml
 
-package "Host Apps" {
+package "Core applications" {
+
 component log [
 WLogApp
 "com.binblob.wasp-launcher.apps.log"
