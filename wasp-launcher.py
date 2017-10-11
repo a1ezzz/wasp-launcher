@@ -27,6 +27,7 @@ from wasp_launcher.version import __status__
 
 import signal
 import os
+from threading import Lock
 
 from wasp_launcher.core import WAppRegistry
 
@@ -34,6 +35,7 @@ from wasp_launcher.bootstrap import WLauncherBootstrap
 
 
 __second_join_timeout__ = 3
+__shutdown_lock__ = Lock()
 
 
 if __name__ == '__main__':
@@ -48,7 +50,13 @@ if __name__ == '__main__':
 	bootstrap.start_apps()
 
 	def shutdown_signal(signum, frame):
-		WAppRegistry.all_stop()
+		if __shutdown_lock__.acquire(blocking=False) is True:
+			try:
+				WAppRegistry.all_stop()
+			finally:
+				__shutdown_lock__.release()
+		else:
+			print('Shutdown in progress')
 
 	signal.signal(signal.SIGTERM, shutdown_signal)
 	signal.signal(signal.SIGINT, shutdown_signal)
