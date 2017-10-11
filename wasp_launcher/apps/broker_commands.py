@@ -33,9 +33,8 @@ from enum import Enum
 from wasp_general.verify import verify_type, verify_value
 
 from wasp_general.command.command import WCommandResult, WCommandProto, WCommand, WReduceCommand
-from wasp_general.command.command import WCommandSelector, WCommandPrioritizedSelector
-from wasp_general.command.context import WContextProto, WContext, WCommandContextResult, WCommandContextAdapter
-from wasp_general.command.context import WCommandContext, WCommandContextSet
+from wasp_general.command.command import WCommandSelector, WCommandPrioritizedSelector, WCommandSet
+from wasp_general.command.context import WContextProto, WContext, WCommandContextAdapter, WCommandContext
 
 from wasp_launcher.core import WCommandKit, WBrokerCommand
 
@@ -109,20 +108,20 @@ interact with "apps". You are able to switch to next context:
 			WCommand.__init__(self, '..')
 
 		@verify_type('paranoid', command_tokens=str)
-		@verify_type(request_context=(WContextProto, None))
-		def _exec(self, *command_tokens, request_context=None, **command_env):
-			if request_context is not None:
-				return WCommandContextResult(context=request_context.linked_context())
-			return WCommandContextResult()
+		@verify_type(command_context=(WContextProto, None))
+		def _exec(self, *command_tokens, command_context=None, **command_env):
+			if command_context is not None:
+				return WCommandResult(command_context=command_context.linked_context())
+			return WCommandResult(command_context=None)
 
 	class DotCommand(WCommand):
 
 		def __init__(self):
 			WCommand.__init__(self, '.')
 
-		@verify_type('paranoid', command_tokens=str, request_context=(WContextProto, None))
-		def _exec(self, *command_tokens, request_context=None, **command_env):
-			return WCommandContextResult()
+		@verify_type('paranoid', command_tokens=str, command_context=(WContextProto, None))
+		def _exec(self, *command_tokens, command_context=None, **command_env):
+			return WCommandResult(command_context=None)
 
 	class GeneralUsageHelpCommand(WCommandProto):
 
@@ -161,9 +160,9 @@ interact with "apps". You are able to switch to next context:
 		def help_command(self):
 			return self.__help_command
 
-		@verify_type('paranoid', request_context=(WContextProto, None))
+		@verify_type('paranoid', command_context=(WContextProto, None))
 		@verify_type(command_tokens=str)
-		def match(self, *command_tokens, request_context=None, **command_env):
+		def match(self, *command_tokens, command_context=None, **command_env):
 			if len(command_tokens) > 0:
 				if command_tokens[0] == self.help_command():
 					if len(command_tokens) == 1:
@@ -171,21 +170,21 @@ interact with "apps". You are able to switch to next context:
 					tokens = [command_tokens[1], command_tokens[0]]
 					tokens.extend(command_tokens[2:])
 					command = self.command_set().select(
-						*tokens, request_context=request_context, **command_env
+						*tokens, command_context=command_context, **command_env
 					)
 					return command is not None
 			return False
 
-		@verify_type('paranoid', command_tokens=str, request_context=(WContextProto, None))
-		def exec(self, *command_tokens, request_context=None, **command_env):
-			if self.match(*command_tokens, request_context=request_context, **command_env) is False:
+		@verify_type('paranoid', command_tokens=str, command_context=(WContextProto, None))
+		def exec(self, *command_tokens, command_context=None, **command_env):
+			if self.match(*command_tokens, command_context=command_context, **command_env) is False:
 				raise RuntimeError('Invalid tokens')
 			if len(command_tokens) == 1:
 				return WCommandResult(output=self.help_info())
 			tokens = [command_tokens[1], command_tokens[0]]
 			tokens.extend(command_tokens[2:])
-			command = self.command_set().select(*tokens, request_context=request_context, **command_env)
-			return command.exec(*tokens, request_context=request_context, **command_env)
+			command = self.command_set().select(*tokens, command_context=command_context, **command_env)
+			return command.exec(*tokens, command_context=command_context, **command_env)
 
 	class SpecificCommandHelp(WCommandProto):
 
@@ -262,18 +261,18 @@ interact with "apps". You are able to switch to next context:
 				if self.__app_name is not None:
 					context = WContext(self.__app_name, linked_context=context)
 
-				return WCommandContextResult(context=context)
+				return WCommandResult(command_context=context)
 
 			raise RuntimeError('Invalid tokens')
 
 	class BrokerContextAdapter(WCommandContextAdapter):
 
-		@verify_type(command_tokens=str, request_context=(WContextProto, None))
-		def adapt(self, *command_tokens, request_context=None):
-			if request_context is None:
+		@verify_type(command_tokens=str, command_context=(WContextProto, None))
+		def adapt(self, *command_tokens, command_context=None):
+			if command_context is None:
 				return command_tokens
 
-			result = [request_context.context_name()]
+			result = [command_context.context_name()]
 			result.extend(command_tokens)
 			return tuple(result)
 
@@ -363,7 +362,7 @@ interact with "apps". You are able to switch to next context:
 			self.add_prioritized(WReduceCommand(app_commands, *kit_names), 30)
 
 	def __init__(self):
-		self.__internal_set = WCommandContextSet()
+		self.__internal_set = WCommandSet(command_selector=WCommandPrioritizedSelector())
 		self.__main_sections = {}
 
 		internal_command_set = self.__internal_set.commands()
@@ -400,15 +399,15 @@ interact with "apps". You are able to switch to next context:
 		section.add_commands(command_kit)
 
 	# noinspection PyBroadException
-	@verify_type('paranoid', command_tokens=str, request_context=(WContextProto, None))
-	def exec_broker_command(self, *command_tokens, request_context=None):
-		command_obj = self.__internal_set.commands().select(*command_tokens, request_context=request_context)
+	@verify_type('paranoid', command_tokens=str, command_context=(WContextProto, None))
+	def exec_broker_command(self, *command_tokens, **command_env):
+		command_obj = self.__internal_set.commands().select(*command_tokens, **command_env)
 
 		if command_obj is None:
 			return WCommandResult(output='No suitable command found', error=1)
 
 		try:
-			return command_obj.exec(*command_tokens, request_context=request_context)
+			return command_obj.exec(*command_tokens, **command_env)
 		except Exception:
 			return WCommandResult(
 				output='Command execution error. Traceback\n%s' % traceback.format_exc(), error=1

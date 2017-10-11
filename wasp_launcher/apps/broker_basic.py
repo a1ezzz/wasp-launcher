@@ -40,8 +40,8 @@ from wasp_general.network.messenger.proto import WMessengerEnvelopeProto, WMesse
 from wasp_general.network.messenger.layers import WMessengerOnionPackerLayerProto, WMessengerOnionCoderLayerProto
 from wasp_general.network.messenger.envelope import WMessengerBytesEnvelope, WMessengerEnvelope
 
-from wasp_general.command.command import WCommandResult
-from wasp_general.command.context import WContextProto, WContext, WCommandContextResult
+from wasp_general.command.command import WCommandResult, WCommandEnv
+from wasp_general.command.context import WContext
 
 from wasp_launcher.core import WAppsGlobals, WThreadedApp
 
@@ -58,17 +58,24 @@ class WManagementCommandPackerLayer(WMessengerOnionPackerLayerProto):
 			self, WManagementCommandPackerLayer.__layer_name__
 		)
 
-	class Command:
-		tokens = []
-		context = None
+	class Command(WCommandEnv):
+		serialization_helpers = {'command_context': WContext.ContextSerializationHelper()}
 
-		@staticmethod
-		@verify_type(command_tokens=str, request_context=(WContextProto, None))
-		def create(*command_tokens, request_context=None):
-			command = WManagementCommandPackerLayer.Command()
-			command.tokens = list(command_tokens)
-			command.context = request_context
-			return command
+		def __init__(self, *command_tokens, **command_env):
+			WCommandEnv.__init__(self, **command_env)
+			self.tokens = command_tokens
+
+		def serialize_env(self, **serialization_helpers):
+			helpers = serialization_helpers.copy()
+			helpers.update(WManagementCommandPackerLayer.Command.serialization_helpers)
+			return WCommandEnv.serialize_env(self, **helpers)
+
+		@classmethod
+		@verify_type(env=dict)
+		def deserialize_env(cls, env, **serialization_helpers):
+			helpers = serialization_helpers.copy()
+			helpers.update(WManagementCommandPackerLayer.Command.serialization_helpers)
+			return WCommandEnv.deserialize_env(env, **helpers)
 
 	@verify_type('paranoid', session=WMessengerOnionSessionProto)
 	@verify_type(envelope=WMessengerEnvelopeProto)
@@ -79,10 +86,7 @@ class WManagementCommandPackerLayer(WMessengerOnionPackerLayerProto):
 		if isinstance(command, WManagementCommandPackerLayer.Command) is False:
 			raise TypeError("Invalid type for 'command' parameter")
 
-		return WMessengerEnvelope({
-			'tokens': command.tokens,
-			'context': None if command.context is None else WContext.export_context(command.context)
-		}, meta=envelope)
+		return WMessengerEnvelope({'tokens': command.tokens, 'env': command.serialize_env()}, meta=envelope)
 
 	@verify_type('paranoid', session=WMessengerOnionSessionProto)
 	@verify_type(envelope=WMessengerEnvelopeProto)
@@ -91,13 +95,14 @@ class WManagementCommandPackerLayer(WMessengerOnionPackerLayerProto):
 		if isinstance(command, dict) is False:
 			raise TypeError('Invalid envelope message type')
 
-		for attr_name in ['tokens', 'context']:
+		for attr_name in ['tokens', 'env']:
 			if attr_name not in command.keys():
 				raise ValueError("No '%s' attribute for command envelope" % attr_name)
 
 		return WMessengerEnvelope(
-			WManagementCommandPackerLayer.Command.create(
-				*(command['tokens']), request_context=WContext.import_context(command['context'])
+			WManagementCommandPackerLayer.Command(
+				*(command['tokens']),
+				**(WManagementCommandPackerLayer.Command.deserialize_env(command['env']))
 			), meta=envelope.meta()
 		)
 
@@ -113,6 +118,7 @@ class WManagementResultPackerLayer(WMessengerOnionPackerLayerProto):
 		WMessengerOnionPackerLayerProto.__init__(
 			self, WManagementResultPackerLayer.__layer_name__
 		)
+		self.__command_context_helper = WContext.ContextSerializationHelper()
 
 	@verify_type('paranoid', session=WMessengerOnionSessionProto)
 	@verify_type(envelope=WMessengerEnvelopeProto)
@@ -122,17 +128,13 @@ class WManagementResultPackerLayer(WMessengerOnionPackerLayerProto):
 		if isinstance(command_result, WCommandResult) is False:
 			raise TypeError('Invalid envelope message type')
 
+		serialized_vars = command_result.serialize_env(command_context=self.__command_context_helper)
+
 		result = {
 			'output': command_result.output,
 			'error': command_result.error,
-			'context_mode': False,
-			'context': None
+			'env': serialized_vars
 		}
-
-		if isinstance(command_result, WCommandContextResult):
-			result['context_mode'] = True
-			if command_result.context is not None:
-				result['context'] = WContext.export_context(command_result.context)
 
 		return WMessengerEnvelope(result, meta=envelope)
 
@@ -143,17 +145,17 @@ class WManagementResultPackerLayer(WMessengerOnionPackerLayerProto):
 		if isinstance(result_dict, dict) is False:
 			raise TypeError('Invalid envelope message type')
 
-		for attr_name in ['output', 'error', 'context_mode', 'context']:
+		for attr_name in ['output', 'error', 'env']:
 			if attr_name not in result_dict.keys():
 				raise ValueError("No '%s' attribute for result envelope" % attr_name)
 
-		if result_dict['context_mode'] is True:
-			result_obj = WCommandContextResult(
-				output=result_dict['output'], error=result_dict['error'],
-				context=WContext.import_context(result_dict['context'])
-			)
-		else:
-			result_obj = WCommandResult(output=result_dict['output'], error=result_dict['error'])
+		deserialized_vars = WCommandResult.deserialize_env(
+			result_dict['env'], command_context=self.__command_context_helper
+		)
+
+		result_obj = WCommandResult(
+			output=result_dict['output'], error=result_dict['error'], **deserialized_vars
+		)
 
 		return WMessengerEnvelope(result_obj, meta=envelope)
 
@@ -162,7 +164,9 @@ class WBrokerClientTask(WZMQService, WThreadedApp):
 
 	@verify_type('paranoid', connection=str)
 	def __init__(self, connection):
-		setup_agent = WZMQHandler.ConnectSetupAgent(zmq.REQ, connection)
+		setup_agent = WZMQHandler.ConnectSetupAgent(
+			zmq.REQ, connection, WZMQHandler.SocketOption(zmq.IMMEDIATE, 1)
+		)
 
 		timeout = WAppsGlobals.config.getint(
 			'wasp-launcher::broker::connection::cli', 'command_timeout'
@@ -216,7 +220,7 @@ class WLauncherBrokerBasicTask(WThreadedApp):
 		def exec(cls, command):
 			return WMessengerEnvelope(
 				WAppsGlobals.broker_commands.exec_broker_command(
-					*command.tokens, request_context=command.context
+					*command.tokens, **command.env
 				)
 			)
 

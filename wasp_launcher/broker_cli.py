@@ -29,8 +29,7 @@ from wasp_launcher.version import __status__
 
 from wasp_general.verify import verify_type
 
-from wasp_general.command.context import WCommandContextSet
-from wasp_general.command.command import WCommandResult, WCommand
+from wasp_general.command.command import WCommandResult, WCommand, WCommandSet, WCommandPrioritizedSelector
 from wasp_general.command.context import WCommandContext, WContextProto, WCommandContextAdapter
 
 from wasp_general.cli.cli import WConsoleBase
@@ -51,17 +50,22 @@ from wasp_launcher.apps.broker_basic import WManagementResultPackerLayer
 from wasp_launcher.core import WAppsGlobals
 
 
-class WBrokerClientCommandSet(WCommandContextSet):
+class WBrokerClientCommandSet(WCommandSet):
 
 	@verify_type('paranoid', console=WCursesConsole)
 	def __init__(self, console):
-		WCommandContextSet.__init__(self)
+		WCommandSet.__init__(
+			self, command_selector=WCommandPrioritizedSelector(),
+			tracked_vars=('command_context', 'broker_last_command')
+		)
 		self.commands().add(WExitCommand(console))
 		self.commands().add(WEmptyCommand())
 		self.commands().add_prioritized(WBrokerCommandProxy(console), 40)
 
 	def context_prompt(self):
-		context = self.context()
+		context = None
+		if self.has_var('command_context'):
+			context = self.var_value('command_context')
 		if context is None:
 			return ''
 
@@ -150,7 +154,7 @@ class WBrokerCommandProxy(WCommandContext):
 				pass
 
 		class DummyAdapter(WCommandContextAdapter):
-			def adapt(self, *command_tokens, request_context=None, **command_env):
+			def adapt(self, *command_tokens, **command_env):
 				pass
 
 		WCommandContext.__init__(self, DummyCommand(), DummyAdapter(None))
@@ -169,8 +173,8 @@ class WBrokerCommandProxy(WCommandContext):
 	def match(self, *command_tokens, **command_env):
 		return len(command_tokens) > 0
 
-	@verify_type('paranoid', command_tokens=str, request_context=(WContextProto, None))
-	def exec(self, *command_tokens, request_context=None, **command_env):
+	@verify_type('paranoid', command_tokens=str, command_context=(WContextProto, None))
+	def exec(self, *command_tokens, **command_env):
 		broker = self.__console.broker()
 		handler = broker.handler()
 		receive_agent = broker.receive_agent()
@@ -180,9 +184,7 @@ class WBrokerCommandProxy(WCommandContext):
 			WMessengerOnionSessionFlowProto.IteratorInfo(
 				'com.binblob.wasp-launcher.broker-management-command-packer',
 				mode=WMessengerOnionPackerLayerProto.Mode.pack,
-				command=WManagementCommandPackerLayer.Command.create(
-					*command_tokens, request_context=request_context
-				)
+				command=WManagementCommandPackerLayer.Command(*command_tokens, **command_env)
 			),
 			WMessengerOnionSessionFlowProto.IteratorInfo(
 				'com.binblob.wasp-general.json-packer-layer',
@@ -232,4 +234,5 @@ class WBrokerCommandProxy(WCommandContext):
 			return envelope.message()
 		except TimeoutError:
 			self.__console_output_layer.undo_feedback()
+			broker.discard_queue_messages()
 			return WCommandResult(output='Command completion timeout expired', error=1)
