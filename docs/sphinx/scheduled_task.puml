@@ -1,0 +1,41 @@
+@startuml
+
+(*)  -down-> Task scheduled
+-down-> Wait for time to start
+-down-> Scheduler service starts task processing
+if "There are free slots to run task" then
+partition "Running registry" {
+--> [Yes] Task is pushed to "running-registry"
+--> Watchdog started
+--> Task started
+--> Watchdog waits for task completion
+--> Watchdog stops task
+--> Watchdog asks "running-registry" to clean up
+--> Watchdog and task discarded
+}
+else
+partition "Postpone registry" {
+--> [No] Task is pushed to "postpone-registry"
+	if "There are free slots to postpone task" then
+		--> [Yes] if "Task postpone policy allow to wait" then
+		--> [Yes] Wait for slot to run
+		if "Task has on_wait callback" then
+			--> [Yes] on_wait callback executed
+			--> Task is pushed to "running-registry"
+		else
+			--> [No] Task is pushed to "running-registry"
+		endif
+		--> Task is pushed to "running-registry"
+		else
+			--> [No] Task is dropped
+		endif
+	else
+		--> [No] Task is dropped
+		if "Task has on_drop callback" then
+			--> [Yes] on_drop callback executed
+		endif
+	endif
+}
+endif
+
+@enduml
