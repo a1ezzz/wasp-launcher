@@ -84,8 +84,8 @@ You can call a specific command in any context by the following pattern:
 	__specific_app_context_help__ = 'This is help for "%s" of "%s" context. Suitable commands are:\n'
 
 	class MainSections(Enum):
-		core = True
-		apps = False
+		core = 'core'
+		apps = 'apps'
 
 	__help_info__ = {
 		MainSections.core: {
@@ -395,7 +395,8 @@ interact with "apps". You are able to switch to next context:
 
 	@verify_type(command_kit=WCommandKit)
 	def add_kit(self, command_kit):
-		section = self.__main_sections[WBrokerCommandManager.MainSections(command_kit.is_core())]
+		broker_section = command_kit.broker_section()
+		section = self.__main_sections[WBrokerCommandManager.MainSections(broker_section)]
 		section.add_commands(command_kit)
 
 	# noinspection PyBroadException

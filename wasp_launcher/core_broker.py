@@ -75,8 +75,8 @@ class WCommandKit(WSyncApp):
 	def config_section(cls):
 		return 'wasp-launcher::applications::%s' % cls.name()
 
-	def is_core(self):
-		return WAppsGlobals.config.getboolean(self.config_section(), 'core')
+	def broker_section(self):
+		return WAppsGlobals.config[self.config_section()]['section']
 
 	def alias(self):
 		section_name = self.config_section()
