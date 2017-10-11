@@ -46,7 +46,7 @@ class WHealthCommandKit(WCommandKit):
 			WBrokerCommand.__init__(self, 'threads')
 
 		@verify_type(command_arguments=dict)
-		def _exec(self, command_arguments):
+		def _exec(self, command_arguments, **command_env):
 			threads = threading.enumerate()
 
 			table_formatter = WConsoleTableFormatter('Thread name')
