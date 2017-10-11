@@ -27,26 +27,24 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from abc import abstractmethod
 import re
 
 from wasp_general.verify import verify_type, verify_value
 from wasp_general.command.command import WCommandProto
 
 from wasp_general.task.thread import WThreadJoiningTimeoutError
-from wasp_general.task.scheduler.proto import WScheduleRecord
 from wasp_general.task.scheduler.scheduler import WSchedulerService, WRunningRecordRegistry, WSchedulerWatchdog
 from wasp_general.task.scheduler.task_source import WCronTaskSource, WCronLocalTZSchedule, WCronScheduleRecord
 from wasp_general.task.scheduler.task_source import WCronUTCSchedule
 
 from wasp_launcher.core import WAppsGlobals, WThreadTaskLoggingHandler
-from wasp_launcher.core_scheduler import WLauncherScheduleTask, WLauncherTaskSource
+from wasp_launcher.core_scheduler import WLauncherScheduleTask, WLauncherTaskSource, WLauncherScheduleRecord
 
 
 class WLauncherWatchdog(WThreadTaskLoggingHandler, WSchedulerWatchdog):
 
 	@classmethod
-	@verify_type('paranoid', record=WScheduleRecord)
+	@verify_type('paranoid', record=WLauncherScheduleRecord)
 	def create(cls, record, registry):
 			if isinstance(record.task(), WLauncherScheduleTask) is False:
 				raise TypeError(
@@ -105,6 +103,10 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 	def description(self):
 		return 'Fixed tasks that were specified in configuration during start'
 
+	@verify_type(task=WCronScheduleRecord)
+	def add_record(self, schedule_record):
+		WCronTaskSource.add_record(self, schedule_record.task())
+
 	def load_tasks(self, config_section):
 		tasks_options = WAppsGlobals.config.options(config_section)
 		for option_name in tasks_options:
@@ -128,8 +130,8 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 
 			task_schedule = schedule_cls.from_string_tokens(*task_tokens[1:6])
 			broker_command = WLauncherConfigTasks.BrokerClient(option_name, task_tokens[6])
-			task = WCronScheduleRecord(task_schedule, broker_command)
-			self.add_task(task)
+			record = WCronScheduleRecord(task_schedule, broker_command)
+			self.add_record(record)
 			WAppsGlobals.log.info('Scheduled config-task "%s" loaded' % option_name)
 
 

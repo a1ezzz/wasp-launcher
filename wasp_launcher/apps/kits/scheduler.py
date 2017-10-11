@@ -30,7 +30,7 @@ from wasp_launcher.version import __status__
 from wasp_general.verify import verify_type
 from wasp_general.cli.formatter import WConsoleTableFormatter, na_formatter, local_datetime_formatter
 from wasp_general.command.command import WCommandResult
-from wasp_general.task.thread_tracker import WSimpleTrackerStorage
+from wasp_general.task.thread_tracker import WThreadTrackerInfoStorageProto
 
 from wasp_launcher.core import WCommandKit, WBrokerCommand, WAppsGlobals
 
@@ -45,7 +45,7 @@ class WSchedulerCommandKit(WCommandKit):
 			WBrokerCommand.__init__(self, 'instances')
 
 		@verify_type(command_arguments=dict)
-		def _exec(self, command_arguments):
+		def _exec(self, command_arguments, **command_env):
 			if WAppsGlobals.scheduler is None:
 				return WCommandResult(output='Scheduler collection was not loaded', error=1)
 
@@ -92,7 +92,7 @@ class WSchedulerCommandKit(WCommandKit):
 			WBrokerCommand.__init__(self, 'sources')
 
 		@verify_type(command_arguments=dict)
-		def _exec(self, command_arguments):
+		def _exec(self, command_arguments, **command_env):
 			if WAppsGlobals.scheduler is None:
 				return WCommandResult(output='Scheduler was not loaded', error=1)
 
@@ -131,14 +131,14 @@ class WSchedulerCommandKit(WCommandKit):
 			WBrokerCommand.__init__(self, 'running_tasks')
 
 		@verify_type(command_arguments=dict)
-		def _exec(self, command_arguments):
+		def _exec(self, command_arguments, **command_env):
 			if WAppsGlobals.scheduler is None:
 				return WCommandResult(output='Scheduler was not loaded', error=1)
 
 			count = 0
 
 			table_formatter = WConsoleTableFormatter(
-				'Scheduler instance',  'Task name', 'Task uid', 'Task started at', 'Thread', 'Task description'
+				'Scheduler instance',  'Task name', 'Task uid', 'Thread', 'Task description'
 			)
 
 			for instance, instance_name in WAppsGlobals.scheduler:
@@ -150,13 +150,13 @@ class WSchedulerCommandKit(WCommandKit):
 
 				for running_record in running_records:
 					uid = str(running_record.task_uid())
-					started_at = local_datetime_formatter(running_record.started_at())
 					scheduled_task = running_record.task()
 					task_name = scheduled_task.name()
-					thread_name = scheduled_task.thread_name()
+					thread_name = na_formatter(scheduled_task.thread_name())
 					task_description = scheduled_task.description()
+
 					table_formatter.add_row(
-						instance_name, task_name, uid, started_at, thread_name, task_description
+						instance_name, task_name, uid, thread_name, task_description
 					)
 
 			header = 'Total tasks that run at the moment: %i\n' % count
@@ -172,24 +172,30 @@ class WSchedulerCommandKit(WCommandKit):
 			WBrokerCommand.__init__(self, 'history')
 
 		@verify_type(command_arguments=dict)
-		def _exec(self, command_arguments):
+		def _exec(self, command_arguments, **command_env):
 			if WAppsGlobals.scheduler_history is None:
 				return WCommandResult(output='Scheduler history is not available', error=1)
 
 			count = 0
 
 			table_formatter = WConsoleTableFormatter(
-				'Task name', 'Task uid', 'Status', 'Task description'
+				'Task name', 'Task uid', 'Status', 'Event time', 'Task description'
 			)
 
 			for record in WAppsGlobals.scheduler_history:
 
-				if record.record_type == WSimpleTrackerStorage.RecordType.stop:
+				if record.record_type == WThreadTrackerInfoStorageProto.TrackerEvents.start:
+					status = 'Started'
+				elif record.record_type == WThreadTrackerInfoStorageProto.TrackerEvents.stop:
 					status = 'Stopped'
-				elif record.record_type == WSimpleTrackerStorage.RecordType.termination:
+				elif record.record_type == WThreadTrackerInfoStorageProto.TrackerEvents.termination:
 					status = 'Terminated'
-				elif record.record_type == WSimpleTrackerStorage.RecordType.exception:
+				elif record.record_type == WThreadTrackerInfoStorageProto.TrackerEvents.exception:
 					status = 'Exception raised'
+				elif record.record_type == WThreadTrackerInfoStorageProto.TrackerEvents.wait:
+					status = 'Waited'
+				elif record.record_type == WThreadTrackerInfoStorageProto.TrackerEvents.drop:
+					status = 'Dropped'
 				else:
 					# unknow type
 					continue
@@ -198,6 +204,7 @@ class WSchedulerCommandKit(WCommandKit):
 					record.thread_task.name(),
 					str(record.thread_task.uid()),
 					status,
+					local_datetime_formatter(record.registered_at),
 					record.task_details
 				)
 				count += 1

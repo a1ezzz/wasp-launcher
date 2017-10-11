@@ -28,11 +28,11 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 from wasp_launcher.version import __status__
 
 
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
 from wasp_general.task.scheduler.proto import WScheduleTask, WTaskSourceProto
-from wasp_general.task.thread_tracker import WThreadTracker
-from wasp_general.verify import verify_type
+from wasp_general.task.thread_tracker import WThreadTracker, WScheduleRecordTracker
+from wasp_general.verify import verify_type, verify_value
 
 from wasp_launcher.core import WSyncApp, WAppsGlobals, WThreadTaskLoggingHandler
 
@@ -59,7 +59,7 @@ class WLauncherScheduleTask(WScheduleTask, WThreadTracker, WThreadTaskLoggingHan
 	def description(self):
 		raise NotImplementedError('This method is abstract')
 
-	def task_details(self):
+	def task_details(self, event):
 		return self.description()
 
 	def thread_stopped(self):
@@ -68,6 +68,19 @@ class WLauncherScheduleTask(WScheduleTask, WThreadTracker, WThreadTaskLoggingHan
 	def thread_exception(self, raised_exception):
 		WThreadTracker.thread_exception(self, raised_exception)
 		WThreadTaskLoggingHandler.thread_exception(self, raised_exception)
+
+
+class WLauncherScheduleRecord(WScheduleRecordTracker):
+
+	@verify_type('paranoid', task_group_id=(str, None))
+	@verify_value('paranoid', on_drop=lambda x: x is None or callable(x))
+	@verify_value('paranoid', on_wait=lambda x: x is None or callable(x))
+	@verify_type(task=WLauncherScheduleTask)
+	def __init__(self, task, policy=None, task_group_id=None, on_drop=None, on_wait=None):
+		WScheduleRecordTracker.__init__(
+			self, task, policy=policy, task_group_id=task_group_id, on_drop=on_drop, on_wait=on_wait,
+			track_wait=True, track_drop=True
+		)
 
 
 class WLauncherTaskSource(WTaskSourceProto):
@@ -79,6 +92,11 @@ class WLauncherTaskSource(WTaskSourceProto):
 	# noinspection PyMethodMayBeStatic
 	def description(self):
 		return None
+
+	@abstractmethod
+	@verify_type(schedule_record=WLauncherScheduleRecord)
+	def add_record(self, schedule_record):
+		raise NotImplementedError('This method is abstract')
 
 
 class WSchedulerTaskSourceInstaller(WSyncApp):
