@@ -139,59 +139,6 @@ class WThreadedApp(WRegisteredApp, WThreadTaskLoggingHandler, WThreadTask, metac
 				print('Error! ' + msg)
 
 
-class WBrokerCommand(WEnhancedCommand):
-
-	@abstractmethod
-	def brief_description(self):
-		raise NotImplementedError('This method is abstract')
-
-	def detailed_description(self):
-		info = 'This is help information for "%s" command (%s). ' % (self.command(), self.brief_description())
-
-		arguments_help = self.arguments_help()
-		if len(arguments_help) == 0:
-			info += 'Command does not have arguments\n'
-		else:
-			info += 'Command arguments:\n'
-			for argument_name, argument_description in arguments_help:
-				info += '\t%s - %s\n' % (argument_name, argument_description)
-		return info
-
-
-class WCommandKit(WSyncApp):
-
-	__dependency__ = [
-		'com.binblob.wasp-launcher.apps.broker::init'
-	]
-
-	# noinspection PyMethodParameters
-	@abstractclassmethod
-	def commands(cls):
-		"""
-
-		:return: WCommand
-		"""
-		raise NotImplementedError('This method is abstract')
-
-	@classmethod
-	def config_section(cls):
-		return 'wasp-launcher::applications::%s' % cls.name()
-
-	def is_core(self):
-		return WAppsGlobals.config.getboolean(self.config_section(), 'core')
-
-	def alias(self):
-		section_name = self.config_section()
-		if WAppsGlobals.config.has_option(section_name, 'alias') is True:
-			return WAppsGlobals.config[section_name]['alias']
-
-	def start(self):
-		WAppsGlobals.broker_commands.add_kit(self)
-
-	def stop(self):
-		pass
-
-
 class WWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
 
 	@verify_type('paranoid', request=WWebRequestProto, target_route=WWebTargetRoute, service=WWebService)

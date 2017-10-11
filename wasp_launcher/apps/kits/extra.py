@@ -27,7 +27,7 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
-from wasp_launcher.core import WCommandKit
+from wasp_launcher.core_broker import WCommandKit
 
 
 class WModelDBCommandKit(WCommandKit):

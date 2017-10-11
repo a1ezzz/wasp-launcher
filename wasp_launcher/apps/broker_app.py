@@ -28,8 +28,9 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 from wasp_launcher.version import __status__
 
 from wasp_launcher.core import WSyncApp, WAppsGlobals
+from wasp_launcher.core_broker import WCommandKit
 from wasp_launcher.apps.broker_basic import WLauncherBrokerBasicTask
-from wasp_launcher.apps.broker_commands import WBrokerCommandManager, WCommandKit
+from wasp_launcher.apps.broker_commands import WBrokerCommandManager
 
 
 class WLauncherBrokerTCPTask(WLauncherBrokerBasicTask):

@@ -32,7 +32,8 @@ from wasp_general.cli.formatter import WConsoleTableFormatter, na_formatter, loc
 from wasp_general.command.command import WCommandResult
 from wasp_general.task.thread_tracker import WThreadTrackerInfoStorageProto
 
-from wasp_launcher.core import WCommandKit, WBrokerCommand, WAppsGlobals
+from wasp_launcher.core import WAppsGlobals
+from wasp_launcher.core_broker import WCommandKit, WBrokerCommand
 
 
 class WSchedulerCommandKit(WCommandKit):

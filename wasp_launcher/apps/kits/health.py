@@ -33,7 +33,7 @@ from wasp_general.verify import verify_type
 from wasp_general.cli.formatter import WConsoleTableFormatter
 from wasp_general.command.command import WCommandResult
 
-from wasp_launcher.core import WCommandKit, WBrokerCommand
+from wasp_launcher.core_broker import WCommandKit, WBrokerCommand
 
 
 class WHealthCommandKit(WCommandKit):

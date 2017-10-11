@@ -36,7 +36,7 @@ from wasp_general.command.command import WCommandResult, WCommandProto, WCommand
 from wasp_general.command.command import WCommandSelector, WCommandPrioritizedSelector, WCommandSet
 from wasp_general.command.context import WContextProto, WContext, WCommandContextAdapter, WCommandContext
 
-from wasp_launcher.core import WCommandKit, WBrokerCommand
+from wasp_launcher.core_broker import WCommandKit, WBrokerCommand
 
 
 class WBrokerCommandManager:
