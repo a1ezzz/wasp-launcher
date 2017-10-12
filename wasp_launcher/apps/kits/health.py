@@ -62,7 +62,7 @@ class WHealthCommandKit(WCommandKit):
 
 	@classmethod
 	def description(cls):
-		return 'general or launcher-wide commands'
+		return 'shows launcher and application "health" information'
 
 	@classmethod
 	def commands(cls):
