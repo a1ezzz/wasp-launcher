@@ -45,8 +45,8 @@ from wasp_general.network.messenger.layers import WMessengerOnionCoderLayerProto
 from wasp_general.network.messenger.envelope import WMessengerEnvelope
 from wasp_general.network.messenger.session import WMessengerOnionSessionFlow, WMessengerOnionSession
 
-from wasp_launcher.apps.broker_basic import WBrokerClientTask, WManagementCommandPackerLayer
-from wasp_launcher.apps.broker_basic import WManagementResultPackerLayer
+from wasp_launcher.apps.broker.basic import WBrokerClientTask, WManagementCommandPackerLayer
+from wasp_launcher.apps.broker.basic import WManagementResultPackerLayer
 from wasp_launcher.core import WAppsGlobals
 
 

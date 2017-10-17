@@ -32,7 +32,7 @@ from wasp_general.thread import WCriticalResource
 
 from wasp_launcher.core import WSyncApp, WAppsGlobals
 from wasp_launcher.core_broker import WCommandKit
-from wasp_launcher.apps.broker_basic import WLauncherBrokerBasicTask
+from wasp_launcher.apps.broker.basic import WLauncherBrokerBasicTask
 from wasp_launcher.apps.broker.command_manager import WBrokerCommandManager
 
 
