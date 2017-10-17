@@ -252,5 +252,7 @@ class WAppsGlobals:
 	""" Brokers management commands
 	"""
 
+	broker_calls = None
+
 	scheduler = None
 	scheduler_history = None

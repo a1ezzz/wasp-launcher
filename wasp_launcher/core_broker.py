@@ -116,7 +116,7 @@ class WResponsiveTask:
 	def task_source(self):
 		return self.__task_source
 
-	def add_task(self):
+	def submit_task(self):
 		scheduler_name = self.scheduler_instance()
 		task_source_name = self.task_source()
 		task_source = WAppsGlobals.scheduler.task_source(task_source_name, scheduler_name)
@@ -128,7 +128,9 @@ class WResponsiveTask:
 
 		schedule_record = self.schedule_record()
 		task_uid = schedule_record.task_uid()
-
+		if WAppsGlobals.broker_calls is None:
+			WAppsGlobals.log.error('Unable to register task "%s" in calls registry')
+		else:
+			WAppsGlobals.broker_calls.add_task(task_uid, scheduler_name)
 		task_source.add_record(schedule_record)
-		uid = str(task_uid)
-		return WCommandResult(output='Task submitted. Task id: %s' % uid, broker_last_command=uid)
+		return WCommandResult(output='Task submitted. Task id: %s' % task_uid, broker_last_task=task_uid)

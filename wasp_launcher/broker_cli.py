@@ -56,7 +56,7 @@ class WBrokerClientCommandSet(WCommandSet):
 	def __init__(self, console):
 		WCommandSet.__init__(
 			self, command_selector=WCommandPrioritizedSelector(),
-			tracked_vars=('command_context', 'broker_last_command')
+			tracked_vars=('command_context', 'broker_last_task', 'broker_selected_task')
 		)
 		self.commands().add(WExitCommand(console))
 		self.commands().add(WEmptyCommand())

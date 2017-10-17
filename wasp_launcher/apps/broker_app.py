@@ -27,6 +27,9 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
+from wasp_general.verify import verify_type
+from wasp_general.thread import WCriticalResource
+
 from wasp_launcher.core import WSyncApp, WAppsGlobals
 from wasp_launcher.core_broker import WCommandKit
 from wasp_launcher.apps.broker_basic import WLauncherBrokerBasicTask
@@ -52,6 +55,43 @@ class WLauncherBrokerIPCTask(WLauncherBrokerBasicTask):
 	def connection(self):
 		named_socket = WAppsGlobals.config['wasp-launcher::broker::connection']['named_socket_path']
 		return 'ipc://%s' % named_socket
+
+
+class WBrokerCallsRegistry(WCriticalResource):
+	# Task creation latency should be small as possible, so only some checks are made. There is no check
+	# if different tasks have the same uid. It may be done outside of this class
+
+	def __init__(self):
+		WCriticalResource.__init__(self)
+		self.__registry = []
+
+	@verify_type('paranoid', uid=str, scheduler=(str, None))
+	def add_task(self, uid, scheduler):
+		self.__add_task(uid, scheduler)
+
+	@WCriticalResource.critical_section()
+	@verify_type(uid=str, scheduler=(str, None))
+	def __add_task(self, uid, scheduler):
+		self.__registry.append((uid, scheduler))
+
+	def fetch_uids(self):
+		return tuple(map(lambda x: x[0], self))
+
+	@verify_type(uid=str)
+	def get_scheduler(self, uid):
+		for record in self:
+			if record[0] == uid:
+				return record[1]
+		raise ValueError('Invalid uid is specified')
+
+	def __iter__(self):
+		result = self.__clone()
+		while len(result) > 0:
+			yield result.pop(-1)
+
+	@WCriticalResource.critical_section()
+	def __clone(self):
+		return self.__registry.copy()
 
 
 class WBrokerAppTasks:
@@ -82,11 +122,15 @@ class WBrokerInitApp(WSyncApp):
 		if WAppsGlobals.broker_commands is None:
 			WAppsGlobals.broker_commands = WBrokerCommandManager()
 
+		if WAppsGlobals.broker_calls is None:
+			WAppsGlobals.broker_calls = WBrokerCallsRegistry()
+
 	def stop(self):
 		WAppsGlobals.log.info('Broker is finalizing')
 		WBrokerAppTasks.__broker_tcp_task__ = None
 		WBrokerAppTasks.__broker_ipc_task__ = None
 		WAppsGlobals.broker_commands = None
+		WAppsGlobals.broker_calls = None
 
 
 class WBrokerApp(WSyncApp):
