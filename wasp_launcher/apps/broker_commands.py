@@ -32,11 +32,12 @@ from enum import Enum
 
 from wasp_general.verify import verify_type, verify_value
 
-from wasp_general.command.command import WCommandResult, WCommandProto, WCommand, WReduceCommand
-from wasp_general.command.command import WCommandSelector, WCommandPrioritizedSelector, WCommandSet
+from wasp_general.command.command import WCommandResult, WCommandProto, WReduceCommand, WCommandSelector
+from wasp_general.command.command import WCommandPrioritizedSelector, WCommandSet
 from wasp_general.command.context import WContextProto, WContext, WCommandContextAdapter, WCommandContext
 
 from wasp_launcher.core_broker import WCommandKit, WBrokerCommand
+from wasp_launcher.apps.broker.internal_commands import WBrokerInternalCommandSet
 
 
 class WBrokerCommandManager:
@@ -59,24 +60,6 @@ class WBrokerCommandManager:
 		| - - - - > double dot (WCommand)
 	"""
 
-	__general_usage_help__ = """It is a help system. It can be used in any context. It can be called directly for particular help section like:
-	- help <[core|apps] <[module name or alias] <command>>>
-	- [core|apps] help
-	- [core|apps] [module name or alias] help
-	- [core|apps] [module name or alias] help [command]
-
-Or it can be called inside a context by calling 'help', in that case - result will be different for different context
-
-You can change current context by calling a command:
-	- [core|apps] <[module name or alias]>
-
-Inside a context you can switch to main context with a single dot command  ('.') or to one-level higher context with \
-double dot command ('..').
-
-You can call a specific command in any context by the following pattern:
-	- [core|apps] [module or alias] [command] <command_arg1> <command_arg2...>
-"""
-
 	__general_usage_tip__ = 'For detailed information about command line usage - type "help help"\n'
 
 	__main_context_help_header__ = 'This is a main or root context. Suitable sub-context are:\n'
@@ -88,57 +71,13 @@ You can call a specific command in any context by the following pattern:
 		apps = 'apps'
 
 	__help_info__ = {
-		MainSections.core: {
-			'section_name': 'core',
-			'section_help_header': """This is a 'core' context. Context for modules and commands that \
-interact with "cores". You are able to switch to next context:
+		MainSections.core: """This is a 'core' context. Context for commands that interact with important
+built-in applications. You are able to switch to next context:
+""",
+		MainSections.apps: """This is a 'apps' context. Context for commands that interact with user-defined
+applications. You are able to switch to next context:
 """
-		},
-		MainSections.apps: {
-			'section_name': 'apps',
-			'section_help_header': """This is a 'apps' context. Context for modules and commands that \
-interact with "apps". You are able to switch to next context:
-"""
-		}
 	}
-
-	class DoubleDotCommand(WCommand):
-
-		def __init__(self):
-			WCommand.__init__(self, '..')
-
-		@verify_type('paranoid', command_tokens=str)
-		@verify_type(command_context=(WContextProto, None))
-		def _exec(self, *command_tokens, command_context=None, **command_env):
-			if command_context is not None:
-				return WCommandResult(command_context=command_context.linked_context())
-			return WCommandResult(command_context=None)
-
-	class DotCommand(WCommand):
-
-		def __init__(self):
-			WCommand.__init__(self, '.')
-
-		@verify_type('paranoid', command_tokens=str, command_context=(WContextProto, None))
-		def _exec(self, *command_tokens, command_context=None, **command_env):
-			return WCommandResult(command_context=None)
-
-	class GeneralUsageHelpCommand(WCommandProto):
-
-		def __init__(self):
-			WCommandProto.__init__(self)
-
-		@verify_type(command_tokens=str)
-		def match(self, *command_tokens, **command_env):
-			if command_tokens == ('help', 'help'):
-				return True
-			return False
-
-		@verify_type('paranoid', command_tokens=str)
-		def exec(self, *command_tokens, **command_env):
-			if self.match(*command_tokens, **command_env) is False:
-				raise RuntimeError('Invalid tokens')
-			return WCommandResult(output=WBrokerCommandManager.__general_usage_help__)
 
 	class ContextHelpCommand(WCommandProto):
 
@@ -287,9 +226,8 @@ interact with "apps". You are able to switch to next context:
 				raise TypeError('Invalid section type')
 
 			self.__main_command_set = main_command_set
-			section_help = WBrokerCommandManager.__help_info__[section]
-			self.__section_name = section_help['section_name']
-			self.__section_help_header = section_help['section_help_header']
+			self.__section_name = section.value
+			self.__section_help_header = WBrokerCommandManager.__help_info__[section]
 			self.__kits = []
 			self.__total_commands = 0
 
@@ -362,7 +300,7 @@ interact with "apps". You are able to switch to next context:
 			self.add_prioritized(WReduceCommand(app_commands, *kit_names), 30)
 
 	def __init__(self):
-		self.__internal_set = WCommandSet(command_selector=WCommandPrioritizedSelector())
+		self.__internal_set = WBrokerInternalCommandSet()
 		self.__main_sections = {}
 
 		internal_command_set = self.__internal_set.commands()
@@ -371,14 +309,9 @@ interact with "apps". You are able to switch to next context:
 			self.__main_sections[section] = WBrokerCommandManager.BrokerCommandSet(
 				internal_command_set, section
 			)
-			section_name = WBrokerCommandManager.__help_info__[section]['section_name']
+			section_name = section.value
 			help_info += ('\t - %s\n' % section_name)
 		help_info += WBrokerCommandManager.__general_usage_tip__
-
-		self.__internal_set.commands().add_prioritized(WBrokerCommandManager.DotCommand(), 10)
-		self.__internal_set.commands().add_prioritized(WBrokerCommandManager.DoubleDotCommand(), 10)
-
-		self.__internal_set.commands().add_prioritized(WBrokerCommandManager.GeneralUsageHelpCommand(), 15)
 
 		context_help_cmd = WBrokerCommandManager.ContextHelpCommand(lambda: help_info, internal_command_set)
 		self.__internal_set.commands().add_prioritized(context_help_cmd, 50)
