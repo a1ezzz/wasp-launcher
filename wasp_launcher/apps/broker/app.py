@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/apps/broker_app.py
+# wasp_launcher/apps/broker/app.py
 #
 # Copyright (C) 2017 the wasp-launcher authors and contributors
 # <see AUTHORS file>
