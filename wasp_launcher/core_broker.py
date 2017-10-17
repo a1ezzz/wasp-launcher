@@ -134,3 +134,39 @@ class WResponsiveTask:
 			WAppsGlobals.broker_calls.add_task(task_uid, scheduler_name)
 		task_source.add_record(schedule_record)
 		return WCommandResult(output='Task submitted. Task id: %s' % task_uid, broker_last_task=task_uid)
+
+
+# noinspection PyAbstractClass
+class WResponsiveBrokerCommand(WBrokerCommand):
+
+	__command__ = None
+	__arguments__ = []
+	__argument_relationships = None
+
+	__scheduler_instance__ = None
+	__task_source_name__ = None
+
+	def __init__(self):
+		if self.__command__ is None:
+			raise ValueError('__command__ must be redefined in a subclass')
+
+		WBrokerCommand.__init__(
+			self, self.__command__, *self.__arguments__, relationships=self.__argument_relationships
+		)
+		if self.__task_source_name__ is None:
+			raise ValueError('__task_source_name__ must be redefined in a subclass')
+
+	def _exec(self, command_arguments, **command_env):
+		task = self.create_task(command_arguments, **command_env)
+		rt = WResponsiveTask(task, self.__task_source_name__, scheduler_instance=self.__scheduler_instance__)
+		return rt.submit_task()
+
+	@abstractmethod
+	def create_task(self, command_arguments, **command_env):
+		"""
+
+		:param command_arguments:
+		:param command_env:
+		:return: WLauncherScheduleTask
+		"""
+		raise NotImplementedError('This method is abstract')
