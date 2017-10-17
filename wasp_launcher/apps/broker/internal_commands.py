@@ -283,8 +283,8 @@ the moment. Here they are:
 
 		@classmethod
 		def __details(cls, task_uid, task, scheduler_name):
-			header = 'Task with uid "%s" selected.\n' % task_uid
-			header += 'Task was registered on scheduler: %s\n' % na_formatter(
+			output = 'Task with uid "%s" selected.\n' % task_uid
+			output += 'Task was registered on scheduler: %s\n' % na_formatter(
 				scheduler_name, none_value='<default instance>'
 			)
 
@@ -295,13 +295,17 @@ the moment. Here they are:
 				record_date = local_datetime_formatter(event_record.registered_at)
 
 				if event_record.record_type == WTrackerEvents.drop:
-					header += 'Task was dropped at %s\n' % record_date
+					output += 'Task was dropped at %s\n' % record_date
 				elif event_record.record_type == WTrackerEvents.wait:
-					header += 'Task has been waited since %s\n' % record_date
+					output += 'Task has been waited since %s\n' % record_date
 				elif event_record.record_type == WTrackerEvents.start:
-					header += 'Task has been started at %s\n' % record_date
+					output += 'Task has been started at %s\n' % record_date
 
-			return WCommandResult(output=header)
+			task_status = task.state_details()
+			if task_status is not None:
+				output += '\n' + task_status
+
+			return WCommandResult(output=output)
 
 		@classmethod
 		def __stop(cls, task_uid, task, scheduler_name):
