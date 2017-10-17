@@ -150,7 +150,7 @@ class WSchedulerCommandKit(WCommandKit):
 				count += len(running_records)
 
 				for running_record in running_records:
-					uid = str(running_record.task_uid())
+					uid = running_record.task_uid()
 					scheduled_task = running_record.task()
 					task_name = scheduled_task.name()
 					thread_name = na_formatter(scheduled_task.thread_name())
@@ -203,7 +203,7 @@ class WSchedulerCommandKit(WCommandKit):
 
 				table_formatter.add_row(
 					record.thread_task.name(),
-					str(record.thread_task.uid()),
+					record.thread_task.uid(),
 					status,
 					local_datetime_formatter(record.registered_at),
 					record.task_details

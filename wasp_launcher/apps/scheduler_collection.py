@@ -57,7 +57,7 @@ class WLauncherWatchdog(WThreadTaskLoggingHandler, WSchedulerWatchdog):
 			WSchedulerWatchdog.stop(self)
 		except WThreadJoiningTimeoutError:
 			task_uid = self.record().task_uid()
-			WAppsGlobals.log.error('Unable to stop scheduled task gracefully. Task id: %s' % str(task_uid))
+			WAppsGlobals.log.error('Unable to stop scheduled task gracefully. Task id: %s' % task_uid)
 
 
 class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):

@@ -48,6 +48,9 @@ class WLauncherScheduleTask(WScheduleTask, WThreadTracker, WThreadTaskLoggingHan
 		WThreadTracker.__init__(self)
 		WThreadTaskLoggingHandler.__init__(self)
 
+	def uid(self):
+		return str(WScheduleTask.uid(self))
+
 	def tracker_storage(self):
 		return WAppsGlobals.scheduler_history
 
