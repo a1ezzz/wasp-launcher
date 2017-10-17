@@ -56,6 +56,10 @@ class WLauncherScheduleTask(WScheduleTask, WThreadTracker, WThreadTaskLoggingHan
 
 	@abstractmethod
 	def name(self):
+		""" Common name for the same set of tasks
+
+		:return: str
+		"""
 		raise NotImplementedError('This method is abstract')
 
 	@abstractmethod
