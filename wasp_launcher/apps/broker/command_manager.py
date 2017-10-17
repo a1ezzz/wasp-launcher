@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# wasp_launcher/apps/broker_commands.py
+# wasp_launcher/apps/broker/command_manager.py
 #
 # Copyright (C) 2017 the wasp-launcher authors and contributors
 # <see AUTHORS file>
@@ -33,7 +33,7 @@ from enum import Enum
 from wasp_general.verify import verify_type, verify_value
 
 from wasp_general.command.command import WCommandResult, WCommandProto, WReduceCommand, WCommandSelector
-from wasp_general.command.command import WCommandPrioritizedSelector, WCommandSet
+from wasp_general.command.command import WCommandPrioritizedSelector
 from wasp_general.command.context import WContextProto, WContext, WCommandContextAdapter, WCommandContext
 
 from wasp_launcher.core_broker import WCommandKit, WBrokerCommand
@@ -42,7 +42,7 @@ from wasp_launcher.apps.broker.internal_commands import WBrokerInternalCommandSe
 
 class WBrokerCommandManager:
 	"""
-	WBrokerCommandManager.__internal_set - static help information
+	WBrokerCommandManager.__internal_set (WBrokerInternalCommandSet) - static help information
 		|
 		| - - - - > core_set (BrokerCommandSet(WCommandPrioritizedSelector)) - static help information
 		|                 | - - - > ... (WCommandPrioritizedSelector) - dynamic help information
@@ -55,9 +55,6 @@ class WBrokerCommandManager:
 		|                 |          | - - - > (WCommand) - dynamic help information
 		|                 |          | - - - > (WCommand) - dynamic help information
 		|                 | - - - > ... (WCommandPrioritizedSelector) - dynamic help information
-		|
-		| - - - - > dot (WCommand)
-		| - - - - > double dot (WCommand)
 	"""
 
 	__general_usage_tip__ = 'For detailed information about command line usage - type "help help"\n'
