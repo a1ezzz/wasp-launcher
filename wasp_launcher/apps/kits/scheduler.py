@@ -30,7 +30,7 @@ from wasp_launcher.version import __status__
 from wasp_general.verify import verify_type
 from wasp_general.cli.formatter import WConsoleTableFormatter, na_formatter, local_datetime_formatter
 from wasp_general.command.command import WCommandResult
-from wasp_general.task.thread_tracker import WThreadTrackerInfoStorageProto
+from wasp_general.task.thread_tracker import WTrackerEvents
 
 from wasp_launcher.core import WAppsGlobals
 from wasp_launcher.core_broker import WCommandKit, WBrokerCommand
@@ -154,7 +154,7 @@ class WSchedulerCommandKit(WCommandKit):
 					scheduled_task = running_record.task()
 					task_name = scheduled_task.name()
 					thread_name = na_formatter(scheduled_task.thread_name())
-					task_description = scheduled_task.description()
+					task_description = scheduled_task.brief_description()
 
 					table_formatter.add_row(
 						instance_name, task_name, uid, thread_name, task_description
@@ -185,17 +185,17 @@ class WSchedulerCommandKit(WCommandKit):
 
 			for record in WAppsGlobals.scheduler_history:
 
-				if record.record_type == WThreadTrackerInfoStorageProto.TrackerEvents.start:
+				if record.record_type == WTrackerEvents.start:
 					status = 'Started'
-				elif record.record_type == WThreadTrackerInfoStorageProto.TrackerEvents.stop:
+				elif record.record_type == WTrackerEvents.stop:
 					status = 'Stopped'
-				elif record.record_type == WThreadTrackerInfoStorageProto.TrackerEvents.termination:
+				elif record.record_type == WTrackerEvents.termination:
 					status = 'Terminated'
-				elif record.record_type == WThreadTrackerInfoStorageProto.TrackerEvents.exception:
+				elif record.record_type == WTrackerEvents.exception:
 					status = 'Exception raised'
-				elif record.record_type == WThreadTrackerInfoStorageProto.TrackerEvents.wait:
+				elif record.record_type == WTrackerEvents.wait:
 					status = 'Waited'
-				elif record.record_type == WThreadTrackerInfoStorageProto.TrackerEvents.drop:
+				elif record.record_type == WTrackerEvents.drop:
 					status = 'Dropped'
 				else:
 					# unknow type
@@ -206,7 +206,7 @@ class WSchedulerCommandKit(WCommandKit):
 					record.thread_task.uid(),
 					status,
 					local_datetime_formatter(record.registered_at),
-					record.task_details
+					record.thread_task.brief_description()
 				)
 				count += 1
 

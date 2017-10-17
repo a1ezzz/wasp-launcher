@@ -59,11 +59,30 @@ class WLauncherScheduleTask(WScheduleTask, WThreadTracker, WThreadTaskLoggingHan
 		raise NotImplementedError('This method is abstract')
 
 	@abstractmethod
-	def description(self):
+	def brief_description(self):
+		""" General/brief information about this task. That is used for information user about task purposes
+
+		:return: str
+		"""
 		raise NotImplementedError('This method is abstract')
 
-	def task_details(self, event):
-		return self.description()
+	def event_details(self, event):
+		""" Return information about the given tracking event
+
+		that may
+
+		:param event:
+		:return:
+		"""
+		return None
+
+	def state_details(self):
+		""" Return detailed information about current task state (it is presumed that this information
+		is available when task is running only)
+
+		:return: str or None
+		"""
+		return None
 
 	def thread_stopped(self):
 		WThreadTracker.thread_stopped(self)

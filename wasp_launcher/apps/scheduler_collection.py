@@ -84,8 +84,8 @@ class WLauncherConfigTasks(WLauncherTaskSource, WCronTaskSource):
 		def name(self):
 			return 'Executing task "%s" from configuration' % self.__option
 
-		def description(self):
-			return 'Requested command: ' + self.__command
+		def brief_description(self):
+			return 'Task generated from launcher configuration. Requested command: ' + self.__command
 
 	__task_source_name__ = 'com.binblob.wasp-launcher.app.scheduler.config'
 
