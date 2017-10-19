@@ -44,8 +44,8 @@ class WLauncherScheduleTask(WScheduleTask, WThreadTracker, WThreadTaskLoggingHan
 	"""
 
 	def __init__(self, thread_join_timeout=None):
-		WScheduleTask.__init__(self, thread_join_timeout=thread_join_timeout)
 		WThreadTracker.__init__(self)
+		WScheduleTask.__init__(self, thread_join_timeout=thread_join_timeout)
 		WThreadTaskLoggingHandler.__init__(self)
 
 	def uid(self):
