@@ -204,7 +204,7 @@ applications. You are able to switch to next context:
 	class BrokerContextAdapter(WCommandContextAdapter):
 
 		@verify_type(command_tokens=str, command_context=(WContextProto, None))
-		def adapt(self, *command_tokens, command_context=None):
+		def adapt(self, *command_tokens, command_context=None, **command_env):
 			if command_context is None:
 				return command_tokens
 
