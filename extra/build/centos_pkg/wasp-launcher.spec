@@ -29,6 +29,10 @@ some python library
 
 %install
 %py3_install
+cp wasp-launcher.py %{buildroot}/usr/bin
+cp wasp-launcher-cli.py %{buildroot}/usr/bin
 
 %files
 %{python3_sitelib}/*
+/usr/bin/wasp-launcher.py
+/usr/bin/wasp-launcher-cli.py
