@@ -34,7 +34,8 @@ import uuid
 from wasp_general.verify import verify_type, verify_value
 
 from wasp_general.network.web.service import WWebRoute
-from wasp_general.network.web.template import WWebTemplateResponse, WWebTemplateText
+from wasp_general.template import WTemplateText
+from wasp_general.network.web.template_response import WWebTemplateResponse
 
 from wasp_launcher.core import WWebApp, WWebPresenter
 from wasp_launcher.apps.web_debugger import WWebAppDebuggerDatastore
@@ -101,7 +102,7 @@ class WDebugErrorPresenter(WErrorPresenter):
 			link = '/apps.wasp-debug.debug/session/%s' % session
 			context['error_messages']['Debug'] = '<A href="%s">Debug information</A>' % link
 
-		return WWebTemplateResponse(WWebTemplateText(self.__error_template__()), context=context)
+		return WWebTemplateResponse(WTemplateText(self.__error_template__()), context=context)
 
 	@classmethod
 	def __presenter_name__(cls):

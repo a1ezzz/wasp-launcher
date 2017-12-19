@@ -39,9 +39,9 @@ from tempfile import TemporaryDirectory
 
 from wasp_general.verify import verify_type, verify_subclass, verify_value
 
-from wasp_general.network.web.template import WWebTemplateFile, WWebTemplate, WWebTemplateText, WWebTemplateLookup
+from wasp_general.template import WTemplateFile, WTemplate, WTemplateText, WTemplateLookup
 
-from wasp_launcher.core import WSyncApp, WWebApp, WAppsGlobals
+from wasp_launcher.core import WSyncApp, WTemplatesSource, WAppsGlobals
 
 
 class WTemplateSearcherProto(metaclass=ABCMeta):
@@ -84,8 +84,8 @@ class WBasicTemplateSearcher(WTemplateSearcherProto):
 		search = self.search(view_path[0])
 		if search is not None:
 			if isinstance(search, WTemplateSearcherProto) is True:
-				return search.get(view_path[1:])
-			elif isinstance(search, WWebTemplate) is True:
+				return search.get(view_path[1:], **template_args)
+			elif isinstance(search, WTemplate) is True:
 				return search
 			raise RuntimeError('Invalid lookup object')
 
@@ -96,36 +96,36 @@ class WBasicTemplateSearcher(WTemplateSearcherProto):
 		return self.get(view_path.split(WTemplateSearcherProto.__separator__))
 
 
-class WAppTemplateSearcherBase(WBasicTemplateSearcher, metaclass=ABCMeta):
+class WTemplateSearcherBase(WBasicTemplateSearcher, metaclass=ABCMeta):
 
 	class Handler(WBasicTemplateSearcher, metaclass=ABCMeta):
 
-		@verify_subclass(app_description=WWebApp)
-		def __init__(self, app_description):
+		@verify_subclass(template_source=WTemplatesSource)
+		def __init__(self, template_source):
 			WBasicTemplateSearcher.__init__(self)
-			self.__app_description = app_description
+			self.__template_source = template_source
 
-		def app_description(self):
-			return self.__app_description
+		def template_source(self):
+			return self.__template_source
 
-	@verify_type(app=WWebApp)
-	def add_app(self, app):
-		obj = self.handler_class()(app.__class__)
-		self.replace(app.name(), obj)
+	@verify_type(template_source=WTemplatesSource)
+	def add_template_source(self, template_source):
+		obj = self.handler_class()(template_source.__class__)
+		self.replace(template_source.name(), obj)
 
 	@abstractmethod
 	def handler_class(self):
 		raise NotImplementedError('This method is abstract')
 
 
-class WSearcherFileHandler(WAppTemplateSearcherBase.Handler):
+class WSearcherFileHandler(WTemplateSearcherBase.Handler):
 
-	def app_directory(self):
+	def template_directory(self):
 		return None
 
 	def filename(self, view_path):
-		app_dir = self.app_directory()
-		return os.path.join(app_dir, *view_path) if app_dir is not None else None
+		template_dir = self.template_directory()
+		return os.path.join(template_dir, *view_path) if template_dir is not None else None
 
 	def has(self, view_name):
 
@@ -143,36 +143,36 @@ class WSearcherFileHandler(WAppTemplateSearcherBase.Handler):
 
 		path = self.filename(view_path)
 		if os.path.isfile(path):
-			return WWebTemplateFile(path, **template_args)
+			return WTemplateFile(path, **template_args)
 		else:
 			raise TemplateLookupException('No such template: ' + str(view_path))
 
 
-class WMakoTemplateSearcher(WAppTemplateSearcherBase):
+class WMakoTemplateSearcher(WTemplateSearcherBase):
 
 	class Handler(WSearcherFileHandler):
 
-		def app_directory(self):
-			return self.app_description().template_path()
+		def template_directory(self):
+			return self.template_source().template_path()
 
 	def handler_class(self):
 		return WMakoTemplateSearcher.Handler
 
 
-class WStaticFileSearcher(WAppTemplateSearcherBase):
+class WStaticFileSearcher(WTemplateSearcherBase):
 
 	class Handler(WSearcherFileHandler):
 
-		def app_directory(self):
-			return self.app_description().static_files_path()
+		def template_directory(self):
+			return self.template_source().static_files_path()
 
 	def handler_class(self):
 		return WStaticFileSearcher.Handler
 
 
-class WPyTemplateSearcher(WAppTemplateSearcherBase):
+class WPyTemplateSearcher(WTemplateSearcherBase):
 
-	class PyHandler(WAppTemplateSearcherBase.Handler):
+	class PyHandler(WTemplateSearcherBase.Handler):
 
 		class PyModuleHandler(WBasicTemplateSearcher):
 			def __init__(self, module):
@@ -192,14 +192,14 @@ class WPyTemplateSearcher(WAppTemplateSearcherBase):
 
 				fn = self.search(view_path[0])
 				if isfunction(fn):
-					return WWebTemplateText(fn(), **template_args)
+					return WTemplateText(fn(), **template_args)
 				elif isclass(fn):
-					return WWebTemplateText(fn()(), **template_args)
+					return WTemplateText(fn()(), **template_args)
 
 				raise TemplateLookupException('No such template: %s' % (str(view_path)))
 
 		def module_name(self, view_name):
-			m = self.app_description().py_templates_package()
+			m = self.template_source().py_templates_package()
 			if m is not None:
 				return m + '.' + view_name
 			raise TemplateLookupException('No such template: %s' % view_name)
@@ -252,24 +252,25 @@ class WAgentTemplateSearcher(TemplateCollection, WBasicTemplateSearcher):
 		if len(config_encoding) > 0:
 			self._template_encoding = config_encoding
 
-	@verify_type(app=WWebApp)
-	def add_app(self, app):
-		self.__mako_searcher.add_app(app)
-		self.__static_file_searcher.add_app(app)
-		self.__py_searcher.add_app(app)
+	@verify_type(template_source=WTemplatesSource)
+	def add_template_source(self, template_source):
+		self.__mako_searcher.add_template_source(template_source)
+		self.__static_file_searcher.add_template_source(template_source)
+		self.__py_searcher.add_template_source(template_source)
 
 	@verify_type(uri=str)
 	@verify_value(uri=lambda x: len(x) > 0)
 	def get_template(self, uri, relativeto=None):
 		return self.get(
 			uri.strip().split(WTemplateSearcherProto.__separator__),
-			lookup_obj=self,
+			lookup=self,
 			module_directory=self._module_directory.name,
-			template_encoding=self._template_encoding
-		)
+			input_encoding=self._template_encoding
+		).template()
 
 	def lookup(self, uri):
-		return WWebTemplateLookup(uri, self)
+		result = WTemplateLookup(uri, self)
+		return result
 
 
 class WTemplateLookupApp(WSyncApp):

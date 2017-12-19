@@ -29,8 +29,9 @@ from wasp_launcher.version import __status__
 
 from wasp_general.verify import verify_type
 
-from wasp_general.command.command import WCommandResult, WCommand, WCommandSet, WCommandPrioritizedSelector
+from wasp_general.command.command import WCommand, WCommandSet, WCommandPrioritizedSelector
 from wasp_general.command.context import WCommandContext, WContextProto, WCommandContextAdapter
+from wasp_general.command.result import WPlainCommandResult
 
 from wasp_general.cli.cli import WConsoleBase
 from wasp_general.cli.curses import WCursesConsole
@@ -42,11 +43,12 @@ from wasp_general.network.messenger.proto import WMessengerOnionSessionFlowProto
 from wasp_general.network.messenger.proto import WMessengerEnvelopeProto, WMessengerOnionSessionProto
 from wasp_general.network.messenger.onion import WMessengerOnion
 from wasp_general.network.messenger.layers import WMessengerOnionCoderLayerProto, WMessengerOnionPackerLayerProto
-from wasp_general.network.messenger.envelope import WMessengerEnvelope
+from wasp_general.network.messenger.composer import WMessengerComposerLayer
+from wasp_general.network.messenger.envelope import WMessengerEnvelope, WMessengerDictEnvelope
 from wasp_general.network.messenger.session import WMessengerOnionSessionFlow, WMessengerOnionSession
 
-from wasp_launcher.apps.broker.basic import WBrokerClientTask, WManagementCommandPackerLayer
-from wasp_launcher.apps.broker.basic import WManagementResultPackerLayer
+from wasp_launcher.apps.broker.basic import WBrokerClientTask
+from wasp_launcher.apps.broker.composer import WCommandRequest, WLauncherComposerFactory
 from wasp_launcher.core import WAppsGlobals
 
 
@@ -165,9 +167,8 @@ class WBrokerCommandProxy(WCommandContext):
 
 		self.__onion = WMessengerOnion()
 		self.__console_output_layer = WBrokerCommandProxy.ConsoleOutputLayer(self.__console)
-		self.__onion.add_layers(
-			self.__console_output_layer, WManagementCommandPackerLayer(), WManagementResultPackerLayer()
-		)
+		self.__onion.add_layers(self.__console_output_layer)
+		self.__composer_factory = WLauncherComposerFactory()
 
 	@verify_type(command_tokens=str)
 	def match(self, *command_tokens, **command_env):
@@ -182,9 +183,9 @@ class WBrokerCommandProxy(WCommandContext):
 
 		session_flow = WMessengerOnionSessionFlow.sequence_flow(
 			WMessengerOnionSessionFlowProto.IteratorInfo(
-				'com.binblob.wasp-launcher.broker-management-command-packer',
-				mode=WMessengerOnionPackerLayerProto.Mode.pack,
-				command=WManagementCommandPackerLayer.Command(*command_tokens, **command_env)
+				'com.binblob.wasp-general.composer-packer-layer',
+				mode=WMessengerComposerLayer.Mode.decompose,
+				composer_factory=self.__composer_factory
 			),
 			WMessengerOnionSessionFlowProto.IteratorInfo(
 				'com.binblob.wasp-general.json-packer-layer',
@@ -223,16 +224,22 @@ class WBrokerCommandProxy(WCommandContext):
 				mode=WMessengerOnionPackerLayerProto.Mode.unpack
 			),
 			WMessengerOnionSessionFlowProto.IteratorInfo(
-				'com.binblob.wasp-launcher.broker-management-result-packer',
-				mode=WMessengerOnionPackerLayerProto.Mode.unpack
+				"com.binblob.wasp-general.simple-casting-layer",
+				from_envelope=WMessengerEnvelope, to_envelope=WMessengerDictEnvelope
+			),
+			WMessengerOnionSessionFlowProto.IteratorInfo(
+				'com.binblob.wasp-general.composer-packer-layer',
+				mode=WMessengerComposerLayer.Mode.compose,
+				composer_factory=self.__composer_factory
 			)
 		)
 
 		session = WMessengerOnionSession(self.__onion, session_flow)
 		try:
-			envelope = session.process(WMessengerEnvelope(None))
+			command_request = WCommandRequest(*command_tokens, **command_env)
+			envelope = session.process(WMessengerEnvelope(command_request))
 			return envelope.message()
 		except TimeoutError:
 			self.__console_output_layer.undo_feedback()
 			broker.discard_queue_messages()
-			return WCommandResult(output='Command completion timeout expired', error=1)
+			return WPlainCommandResult('Error. Command completion timeout expired')

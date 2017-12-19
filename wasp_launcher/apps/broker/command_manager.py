@@ -32,11 +32,13 @@ from enum import Enum
 
 from wasp_general.verify import verify_type, verify_value
 
-from wasp_general.command.command import WCommandResult, WCommandProto, WReduceCommand, WCommandSelector
-from wasp_general.command.command import WCommandPrioritizedSelector
+from wasp_general.command.command import WCommandProto, WReduceCommand, WCommandSelector, WCommand
+from wasp_general.command.command import WCommandPrioritizedSelector, WCommandAlias
 from wasp_general.command.context import WContextProto, WContext, WCommandContextAdapter, WCommandContext
+from wasp_general.command.result import WPlainCommandResult, WExceptionResult, WCommandResultTemplate
 
-from wasp_launcher.core_broker import WCommandKit, WBrokerCommand
+from wasp_launcher.core import WAppsGlobals
+from wasp_launcher.core_broker import WCommandKit, WTemplateBrokerCommand
 from wasp_launcher.apps.broker.internal_commands import WBrokerInternalCommandSet
 
 
@@ -57,124 +59,62 @@ class WBrokerCommandManager:
 		|                 | - - - > ... (WCommandPrioritizedSelector) - dynamic help information
 	"""
 
+	__help_command__ = 'help'
+
 	__general_usage_tip__ = 'For detailed information about command line usage - type "help help"\n'
 
-	__main_context_help_header__ = 'This is a main or root context. Suitable sub-context are:\n'
-
-	__specific_app_context_help__ = 'This is help for "%s" of "%s" context. Suitable commands are:\n'
-
-	class MainSections(Enum):
+	class MainKitContext(Enum):
 		core = 'core'
 		apps = 'apps'
 
-	__help_info__ = {
-		MainSections.core: """This is a 'core' context. Context for commands that interact with important
-built-in applications. You are able to switch to next context:
-""",
-		MainSections.apps: """This is a 'apps' context. Context for commands that interact with user-defined
-applications. You are able to switch to next context:
-"""
-	}
+	class HelpCommandAlias(WCommandAlias):
 
-	class ContextHelpCommand(WCommandProto):
+		@verify_type(command_set=WCommandSelector)
+		def __init__(self, command_set):
+			WCommandAlias.__init__(self, command_set)
 
-		@verify_type(command_set=WCommandSelector, help_command=(str, None))
-		@verify_value(help_ingfo=lambda x: callable(x) or (isinstance(x, str) and len(x) > 0))
-		@verify_value(help_command=lambda x: x is None or len(x) > 0)
-		def __init__(self, help_info, command_set, help_command=None):
-			WCommandProto.__init__(self)
-			self.__help_fn = help_info if callable(help_info) else lambda: help_info
-			self.__command_set = command_set
-			self.__help_command = help_command if help_command is not None else 'help'
-
-		def help_info(self):
-			return self.__help_fn()
-
-		def command_set(self):
-			return self.__command_set
-
-		def help_command(self):
-			return self.__help_command
-
-		@verify_type('paranoid', command_context=(WContextProto, None))
-		@verify_type(command_tokens=str)
-		def match(self, *command_tokens, command_context=None, **command_env):
-			if len(command_tokens) > 0:
-				if command_tokens[0] == self.help_command():
-					if len(command_tokens) == 1:
-						return True
+		def mutate_command_tokens(self, *command_tokens):
+			if len(command_tokens) > 1:
+				if command_tokens[0] == WBrokerCommandManager.__help_command__:
 					tokens = [command_tokens[1], command_tokens[0]]
 					tokens.extend(command_tokens[2:])
-					command = self.command_set().select(
-						*tokens, command_context=command_context, **command_env
-					)
-					return command is not None
-			return False
+					return tokens
 
-		@verify_type('paranoid', command_tokens=str, command_context=(WContextProto, None))
-		def exec(self, *command_tokens, command_context=None, **command_env):
-			if self.match(*command_tokens, command_context=command_context, **command_env) is False:
-				raise RuntimeError('Invalid tokens')
-			if len(command_tokens) == 1:
-				return WCommandResult(output=self.help_info())
-			tokens = [command_tokens[1], command_tokens[0]]
-			tokens.extend(command_tokens[2:])
-			command = self.command_set().select(*tokens, command_context=command_context, **command_env)
-			return command.exec(*tokens, command_context=command_context, **command_env)
 
-	class SpecificCommandHelp(WCommandProto):
+	class BrokerHelpCommand(WTemplateBrokerCommand):
 
-		@verify_type(command=WBrokerCommand, help_info=str, help_command=(str, None))
-		@verify_value(help_info=lambda x: len(x) > 0, help_command=lambda x: x is None or len(x) > 0)
-		def __init__(self, command, help_command=None):
-			WCommandProto.__init__(self)
-			self.__command = command
-			self.__help_command = help_command if help_command is not None else 'help'
+		@verify_type('paranoid', template_id=str, template_context=(dict, None))
+		@verify_value('paranoid', template_id=lambda x: len(x) > 0)
+		def __init__(self, template_id, template_context=None):
+			WTemplateBrokerCommand.__init__(
+				self, template_id, WBrokerCommandManager.__help_command__,
+				template_context=template_context
+			)
 
-		def command(self):
-			return self.__command
+		def brief_description(self):
+			return ''
 
-		def help_command(self):
-			return self.__help_command
+	class UnknownHelpCommand(WCommand):
 
-		@verify_type(command_tokens=str)
-		def match(self, *command_tokens, **command_env):
-			if command_tokens == (self.help_command(), self.command().command()):
-				return True
-			return False
-
-		@verify_type('paranoid', command_tokens=str)
-		def exec(self, *command_tokens, **command_env):
-			if self.match(*command_tokens, **command_env) is False:
-				raise RuntimeError('Invalid tokens')
-			help_info = self.command().detailed_description()
-			help_info += '\n' + WBrokerCommandManager.__general_usage_tip__
-			return WCommandResult(output=help_info)
-
-	class UnknownHelpCommand(WCommandProto):
-
-		@verify_type(help_command=(str, None))
-		@verify_value(help_command=lambda x: x is None or len(x) > 0)
-		def __init__(self, help_command=None):
-			WCommandProto.__init__(self)
-			self.__help_command = help_command if help_command is not None else 'help'
-
-		def help_command(self):
-			return self.__help_command
+		def __init__(self):
+			WCommand.__init__(self, WBrokerCommandManager.__help_command__)
 
 		@verify_type(command_tokens=str)
 		def match(self, *command_tokens, **command_env):
 			if len(command_tokens) > 1:
-				return command_tokens[0] == self.help_command()
-			return False
+				return WCommand.match(self, *command_tokens, **command_env)
 
 		@verify_type('paranoid', command_tokens=str)
-		def exec(self, *command_tokens, **command_env):
-			if self.match(*command_tokens, **command_env) is False:
-				raise RuntimeError('Invalid tokens')
-			help_info = 'Unknown help section: %s\n' % self.join_tokens(*command_tokens[1:])
-			help_info += WBrokerCommandManager.__general_usage_tip__
-			return WCommandResult(output=help_info)
+		def _exec(self, *command_tokens, **command_env):
+			result = WCommandResultTemplate(self.command_template())
+			result.update_context(invalid_section=self.join_tokens(*command_tokens[1:]))
+			return result
+
+		@classmethod
+		def command_template(cls):
+			return WAppsGlobals.templates.lookup(
+				'mako::com.binblob.wasp-launcher.broker::help::unknown_help.mako'
+			)
 
 	class BrokerContextCommand(WCommandProto):
 
@@ -185,8 +125,7 @@ applications. You are able to switch to next context:
 
 		@verify_type(command_tokens=str)
 		def match(self, *command_tokens, **command_env):
-			tokens_count = len(command_tokens)
-			if tokens_count == 0:
+			if len(command_tokens) == 0:
 				return True
 			return False
 
@@ -197,7 +136,7 @@ applications. You are able to switch to next context:
 				if self.__app_name is not None:
 					context = WContext(self.__app_name, linked_context=context)
 
-				return WCommandResult(command_context=context)
+				return WPlainCommandResult('', command_context=context)
 
 			raise RuntimeError('Invalid tokens')
 
@@ -216,38 +155,39 @@ applications. You are able to switch to next context:
 
 		@verify_type('paranoid', default_priority=int)
 		@verify_type(main_command_set=WCommandPrioritizedSelector)
-		def __init__(self, main_command_set, section, default_priority=30):
+		def __init__(self, main_command_set, kit_context, default_priority=30):
 			WCommandPrioritizedSelector.__init__(self, default_priority=default_priority)
 
-			if isinstance(section, WBrokerCommandManager.MainSections) is False:
-				raise TypeError('Invalid section type')
+			if isinstance(kit_context, WBrokerCommandManager.MainKitContext) is False:
+				raise TypeError('Invalid kit context type')
 
 			self.__main_command_set = main_command_set
-			self.__section_name = section.value
-			self.__section_help_header = WBrokerCommandManager.__help_info__[section]
+			self.__kit_context = kit_context.value
 			self.__kits = []
 			self.__total_commands = 0
 
-			def context_help_fn():
-				help_info = self.__section_help_header
-				for kit in self.__kits:
-					alias = kit.alias()
-					name = ('%s | %s' % (alias, kit.name())) if alias is not None else kit.name()
-					help_info += '\t- %s - %s\n' % (name, kit.description())
-				help_info += '\n'
-				help_info += WBrokerCommandManager.__general_usage_tip__
-				return help_info
+			kit_context_help_cmd = WBrokerCommandManager.BrokerHelpCommand(
+				'mako::com.binblob.wasp-launcher.broker::help::context_help.mako',
+				template_context={'broker_adapter': self}
+			)
 
-			self.add_prioritized(WBrokerCommandManager.BrokerContextCommand(self.__section_name), 10)
-			self.add_prioritized(WBrokerCommandManager.ContextHelpCommand(context_help_fn, self), 50)
+			self.add_prioritized(WBrokerCommandManager.BrokerContextCommand(self.__kit_context), 10)
+			self.add_prioritized(kit_context_help_cmd, 50)
+			self.add_prioritized(WBrokerCommandManager.HelpCommandAlias(self), 50)
 			self.add_prioritized(WBrokerCommandManager.UnknownHelpCommand(), 70)
 
-			reduce_command = WReduceCommand(self, self.__section_name)
-			main_context_adapter = WBrokerCommandManager.BrokerContextAdapter(WContext(self.__section_name))
+			reduce_command = WReduceCommand(self, self.__kit_context)
+			main_context_adapter = WBrokerCommandManager.BrokerContextAdapter(WContext(self.__kit_context))
 			main_context_command = WCommandContext(reduce_command, main_context_adapter)
 
 			self.__main_command_set.add_prioritized(main_context_command, 20)
 			self.__main_command_set.add_prioritized(reduce_command, 30)
+
+		def kit_context(self):
+			return self.__kit_context
+
+		def kits(self):
+			return self.__kits
 
 		def total_commands(self):
 			return self.__total_commands
@@ -265,29 +205,35 @@ applications. You are able to switch to next context:
 			alias = command_kit.alias()
 			kit_names = (kit_name,) if alias is None else (kit_name, alias)
 
-			help_info = WBrokerCommandManager.__specific_app_context_help__
-			help_info = help_info % (command_kit.name(), self.__section_name)
-
 			app_commands = WCommandPrioritizedSelector()
-
 			for command in commands:
-				help_info += '\t- %s - %s\n' % (command.command(), command.brief_description())
 				app_commands.add(command)
-				app_commands.add_prioritized(WBrokerCommandManager.SpecificCommandHelp(command), 40)
 
-			help_info += '\n'
-			help_info += WBrokerCommandManager.__general_usage_tip__
-			app_commands.add_prioritized(
-				WBrokerCommandManager.ContextHelpCommand(lambda: help_info, app_commands), 50
+				specific_command_help = WTemplateBrokerCommand(
+					'mako::com.binblob.wasp-launcher.broker::help::command_help.mako',
+					'help', command.command_token(),
+					template_context={'command': command}
+				)
+
+				app_commands.add_prioritized(specific_command_help, 60)
+
+			specific_kit_context_help_cmd = WBrokerCommandManager.BrokerHelpCommand(
+				'mako::com.binblob.wasp-launcher.broker::help::kit_help.mako',
+				template_context={
+					'kit_context': self.kit_context(),
+					'kit_name': command_kit.name(),
+					'kit_commands': commands
+				}
 			)
-
+			app_commands.add_prioritized(specific_kit_context_help_cmd, 40)
+			app_commands.add_prioritized(WBrokerCommandManager.HelpCommandAlias(self), 50)
 			app_commands.add_prioritized(
-				WBrokerCommandManager.BrokerContextCommand(self.__section_name, kit_name), 10
+				WBrokerCommandManager.BrokerContextCommand(self.kit_context(), kit_name), 10
 			)
 			app_commands.add_prioritized(WBrokerCommandManager.UnknownHelpCommand(), 80)
 
 			app_context_adapter = WBrokerCommandManager.BrokerContextAdapter(
-				WContext(kit_name, linked_context=WContext(self.__section_name))
+				WContext(kit_name, linked_context=WContext(self.kit_context()))
 			)
 			app_context_command = WCommandContext(
 				WReduceCommand(app_commands, *kit_names), app_context_adapter
@@ -298,36 +244,39 @@ applications. You are able to switch to next context:
 
 	def __init__(self):
 		self.__internal_set = WBrokerInternalCommandSet()
-		self.__main_sections = {}
+		self.__kit_context_storage = {}
 
 		internal_command_set = self.__internal_set.commands()
-		help_info = WBrokerCommandManager.__main_context_help_header__
-		for section in WBrokerCommandManager.MainSections:
-			self.__main_sections[section] = WBrokerCommandManager.BrokerCommandSet(
-				internal_command_set, section
+		for kit_context in WBrokerCommandManager.MainKitContext:
+			self.__kit_context_storage[kit_context] = WBrokerCommandManager.BrokerCommandSet(
+				internal_command_set, kit_context
 			)
-			section_name = section.value
-			help_info += ('\t - %s\n' % section_name)
-		help_info += WBrokerCommandManager.__general_usage_tip__
 
-		context_help_cmd = WBrokerCommandManager.ContextHelpCommand(lambda: help_info, internal_command_set)
-		self.__internal_set.commands().add_prioritized(context_help_cmd, 50)
+		root_context_help_cmd = WBrokerCommandManager.BrokerHelpCommand(
+			'mako::com.binblob.wasp-launcher.broker::help::root_help.mako',
+			template_context={
+				'all_kit_context': map(lambda x: x.value, WBrokerCommandManager.MainKitContext)}
+		)
+		self.__internal_set.commands().add_prioritized(root_context_help_cmd, 50)
+		self.__internal_set.commands().add_prioritized(
+			WBrokerCommandManager.HelpCommandAlias(internal_command_set), 50
+		)
 		self.__internal_set.commands().add_prioritized(WBrokerCommandManager.UnknownHelpCommand(), 60)
 
-	def commands_count(self, section=None):
-		if section is not None:
-			return self.__main_sections[section].total_commands()
+	def commands_count(self, kit_context=None):
+		if kit_context is not None:
+			return self.__kit_context_storage[kit_context].total_commands()
 		result = 0
-		for section_iter in WBrokerCommandManager.MainSections:
-			if section_iter in self.__main_sections:
-				result += self.__main_sections[section_iter].total_commands()
+		for context_iter in WBrokerCommandManager.MainKitContext:
+			if context_iter in self.__kit_context_storage:
+				result += self.__kit_context_storage[context_iter].total_commands()
 		return result
 
 	@verify_type(command_kit=WCommandKit)
 	def add_kit(self, command_kit):
-		broker_section = command_kit.broker_section()
-		section = self.__main_sections[WBrokerCommandManager.MainSections(broker_section)]
-		section.add_commands(command_kit)
+		kit_context = command_kit.kit_context()
+		kit_context = self.__kit_context_storage[WBrokerCommandManager.MainKitContext(kit_context)]
+		kit_context.add_commands(command_kit)
 
 	# noinspection PyBroadException
 	@verify_type('paranoid', command_tokens=str, command_context=(WContextProto, None))
@@ -335,11 +284,9 @@ applications. You are able to switch to next context:
 		command_obj = self.__internal_set.commands().select(*command_tokens, **command_env)
 
 		if command_obj is None:
-			return WCommandResult(output='No suitable command found', error=1)
+			return WPlainCommandResult.error('No suitable command found')
 
 		try:
 			return command_obj.exec(*command_tokens, **command_env)
-		except Exception:
-			return WCommandResult(
-				output='Command execution error. Traceback\n%s' % traceback.format_exc(), error=1
-			)
+		except Exception as e:
+			return WExceptionResult('Command execution error', e, traceback.format_exc())

@@ -29,13 +29,15 @@ from wasp_launcher.version import __status__
 
 from wasp_general.verify import verify_type
 
-from wasp_general.command.command import WCommandSet, WCommandPrioritizedSelector, WCommand, WCommandResult
+from wasp_general.command.command import WCommandSet, WCommandPrioritizedSelector, WCommand
 from wasp_general.command.command import WCommandProto
 from wasp_general.command.context import WContextProto
-from wasp_general.cli.formatter import WConsoleTableFormatter, na_formatter, local_datetime_formatter
+from wasp_general.command.result import WPlainCommandResult
+from wasp_general.cli.formatter import na_formatter, local_datetime_formatter
 from wasp_general.task.thread_tracker import WTrackerEvents
 
 from wasp_launcher.core import WAppsGlobals
+from wasp_launcher.core_broker import WTemplateBrokerCommand
 
 
 class WBrokerInternalCommandSet(WCommandSet):
@@ -92,8 +94,8 @@ the moment. Here they are:
 		@verify_type(command_context=(WContextProto, None))
 		def _exec(self, *command_tokens, command_context=None, **command_env):
 			if command_context is not None:
-				return WCommandResult(command_context=command_context.linked_context())
-			return WCommandResult(command_context=None)
+				return WPlainCommandResult('', command_context=command_context.linked_context())
+			return WPlainCommandResult('', command_context=None)
 
 	class DotCommand(WCommand):
 
@@ -102,7 +104,7 @@ the moment. Here they are:
 
 		@verify_type('paranoid', command_tokens=str, command_context=(WContextProto, None))
 		def _exec(self, *command_tokens, command_context=None, **command_env):
-			return WCommandResult(command_context=None)
+			return WPlainCommandResult('', command_context=None)
 
 	class GeneralUsageHelpCommand(WCommandProto):
 
@@ -120,38 +122,36 @@ the moment. Here they are:
 		def exec(self, *command_tokens, **command_env):
 			if self.match(*command_tokens, **command_env) is False:
 				raise RuntimeError('Invalid tokens')
-			return WCommandResult(output=WBrokerInternalCommandSet.__help_info__[command_tokens[1]])
+			return WPlainCommandResult(WBrokerInternalCommandSet.__help_info__[command_tokens[1]])
 
-	class CallsListCommand(WCommandProto):
+	class CallsListCommand(WTemplateBrokerCommand):
 
 		def __init__(self):
-			WCommandProto.__init__(self)
+			WTemplateBrokerCommand.__init__(
+				self,
+				'mako::com.binblob.wasp-launcher.broker::internal::calls.mako',
+				'calls',
+				template_context={}
+			)
 
-		@verify_type(command_tokens=str)
-		def match(self, *command_tokens, **command_env):
-			if command_tokens == ('calls',):
-				return True
-			return False
-
-		@verify_type('paranoid', command_tokens=str)
 		@verify_type(broker_last_task=(str, None), broker_selected_task=(str, None))
-		def exec(self, *command_tokens, broker_last_task=None, broker_selected_task=None, **command_env):
-			if self.match(*command_tokens, **command_env) is False:
-				raise RuntimeError('Invalid tokens')
-
-			if WAppsGlobals.broker_calls is None:
-				return WCommandResult(output='Unable to get task list. Service unavailable', error=1)
-
+		def result_template(
+			self, *command_tokens, broker_last_task=None, broker_selected_task=None, **command_env
+		):
+			result = WTemplateBrokerCommand.result_template(self, *command_tokens, **command_env)
 			uids = WAppsGlobals.broker_calls.fetch_uids()
+			result.update_context(
+				calls_uids=uids,
+				calls_general_info=(
+					('Last task', na_formatter(broker_last_task)),
+					('Selected task', na_formatter(broker_selected_task)),
+					('Total tasks', len(uids))
+				)
+			)
+			return result
 
-			table_formatter = WConsoleTableFormatter('Task uid')
-			for uid in uids:
-				table_formatter.add_row(uid)
-
-			header = 'Last task: %s\n' % na_formatter(broker_last_task)
-			header += 'Selected task: %s\n' % na_formatter(broker_selected_task)
-			header += 'Total tasks: %i\n' % len(uids)
-			return WCommandResult(output=header + table_formatter.format())
+		def brief_description(self):
+			return ''
 
 	class CallsSelectCommand(WCommandProto):
 
@@ -170,9 +170,7 @@ the moment. Here they are:
 			if self.match(*command_tokens, **command_env) is False:
 				raise RuntimeError('Invalid tokens')
 			uid = command_tokens[2]
-			return WCommandResult(
-				output='Task "%s" was selected' % uid, broker_selected_task=uid
-			)
+			return WPlainCommandResult('Task "%s" was selected' % uid, broker_selected_task=uid)
 
 	class CallsCommand(WCommandProto):
 
@@ -208,19 +206,17 @@ the moment. Here they are:
 			try:
 				scheduler_name = WAppsGlobals.broker_calls.get_scheduler(uid)
 			except ValueError:
-				return WCommandResult(
-					output='Invalid task "%s" selected. Type "help calls" for help information',
-					error=1
+				return WPlainCommandResult.error(
+					'Invalid task "%s" selected. Type "help calls" for help information',
 				)
 
 			header = 'Task with uid "%s" selected.\n' % uid
 
 			scheduler = WAppsGlobals.scheduler.instance(scheduler_name)
 			if scheduler is None:
-				return WCommandResult(
-					output=header + 'Invalid task "%s" selected. Unable to find scheduler '
+				return WPlainCommandResult.error(
+					header + 'Invalid task "%s" selected. Unable to find scheduler '
 					'instance. Type "help calls" for help information' % uid,
-					error=1
 				)
 
 			task = None
@@ -228,6 +224,12 @@ the moment. Here they are:
 				if running_record.task_uid() == uid:
 					task = running_record.task()
 					break
+
+			task_result = WAppsGlobals.broker_calls.get_result(uid)
+			if task_result is not None:
+				task_result = 'Task result: %s' % str(task_result)
+			else:
+				task_result = 'Task result is unavailable'
 
 			if task is None:
 
@@ -237,42 +239,43 @@ the moment. Here they are:
 
 				history_record = WAppsGlobals.scheduler_history.last_record(uid)
 				if history_record is None:
-					return WCommandResult(
-						output=header + 'Task have not been processed by a scheduler yet. '
-						'Please wait and call this command again'
+					return WPlainCommandResult(
+						header + 'Task have not been processed by a scheduler yet. '
+						'Please wait and call this command again\n' + task_result
 					)
 
 				record_type = history_record.record_type
 				record_date = local_datetime_formatter(history_record.registered_at)
 
 				if record_type == WTrackerEvents.start:
-					return WCommandResult(
-						output=header + 'Task was started at %s. Please wait and call this '
-						'command again for detailed information' % record_date
+					return WPlainCommandResult(
+						header + 'Task was started at %s. Please wait and call this '
+						'command again for detailed information\n' % record_date + task_result
 					)
 				elif record_type == WTrackerEvents.stop:
-					return WCommandResult(
-						output=header + 'Task was completed and stopped at %s' % record_date
+					return WPlainCommandResult(
+						header + 'Task was completed and stopped at %s\n' % record_date +
+						task_result
 					)
 				elif record_type == WTrackerEvents.termination:
-					return WCommandResult(
-						output=header + 'Task was terminated at %s (Task may be incomplete)' %
-						record_date
+					return WPlainCommandResult(
+						header + 'Task was terminated at %s (Task may be incomplete)\n' %
+						record_date + task_result
 					)
 				elif record_type == WTrackerEvents.exception:
 					output = 'Task completion was terminated by an exception at %s.\n' % record_date
 					output += 'Exception information: %s\n' % str(history_record.exception)
 					output += history_record.exception_details
 
-					return WCommandResult(output=header + output)
+					return WPlainCommandResult(header + output)
 				elif record_type == WTrackerEvents.wait:
-					return WCommandResult(
-						output=header + 'Task was not started and have been postponed at %s. '
+					return WPlainCommandResult(
+						header + 'Task was not started and have been postponed at %s. '
 						'Please wait and call this command again' % record_date
 					)
 				elif record_type == WTrackerEvents.drop:
-					return WCommandResult(
-						output=header + 'Task was not started and have been drop by a scheduler '
+					return WPlainCommandResult(
+						header + 'Task was not started and have been drop by a scheduler '
 						'at %s. If you want to start this task again - call task command again'
 					)
 				raise RuntimeError('Invalid history record type spotted: %s' % str(record_type))
@@ -305,13 +308,13 @@ the moment. Here they are:
 			if task_status is not None:
 				output += '\n' + task_status
 
-			return WCommandResult(output=output)
+			return WPlainCommandResult(output)
 
 		@classmethod
 		def __stop(cls, task_uid, task, scheduler_name):
 			header = 'Task with uid "%s" selected.\n' % task_uid
 			task.stop()
-			return WCommandResult(output=header + 'Task was requested to stop')
+			return WPlainCommandResult(header + 'Task was requested to stop')
 
 	def __init__(self):
 		WCommandSet.__init__(self, command_selector=WCommandPrioritizedSelector())

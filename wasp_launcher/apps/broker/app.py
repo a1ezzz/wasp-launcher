@@ -27,10 +27,13 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
+import os
+
 from wasp_general.verify import verify_type
 from wasp_general.thread import WCriticalResource
+from wasp_general.command.proto import WCommandResultProto
 
-from wasp_launcher.core import WSyncApp, WAppsGlobals
+from wasp_launcher.core import WSyncApp, WAppsGlobals, WTemplatesSource
 from wasp_launcher.core_broker import WCommandKit
 from wasp_launcher.apps.broker.basic import WLauncherBrokerBasicTask
 from wasp_launcher.apps.broker.command_manager import WBrokerCommandManager
@@ -60,6 +63,8 @@ class WLauncherBrokerIPCTask(WLauncherBrokerBasicTask):
 class WBrokerCallsRegistry(WCriticalResource):
 	# Task creation latency should be small as possible, so only some checks are made. There is no check
 	# if different tasks have the same uid. It may be done outside of this class
+	# This is quick and dirty implementation, that will be replaced by implementation that stores data in persistent
+	# storage
 
 	def __init__(self):
 		WCriticalResource.__init__(self)
@@ -72,7 +77,7 @@ class WBrokerCallsRegistry(WCriticalResource):
 	@WCriticalResource.critical_section()
 	@verify_type(uid=str, scheduler=(str, None))
 	def __add_task(self, uid, scheduler):
-		self.__registry.append((uid, scheduler))
+		self.__registry.append((uid, scheduler, None))
 
 	def fetch_uids(self):
 		return tuple(map(lambda x: x[0], self))
@@ -82,6 +87,25 @@ class WBrokerCallsRegistry(WCriticalResource):
 		for record in self:
 			if record[0] == uid:
 				return record[1]
+		raise ValueError('Invalid uid is specified')
+
+	def get_result(self, uid):
+		for record in self:
+			if record[0] == uid:
+				return record[2]
+
+	@WCriticalResource.critical_section()
+	@verify_type(uid=str, result=WCommandResultProto)
+	def set_result(self, uid, result):
+		for i in range(len(self.__registry)):
+			record = self.__registry[i]
+			if record[0] == uid:
+				if record[2] is None:
+					self.__registry[i] = (record[0], record[1], str(result))
+					return
+				else:
+					raise RuntimeError('Multiple results spotted for the single task "%s"' % uid)
+
 		raise ValueError('Invalid uid is specified')
 
 	def __iter__(self):
@@ -101,14 +125,26 @@ class WBrokerAppTasks:
 
 class WBrokerInitApp(WSyncApp):
 
+	class TemplateSource(WTemplatesSource):
+
+		__registry_tag__ = 'com.binblob.wasp-launcher.broker'
+
+		@classmethod
+		def template_path(cls):
+			return os.path.abspath(
+				os.path.join(os.path.dirname(__file__), '..', '..', 'templates', 'broker')
+			)
+
 	__registry_tag__ = 'com.binblob.wasp-launcher.apps.broker::init'
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.apps.config'
+		'com.binblob.wasp-launcher.apps.config',
+		'com.binblob.wasp-launcher.apps.template-lookup'
 	]
 
 	def start(self):
 		WAppsGlobals.log.info('Broker is initializing')
+		WBrokerInitApp.TemplateSource().start()
 
 		tcp_enabled = WAppsGlobals.config.getboolean('wasp-launcher::broker::connection', 'bind')
 		ipc_enabled = WAppsGlobals.config.getboolean('wasp-launcher::broker::connection', 'named_socket')
@@ -142,8 +178,8 @@ class WBrokerApp(WSyncApp):
 	__dynamic_dependency__ = WCommandKit
 
 	def start(self):
-		core_commands = WAppsGlobals.broker_commands.commands_count(WBrokerCommandManager.MainSections.core)
-		app_commands = WAppsGlobals.broker_commands.commands_count(WBrokerCommandManager.MainSections.apps)
+		core_commands = WAppsGlobals.broker_commands.commands_count(WBrokerCommandManager.MainKitContext.core)
+		app_commands = WAppsGlobals.broker_commands.commands_count(WBrokerCommandManager.MainKitContext.apps)
 
 		total_commands = WAppsGlobals.broker_commands.commands_count()
 		if total_commands == 0:

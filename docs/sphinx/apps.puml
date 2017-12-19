@@ -73,14 +73,15 @@ config .-down-> log
 debugger .-down-> config
 web_init .-down-> config
 broker_init .-down-> config
+broker_init .-down-> template
 scheduler_init .-down-> config
+
+model .-down-> config
+template .-down-> config
 
 broker_apps .-down-> broker_init
 broker_start .-down-> broker_init
 broker_start .-down-> broker_apps
-
-model .-down-> config
-template .-down-> config
 
 scheduler_apps .-down-> scheduler_init
 scheduler_start .-down-> scheduler_init

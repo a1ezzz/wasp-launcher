@@ -30,21 +30,30 @@ from wasp_launcher.version import __status__
 from abc import abstractmethod, abstractclassmethod
 
 from wasp_general.verify import verify_type, verify_value
-from wasp_general.command.command import WCommandResult
+from wasp_general.command.proto import WCommandResultProto
 from wasp_general.command.enhanced import WEnhancedCommand
+from wasp_general.command.command import WTemplateResultCommand
+from wasp_general.command.result import WPlainCommandResult
 
 from wasp_launcher.core import WAppsGlobals, WSyncApp
 from wasp_launcher.core_scheduler import WLauncherScheduleTask, WLauncherScheduleRecord
 
 
-class WBrokerCommand(WEnhancedCommand):
+class WBrokerCommandDescription:
 
 	@abstractmethod
 	def brief_description(self):
 		raise NotImplementedError('This method is abstract')
 
 	def detailed_description(self):
-		info = 'This is help information for "%s" command (%s). ' % (self.command(), self.brief_description())
+		raise NotImplementedError('This method is abstract')
+
+
+# noinspection PyAbstractClass
+class WBrokerCommand(WEnhancedCommand, WBrokerCommandDescription):
+
+	def detailed_description(self):
+		info = 'This is help information for "%s" command (%s). ' % (self.command_token(), self.brief_description())
 
 		arguments_help = self.arguments_help()
 		if len(arguments_help) == 0:
@@ -54,6 +63,26 @@ class WBrokerCommand(WEnhancedCommand):
 			for argument_name, argument_description in arguments_help:
 				info += '\t%s - %s\n' % (argument_name, argument_description)
 		return info
+
+
+# noinspection PyAbstractClass
+class WTemplateBrokerCommand(WTemplateResultCommand, WBrokerCommandDescription):
+
+	@verify_type('paranoid', command_tokens=str, template_context=(dict, None))
+	@verify_type(template_id=str)
+	@verify_value(template_id=lambda x: len(x) > 0)
+	def __init__(self, template_id, *command_tokens, template_context=None):
+		WTemplateResultCommand.__init__(
+			self, WAppsGlobals.templates.lookup(template_id), *command_tokens,
+			template_context=template_context
+		)
+
+	def command_token(self):
+		return self.command()[0]
+
+	def detailed_description(self):
+		info = 'This is help information for "%s" command (%s). Command does not have arguments\n'
+		return info % (self.command_token(), self.brief_description())
 
 
 class WCommandKit(WSyncApp):
@@ -75,8 +104,8 @@ class WCommandKit(WSyncApp):
 	def config_section(cls):
 		return 'wasp-launcher::applications::%s' % cls.name()
 
-	def broker_section(self):
-		return WAppsGlobals.config[self.config_section()]['section']
+	def kit_context(self):
+		return WAppsGlobals.config[self.config_section()]['kit_context']
 
 	def alias(self):
 		section_name = self.config_section()
@@ -122,51 +151,77 @@ class WResponsiveTask:
 		task_source = WAppsGlobals.scheduler.task_source(task_source_name, scheduler_name)
 
 		if task_source is None:
-			return WCommandResult(
-				output='Unable to find suitable scheduler. Command rejected', error=1
-			)
+			return WPlainCommandResult.error('Unable to find suitable scheduler. Command rejected')
 
 		schedule_record = self.schedule_record()
 		task_uid = schedule_record.task_uid()
 		if WAppsGlobals.broker_calls is None:
-			WAppsGlobals.log.error('Unable to register task "%s" in calls registry')
+			WAppsGlobals.log.error('Unable to register task "%s" in calls registry' % task_uid)
 		else:
 			WAppsGlobals.broker_calls.add_task(task_uid, scheduler_name)
 		task_source.add_record(schedule_record)
-		return WCommandResult(output='Task submitted. Task id: %s' % task_uid, broker_last_task=task_uid)
+		return WPlainCommandResult('Task submitted. Task id: %s' % task_uid, broker_last_task=task_uid)
+
+	@classmethod
+	@verify_type(task=WLauncherScheduleTask, command_result=WCommandResultProto)
+	def submit_result(cls, task, command_result):
+		WAppsGlobals.broker_calls.set_result(task.uid(), command_result)
 
 
-# noinspection PyAbstractClass
 class WResponsiveBrokerCommand(WBrokerCommand):
-
-	__command__ = None
-	__arguments__ = []
-	__argument_relationships = None
 
 	__scheduler_instance__ = None
 	__task_source_name__ = None
 
-	def __init__(self):
-		if self.__command__ is None:
-			raise ValueError('__command__ must be redefined in a subclass')
+	class ScheduledTask(WLauncherScheduleTask):
 
+		__task_name__ = 'Scheduled task for responsive command'
+
+		def __init__(self, basic_command, *command_tokens, **command_env):
+			WLauncherScheduleTask.__init__(self)
+			self.__basic_command = basic_command
+			self.__command_tokens = command_tokens
+			self.__command_env = command_env
+
+		def basic_command(self):
+			return self.__basic_command
+
+		def thread_started(self):
+			result = self.__basic_command.exec(*self.__command_tokens, **self.__command_env)
+			WResponsiveTask.submit_result(self, result)
+
+		def name(self):
+			return self.__task_name__
+
+		def brief_description(self):
+			return self.__basic_command.brief_description()
+
+	def __init__(self, basic_broker_command, scheduled_task_cls=None):
 		WBrokerCommand.__init__(
-			self, self.__command__, *self.__arguments__, relationships=self.__argument_relationships
+			self, basic_broker_command.command_token(), *basic_broker_command.argument_descriptors(),
+			relationships=basic_broker_command.relationships()
 		)
-		if self.__task_source_name__ is None:
-			raise ValueError('__task_source_name__ must be redefined in a subclass')
+		self.__basic_command = basic_broker_command
+		self.__scheduled_task_cls = \
+			scheduled_task_cls if scheduled_task_cls is not None else WResponsiveBrokerCommand.ScheduledTask
 
-	def _exec(self, command_arguments, **command_env):
-		task = self.create_task(command_arguments, **command_env)
+	def basic_command(self):
+		return self.__basic_command
+
+	def exec(self, *command_tokens, **command_env):
+		WBrokerCommand.exec(self, *command_tokens, **command_env)  # just for check
+		task = self.create_task(*command_tokens, **command_env)
 		rt = WResponsiveTask(task, self.__task_source_name__, scheduler_instance=self.__scheduler_instance__)
 		return rt.submit_task()
 
-	@abstractmethod
-	def create_task(self, command_arguments, **command_env):
-		"""
+	def _exec(self, command_arguments, **command_env):
+		pass
 
-		:param command_arguments:
-		:param command_env:
+	def create_task(self, *command_tokens, **command_env):
+		"""
 		:return: WLauncherScheduleTask
 		"""
-		raise NotImplementedError('This method is abstract')
+		return self.__scheduled_task_cls(self.basic_command(), *command_tokens, **command_env)
+
+	def brief_description(self):
+		return self.basic_command().brief_description()

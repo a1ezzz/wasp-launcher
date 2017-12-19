@@ -37,11 +37,10 @@ from wasp_general.task.dependency import WDependentTask
 from wasp_general.task.base import WTask, WSyncTask
 from wasp_general.task.thread import WThreadTask, WThreadJoiningTimeoutError
 from wasp_general.task.dependency import WTaskDependencyRegistry, WTaskDependencyRegistryStorage
-from wasp_general.command.enhanced import WEnhancedCommand
 
 from wasp_general.network.web.service import WWebService, WWebTargetRoute, WWebEnhancedPresenter
 from wasp_general.network.web.proto import WWebRequestProto
-from wasp_general.network.web.template import WWebTemplateResponse
+from wasp_general.network.web.template_response import WWebTemplateResponse
 
 
 class WThreadTaskLoggingHandler:
@@ -157,24 +156,11 @@ class WWebPresenter(WWebEnhancedPresenter, metaclass=ABCMeta):
 		return WWebTemplateResponse(self.__template__(template_id), context=self._context)
 
 
-class WWebApp(WSyncApp):
+class WTemplatesSource(WSyncApp):
 
 	__dependency__ = [
-		'com.binblob.wasp-launcher.apps.web::init',
 		'com.binblob.wasp-launcher.apps.template-lookup'
 	]
-
-	@classmethod
-	def public_presenters(cls):
-		return tuple()
-
-	@classmethod
-	def public_routes(cls):
-		""" Return routes which are published by an application
-
-		:return: tuple of WWebRoute
-		"""
-		return tuple()
 
 	@classmethod
 	def template_path(cls):
@@ -201,8 +187,33 @@ class WWebApp(WSyncApp):
 		return None
 
 	def start(self):
-		WAppsGlobals.templates.add_app(self)
+		WAppsGlobals.templates.add_template_source(self)
 
+	def stop(self):
+		pass
+
+
+class WWebApp(WTemplatesSource):
+
+	__dependency__ = [
+		'com.binblob.wasp-launcher.apps.web::init',
+		'com.binblob.wasp-launcher.apps.template-lookup'
+	]
+
+	@classmethod
+	def public_presenters(cls):
+		return tuple()
+
+	@classmethod
+	def public_routes(cls):
+		""" Return routes which are published by an application
+
+		:return: tuple of WWebRoute
+		"""
+		return tuple()
+
+	def start(self):
+		WTemplatesSource.start(self)
 		for presenter in self.public_presenters():
 			WAppsGlobals.wasp_web_service.add_presenter(presenter)
 			WAppsGlobals.log.info(
@@ -212,7 +223,7 @@ class WWebApp(WSyncApp):
 			WAppsGlobals.wasp_web_service.route_map().append(route)
 
 	def stop(self):
-		pass
+		WTemplatesSource.stop(self)
 
 
 class WModelApp(WSyncApp):

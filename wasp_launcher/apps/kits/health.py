@@ -30,35 +30,34 @@ from wasp_launcher.version import __status__
 import threading
 
 from wasp_general.verify import verify_type
-from wasp_general.cli.formatter import WConsoleTableFormatter
-from wasp_general.command.command import WCommandResult
 
-from wasp_launcher.core_broker import WCommandKit, WBrokerCommand
+from wasp_launcher.core_broker import WCommandKit, WTemplateBrokerCommand
 
 
 class WHealthCommandKit(WCommandKit):
 
 	__registry_tag__ = 'com.binblob.wasp-launcher.broker.kits.health'
 
-	class Threads(WBrokerCommand):
+	class ThreadsCommand(WTemplateBrokerCommand):
 
 		def __init__(self):
-			WBrokerCommand.__init__(self, 'threads')
+			WTemplateBrokerCommand.__init__(
+				self,
+				'mako::com.binblob.wasp-launcher.broker::health::threads.mako',
+				'threads',
+				template_context={}
+			)
 
-		@verify_type(command_arguments=dict)
-		def _exec(self, command_arguments, **command_env):
-			threads = threading.enumerate()
+		@verify_type(broker_last_task=(str, None), broker_selected_task=(str, None))
+		def result_template(
+			self, *command_tokens, broker_last_task=None, broker_selected_task=None, **command_env
+		):
+			result = WTemplateBrokerCommand.result_template(self, *command_tokens, **command_env)
+			result.update_context(threads=[x.name for x in threading.enumerate()])
+			return result
 
-			table_formatter = WConsoleTableFormatter('Thread name')
-			for thread in threads:
-				table_formatter.add_row(thread.name)
-
-			header = 'Total threads: %i\n' % len(threads)
-			return WCommandResult(output=header + table_formatter.format())
-
-		@classmethod
-		def brief_description(cls):
-			return 'return application threads list'
+		def brief_description(self):
+			return ''
 
 	@classmethod
 	def description(cls):
@@ -66,4 +65,4 @@ class WHealthCommandKit(WCommandKit):
 
 	@classmethod
 	def commands(cls):
-		return [WHealthCommandKit.Threads()]
+		return [WHealthCommandKit.ThreadsCommand()]

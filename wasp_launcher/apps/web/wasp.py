@@ -39,7 +39,8 @@ from wasp_general.network.web.headers import WHTTPHeaders
 from wasp_general.network.web.response import WWebResponse
 from wasp_general.network.web.service import WWebEnhancedPresenter, WSimpleErrorPresenter
 from wasp_general.network.web.proto import WWebPresenter
-from wasp_general.network.web.template import WWebTemplateText, WWebTemplateResponse
+from wasp_general.template import WTemplateText
+from wasp_general.network.web.template_response import WWebTemplateResponse
 from wasp_general.network.web.service import WWebRoute
 
 from wasp_launcher.core import WWebApp
@@ -118,7 +119,7 @@ class WStaticFilesPresenter(WWebEnhancedPresenter):
 			link = self.__request__().path() + '/' + entry
 			context['urls'].append((link, entry))
 
-		return WWebTemplateResponse(WWebTemplateText(self.__list_template__()), context=context)
+		return WWebTemplateResponse(WTemplateText(self.__list_template__()), context=context)
 
 	@verify_type(listdir=bool)
 	def index(self, path, basedir, listdir=False):
@@ -223,7 +224,7 @@ class WErrorPresenter(WSimpleErrorPresenter):
 				('Error %i' % code): self.__message__(code)
 			}
 		}
-		return WWebTemplateResponse(WWebTemplateText(self.__error_template__()), context=context)
+		return WWebTemplateResponse(WTemplateText(self.__error_template__()), context=context)
 
 	@classmethod
 	def __presenter_name__(cls):
