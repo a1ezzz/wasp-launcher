@@ -32,7 +32,7 @@ from abc import abstractmethod, abstractclassmethod
 from wasp_general.verify import verify_type, verify_value
 from wasp_general.command.proto import WCommandResultProto
 from wasp_general.command.enhanced import WEnhancedCommand
-from wasp_general.command.command import WTemplateResultCommand
+from wasp_general.command.template_command import WTemplateResultCommand
 from wasp_general.command.result import WPlainCommandResult
 
 from wasp_launcher.core import WAppsGlobals, WSyncApp

@@ -35,7 +35,8 @@ from wasp_general.verify import verify_type, verify_value
 from wasp_general.command.command import WCommandProto, WReduceCommand, WCommandSelector, WCommand
 from wasp_general.command.command import WCommandPrioritizedSelector, WCommandAlias
 from wasp_general.command.context import WContextProto, WContext, WCommandContextAdapter, WCommandContext
-from wasp_general.command.result import WPlainCommandResult, WExceptionResult, WCommandResultTemplate
+from wasp_general.command.result import WPlainCommandResult, WExceptionResult
+from wasp_general.command.template_command import WCommandResultTemplate
 
 from wasp_launcher.core import WAppsGlobals
 from wasp_launcher.core_broker import WCommandKit, WTemplateBrokerCommand
