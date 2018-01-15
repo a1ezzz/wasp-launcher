@@ -54,14 +54,7 @@ class WBrokerCommand(WEnhancedCommand, WBrokerCommandDescription):
 
 	def detailed_description(self):
 		info = 'This is help information for "%s" command (%s). ' % (self.command_token(), self.brief_description())
-
-		arguments_help = self.arguments_help()
-		if len(arguments_help) == 0:
-			info += 'Command does not have arguments\n'
-		else:
-			info += 'Command arguments:\n'
-			for argument_name, argument_description in arguments_help:
-				info += '\t%s - %s\n' % (argument_name, argument_description)
+		info += self.command_help()
 		return info
 
 
