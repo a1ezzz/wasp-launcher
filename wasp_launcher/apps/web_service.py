@@ -24,7 +24,9 @@ from wasp_launcher.version import __author__, __version__, __credits__, __licens
 # noinspection PyUnresolvedReferences
 from wasp_launcher.version import __status__
 
+import asyncio
 import tornado.web
+import tornado.ioloop
 import tornado.httpserver
 
 from wasp_general.network.service import WLoglessIOLoop
@@ -82,20 +84,16 @@ class WWebServiceInitApp(WSyncApp):
 			debugger=(WWebAppDebugger() if debugger is True else None)
 		)
 
-		WAppsGlobals.tornado_io_loop = WLoglessIOLoop()
-
 		WAppsGlobals.tornado_service = tornado.httpserver.HTTPServer(
 			tornado.web.Application([
 				(r".*", WTornadoRequestHandler.__handler__(WAppsGlobals.wasp_web_service))
-			]),
-			io_loop=WAppsGlobals.tornado_io_loop
+			])
 		)
 
 	def stop(self):
 		WAppsGlobals.log.info('Web-service is finalizing')
 
 		WAppsGlobals.tornado_service = None
-		WAppsGlobals.tornado_io_loop = None
 		WAppsGlobals.wasp_web_service = None
 
 
@@ -123,13 +121,24 @@ class WWebServiceApp(WThreadedApp):
 		if info.port() is None:
 			raise RuntimeError('Invalid bind address in the configuration')
 
+		#WAppsGlobals.tornado_io_loop = asyncio.new_event_loop()
+		#WAppsGlobals.tornado_io_loop = WLoglessIOLoop()
+		asyncio.set_event_loop(asyncio.new_event_loop())
+		import tornado.ioloop
+		WAppsGlobals.tornado_io_loop = tornado.ioloop.IOLoop.current()
+
 		WAppsGlobals.tornado_service.listen(int(info.port()), address=str(info.address()))
+
 		WAppsGlobals.log.info('Web-service is starting')
 		WAppsGlobals.tornado_io_loop.start()
+		WAppsGlobals.tornado_io_loop.close()
+		WAppsGlobals.tornado_io_loop = None  # race condition is possible
+
+	#tornado.ioloop.IOLoop.current().start()
 
 	def thread_stopped(self):
 		if WAppsGlobals.tornado_io_loop is not None:
-			WAppsGlobals.tornado_io_loop.stop()
+			WAppsGlobals.tornado_io_loop.add_callback(WAppsGlobals.tornado_io_loop.stop)
 			WAppsGlobals.log.info('Web-service was stopped')
 
 	@classmethod
